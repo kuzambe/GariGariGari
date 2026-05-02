@@ -3,8 +3,20 @@ import { createClient } from "@supabase/supabase-js";
 const rawUrl = (import.meta.env.VITE_SUPABASE_URL as string) ?? "";
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ?? "";
 
-// Normalise: strip trailing slashes, ensure https://
-const supabaseUrl = rawUrl.trim().replace(/\/+$/, "");
+// Normalise: strip any path segments (e.g. /rest/v1, /auth/v1), trailing slashes, and whitespace
+// so the user can paste any Supabase URL and we'll extract the project root automatically
+function normaliseSupabaseUrl(raw: string): string {
+  const trimmed = raw.trim().replace(/\/+$/, "");
+  try {
+    const parsed = new URL(trimmed);
+    // Keep only origin (scheme + host), drop any path
+    return parsed.origin;
+  } catch {
+    return trimmed;
+  }
+}
+
+const supabaseUrl = normaliseSupabaseUrl(rawUrl);
 
 export type ConfigError = { field: string; message: string };
 
