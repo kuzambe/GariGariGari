@@ -16,6 +16,31 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## Artifacts
+
+### `artifacts/web-app` — React + Vite Frontend
+- **Preview path**: `/`
+- **Auth**: Supabase Auth (email/password)
+- **Supabase**: `@supabase/supabase-js` client at `src/lib/supabase.ts`
+- **Auth context**: `src/context/AuthContext.tsx` — provides `session`, `user`, `loading`, `signOut`
+- **Pages**:
+  - `/auth` — Sign in / Sign up tabs
+  - `/dashboard` — Protected overview page with stats cards
+  - `/profile` — Account info, change password
+  - `/settings` — Auth details, sign out, danger zone
+- **Layout**: `src/components/layout/AppShell.tsx` — sticky header with nav + user dropdown
+- **Theme**: Clean light/dark CSS vars in `src/index.css` (blue primary, neutral grays)
+
+### `artifacts/api-server` — Express API Server
+- **Preview path**: `/api`
+- No backend logic needed for this frontend-only Supabase app
+
+## Environment Variables / Secrets
+
+- `VITE_SUPABASE_URL` — Supabase project URL (injected into Vite frontend)
+- `VITE_SUPABASE_ANON_KEY` — Supabase public anon key (injected into Vite frontend)
+- `SESSION_SECRET` — Express session secret
+
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages
