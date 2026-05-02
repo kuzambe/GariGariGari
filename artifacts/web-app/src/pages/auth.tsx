@@ -4,21 +4,32 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, MailCheck, AlertCircle } from "lucide-react";
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
+  const [signUpError, setSignUpError] = useState<string | null>(null);
+  const [signUpDone, setSignUpDone] = useState(false);
+  const [signUpEmail, setSignUpEmail] = useState("");
 
   const [signInForm, setSignInForm] = useState({ email: "", password: "" });
   const [signUpForm, setSignUpForm] = useState({ email: "", password: "", confirm: "" });
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
+    setSignInError(null);
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email: signInForm.email,
@@ -26,7 +37,15 @@ export default function AuthPage() {
     });
     setLoading(false);
     if (error) {
-      toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+      if (error.message.toLowerCase().includes("email not confirmed")) {
+        setSignInError(
+          "Your email isn't confirmed yet. Check your inbox for a confirmation link, then try signing in again."
+        );
+      } else if (error.message.toLowerCase().includes("invalid login credentials")) {
+        setSignInError("Incorrect email or password. Please try again.");
+      } else {
+        setSignInError(error.message);
+      }
     } else {
       navigate("/dashboard");
     }
@@ -34,24 +53,42 @@ export default function AuthPage() {
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
+    setSignUpError(null);
+
     if (signUpForm.password !== signUpForm.confirm) {
-      toast({ title: "Passwords don't match", variant: "destructive" });
+      setSignUpError("Passwords don't match.");
       return;
     }
+    if (signUpForm.password.length < 6) {
+      setSignUpError("Password must be at least 6 characters.");
+      return;
+    }
+
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: signUpForm.email,
       password: signUpForm.password,
     });
     setLoading(false);
+
     if (error) {
-      toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
-    } else {
-      toast({
-        title: "Account created",
-        description: "Check your email to confirm your account, then sign in.",
-      });
+      if (error.message.toLowerCase().includes("already registered")) {
+        setSignUpError("An account with this email already exists. Try signing in instead.");
+      } else {
+        setSignUpError(error.message);
+      }
+      return;
     }
+
+    // If session is immediately available, email confirmation is disabled — go straight to dashboard
+    if (data.session) {
+      navigate("/dashboard");
+      return;
+    }
+
+    // Otherwise email confirmation is required
+    setSignUpEmail(signUpForm.email);
+    setSignUpDone(true);
   }
 
   return (
@@ -65,26 +102,41 @@ export default function AuthPage() {
         <Tabs defaultValue="signin">
           <TabsList className="w-full">
             <TabsTrigger value="signin" className="flex-1">Sign in</TabsTrigger>
-            <TabsTrigger value="signup" className="flex-1">Sign up</TabsTrigger>
+            <TabsTrigger value="signup" className="flex-1" onClick={() => setSignUpDone(false)}>
+              Sign up
+            </TabsTrigger>
           </TabsList>
 
+          {/* ── Sign in ── */}
           <TabsContent value="signin">
             <Card>
               <form onSubmit={handleSignIn}>
                 <CardHeader>
                   <CardTitle className="text-base">Sign in</CardTitle>
-                  <CardDescription className="text-xs">Enter your credentials to access your account</CardDescription>
+                  <CardDescription className="text-xs">
+                    Enter your credentials to access your account
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {signInError && (
+                    <Alert variant="destructive" className="py-2">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-xs ml-2">{signInError}</AlertDescription>
+                    </Alert>
+                  )}
                   <div className="space-y-1.5">
                     <Label htmlFor="signin-email" className="text-xs">Email</Label>
                     <Input
                       id="signin-email"
                       type="email"
                       placeholder="you@example.com"
+                      autoComplete="email"
                       required
                       value={signInForm.email}
-                      onChange={(e) => setSignInForm({ ...signInForm, email: e.target.value })}
+                      onChange={(e) => {
+                        setSignInError(null);
+                        setSignInForm({ ...signInForm, email: e.target.value });
+                      }}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -93,15 +145,19 @@ export default function AuthPage() {
                       id="signin-password"
                       type="password"
                       placeholder="••••••••"
+                      autoComplete="current-password"
                       required
                       value={signInForm.password}
-                      onChange={(e) => setSignInForm({ ...signInForm, password: e.target.value })}
+                      onChange={(e) => {
+                        setSignInError(null);
+                        setSignInForm({ ...signInForm, password: e.target.value });
+                      }}
                     />
                   </div>
                 </CardContent>
                 <CardFooter>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                     Sign in
                   </Button>
                 </CardFooter>
@@ -109,57 +165,104 @@ export default function AuthPage() {
             </Card>
           </TabsContent>
 
+          {/* ── Sign up ── */}
           <TabsContent value="signup">
-            <Card>
-              <form onSubmit={handleSignUp}>
-                <CardHeader>
-                  <CardTitle className="text-base">Create account</CardTitle>
-                  <CardDescription className="text-xs">Sign up for a free account</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="signup-email" className="text-xs">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      required
-                      value={signUpForm.email}
-                      onChange={(e) => setSignUpForm({ ...signUpForm, email: e.target.value })}
-                    />
+            {signUpDone ? (
+              <Card>
+                <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <MailCheck className="h-6 w-6 text-primary" />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="signup-password" className="text-xs">Password</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      required
-                      minLength={6}
-                      value={signUpForm.password}
-                      onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
-                    />
+                  <div>
+                    <p className="text-sm font-semibold">Check your inbox</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      We sent a confirmation link to{" "}
+                      <span className="font-medium text-foreground">{signUpEmail}</span>.
+                      Click it to activate your account, then come back and sign in.
+                    </p>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="signup-confirm" className="text-xs">Confirm password</Label>
-                    <Input
-                      id="signup-confirm"
-                      type="password"
-                      placeholder="••••••••"
-                      required
-                      value={signUpForm.confirm}
-                      onChange={(e) => setSignUpForm({ ...signUpForm, confirm: e.target.value })}
-                    />
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    No email? Check your spam folder or{" "}
+                    <button
+                      className="underline text-primary"
+                      onClick={() => setSignUpDone(false)}
+                    >
+                      try again
+                    </button>
+                    .
+                  </p>
                 </CardContent>
-                <CardFooter>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Create account
-                  </Button>
-                </CardFooter>
-              </form>
-            </Card>
+              </Card>
+            ) : (
+              <Card>
+                <form onSubmit={handleSignUp}>
+                  <CardHeader>
+                    <CardTitle className="text-base">Create account</CardTitle>
+                    <CardDescription className="text-xs">Sign up for a free account</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {signUpError && (
+                      <Alert variant="destructive" className="py-2">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription className="text-xs ml-2">{signUpError}</AlertDescription>
+                      </Alert>
+                    )}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-email" className="text-xs">Email</Label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        required
+                        value={signUpForm.email}
+                        onChange={(e) => {
+                          setSignUpError(null);
+                          setSignUpForm({ ...signUpForm, email: e.target.value });
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-password" className="text-xs">Password</Label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        required
+                        minLength={6}
+                        value={signUpForm.password}
+                        onChange={(e) => {
+                          setSignUpError(null);
+                          setSignUpForm({ ...signUpForm, password: e.target.value });
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-confirm" className="text-xs">Confirm password</Label>
+                      <Input
+                        id="signup-confirm"
+                        type="password"
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        required
+                        value={signUpForm.confirm}
+                        onChange={(e) => {
+                          setSignUpError(null);
+                          setSignUpForm({ ...signUpForm, confirm: e.target.value });
+                        }}
+                      />
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                      Create account
+                    </Button>
+                  </CardFooter>
+                </form>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>
