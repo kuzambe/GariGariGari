@@ -11,7 +11,11 @@ import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ component: Component }: { component: () => JSX.Element }) {
+function ProtectedRoute({
+  component: Component,
+}: {
+  component: () => JSX.Element;
+}) {
   const { session, loading } = useAuth();
   if (loading) {
     return (
@@ -37,11 +41,18 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/auth" component={session ? () => <Redirect to="/dashboard" /> : AuthPage} />
-      <Route path="/dashboard" component={() => <ProtectedRoute component={DashboardPage} />} />
-      <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />
-      <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
-      <Route path="/" component={() => <Redirect to={session ? "/dashboard" : "/auth"} />} />
+      <Route
+        path="/auth"
+        component={session ? () => <Redirect to="/dashboard" /> : AuthPage}
+      />
+      <Route
+        path="/dashboard"
+        component={() => <ProtectedRoute component={DashboardPage} />}
+      />
+      <Route
+        path="/"
+        component={() => <Redirect to={session ? "/dashboard" : "/auth"} />}
+      />
       <Route component={NotFound} />
     </Switch>
   );
