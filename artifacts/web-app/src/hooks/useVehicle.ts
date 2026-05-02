@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { DEMO_VEHICLE } from "@/lib/demo";
 
 export interface Vehicle {
   id: string;
@@ -19,12 +20,14 @@ export interface Vehicle {
 }
 
 export function useVehicle() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
 
   return useQuery<Vehicle | null>({
     queryKey: ["vehicle", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      if (isDemo) return DEMO_VEHICLE as Vehicle;
+
       const { data, error } = await supabase
         .from("vehicles")
         .select("*")
@@ -34,7 +37,7 @@ export function useVehicle() {
         .maybeSingle();
 
       if (error) {
-        if (error.code === "42P01") return null; // table doesn't exist yet
+        if (error.code === "42P01") return null;
         throw error;
       }
       return data;
