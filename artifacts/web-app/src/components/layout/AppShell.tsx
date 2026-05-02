@@ -36,9 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/dashboard">
-              <span className="text-sm font-semibold tracking-tight text-foreground">
-                MyApp
-              </span>
+              <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
             </Link>
             <nav className="hidden sm:flex items-center gap-1">
               {navItems.map((item) => {

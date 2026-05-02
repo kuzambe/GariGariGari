@@ -105,8 +105,8 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">MyApp</h1>
+        <div className="text-center space-y-2">
+          <img src="/logo.png" alt="Logo" className="h-16 w-auto mx-auto" />
           <p className="text-sm text-muted-foreground">Welcome — sign in or create an account</p>
         </div>
 
