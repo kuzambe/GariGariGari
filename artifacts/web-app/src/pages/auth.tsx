@@ -15,6 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, MailCheck, AlertCircle } from "lucide-react";
+import { SupabaseConfigAlert } from "@/components/SupabaseConfigAlert";
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
@@ -37,12 +38,17 @@ export default function AuthPage() {
     });
     setLoading(false);
     if (error) {
-      if (error.message.toLowerCase().includes("email not confirmed")) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes("email not confirmed")) {
         setSignInError(
           "Your email isn't confirmed yet. Check your inbox for a confirmation link, then try signing in again."
         );
-      } else if (error.message.toLowerCase().includes("invalid login credentials")) {
+      } else if (msg.includes("invalid login credentials")) {
         setSignInError("Incorrect email or password. Please try again.");
+      } else if (msg.includes("invalid path") || msg.includes("fetch failed") || msg.includes("failed to fetch")) {
+        setSignInError(
+          "Could not reach Supabase. Check that your Project URL in Secrets is exactly: https://xxxx.supabase.co (no extra path, no trailing slash), and that the project is not paused."
+        );
       } else {
         setSignInError(error.message);
       }
@@ -72,8 +78,13 @@ export default function AuthPage() {
     setLoading(false);
 
     if (error) {
-      if (error.message.toLowerCase().includes("already registered")) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes("already registered")) {
         setSignUpError("An account with this email already exists. Try signing in instead.");
+      } else if (msg.includes("invalid path") || msg.includes("fetch failed") || msg.includes("failed to fetch")) {
+        setSignUpError(
+          "Could not reach Supabase. Check that your Project URL in Secrets is exactly: https://xxxx.supabase.co (no extra path, no trailing slash), and that the project is not paused."
+        );
       } else {
         setSignUpError(error.message);
       }
@@ -98,6 +109,8 @@ export default function AuthPage() {
           <h1 className="text-2xl font-semibold tracking-tight">MyApp</h1>
           <p className="text-sm text-muted-foreground">Welcome — sign in or create an account</p>
         </div>
+
+        <SupabaseConfigAlert />
 
         <Tabs defaultValue="signin">
           <TabsList className="w-full">
