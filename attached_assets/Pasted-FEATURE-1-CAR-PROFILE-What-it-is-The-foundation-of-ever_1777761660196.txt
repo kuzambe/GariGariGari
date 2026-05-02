@@ -1,0 +1,39 @@
+FEATURE 1 — CAR PROFILE
+What it is:
+The foundation of everything. Every other feature in the app uses this data. Get this right and everything else becomes easier.
+What it needs to do:
+User creates an account and is immediately prompted to add their car. Three input methods on one screen — scan VIN barcode from doorsill, enter VIN manually, or enter details manually if VIN lookup fails. VIN lookup calls NHTSA API and returns make, model, year, trim, engine, fuel type, body style. User confirms the details, adds their mileage, adds their license plate, and the profile is created.
+The dashboard screen that results:
+This is the home screen of the app. The Gari logo sits at the top left. The car's name — year, make, model — sits prominently at the top. Below that a clean illustration or silhouette of the car based on body style. Key stats displayed as clean pill shaped cards — mileage, year, trim. A health score metre below that. Then scrollable sections for quick access to each feature — documents, finances, marketplace, diagnostics.
+What connects to what:
+NHTSA API — already working from your first session. You're just integrating it into a proper screen now.
+Supabase database — stores the car profile permanently so it's there every time the user opens the app.
+User authentication — Supabase handles this too. Each user's profile is tied to their account.
+Data structure to build in Supabase:
+Create a table called vehicles with these columns — user_id, vin, make, model, year, trim, engine, fuel_type, body_style, mileage, license_plate, created_at.
+The logo integration:
+The Gari wordmark appears at the top of every screen in the app consistently. On the home dashboard it's slightly larger and more prominent. On inner screens it's smaller, acting as a persistent header. The garage door icon appears as the placeholder when no car image is available and as section dividers throughout.
+
+FEATURE 2 — DOCUMENTATION STORAGE
+What it is:
+A secure digital vault for every important car document. Always accessible, never lost.
+What it needs to do:
+User taps the Documents section from the dashboard. They see a clean grid of document categories — Insurance, Ownership, Registration, Tint Exemption, Driver's License, Vehicle Handbook. Each category shows as a card. Empty categories show a subtle add prompt. Categories with documents show a thumbnail or file icon with the upload date.
+Tapping an empty category opens two options — take a photo with camera or upload from phone gallery. The image gets uploaded to Supabase Storage. The reference gets saved to the database. Tapping a filled category opens the document full screen for viewing.
+The vehicle handbook:
+When the car profile is created from VIN lookup, the app automatically searches for and attaches the relevant owner's manual PDF. Most manufacturers make these publicly available. You find the PDF source for common makes and link them automatically. User doesn't have to do anything — it just appears in their documents.
+What connects to what:
+Supabase Storage — where the actual files live. Set to private so only the authenticated user can access their own documents.
+Supabase database — a table called documents with columns for user_id, vehicle_id, document_type, file_url, uploaded_at.
+Camera and photo library — native phone access through React Native's image picker library.
+Privacy handling:
+Files stored in a private Supabase bucket. Only accessible via authenticated requests from the user who uploaded them. A small lock icon appears on each document card reinforcing that they're secure. A one line note on the screen — "Your documents are encrypted and only accessible by you."
+The logo integration:
+Empty document slots use the garage door icon as a placeholder illustration — subtle, consistent with the brand, better than a generic empty state.
+
+FEATURE 3 — FINANCE TRACKER
+What it is:
+A complete picture of what the car costs. Every dollar tracked, categorized, and visualized.
+What it needs to do:
+User taps the Finances section. They see a summary card at the top showing total spent this month and this year. Below that a list of recent transactions. A prominent add expense button.
+When adding an expense two options — scan a receipt with camera or enter manually. Receipt scanning uses Google ML Kit to extract merchant name, date, and total from the photo. The extracted details are shown to the user to confirm before saving
