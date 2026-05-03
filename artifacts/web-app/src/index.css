@@ -462,16 +462,21 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 [data-gari-dark="1"] {
-  --gc-bg: #0E1510;
-  --gc-sage: #141E15;
-  --gc-text: #E8F3E9;
-  --gc-muted: #7A9E7C;
-  --gc-greenLight: #1A3020;
-  --gc-border: #2C4030;
+  --gc-bg: #0A0A0A;
+  --gc-sage: #141414;
+  --gc-text: #F0F0F0;
+  --gc-muted: #888888;
+  --gc-greenLight: #0F1A12;
+  --gc-border: #262626;
 }
 
 /* Auth + setup pages dark background */
 [data-gari-dark="1"] body,
 [data-gari-dark="1"] #root {
-  background: #0E1510;
+  background: #0A0A0A;
+}
+
+/* Settings icon: invert to white in dark mode */
+[data-gari-dark="1"] .gari-settings-icon {
+  filter: invert(1);
 }

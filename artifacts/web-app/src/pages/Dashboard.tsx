@@ -467,6 +467,7 @@ function TopBar({ userEmail, onProfile }: { userEmail?: string; onProfile: () =>
         <img
           src={`${BASE}gari-icon-new-nobg.png`}
           alt="Gari"
+          className="gari-settings-icon"
           style={{ width: 26, height: 26, objectFit: "contain" }}
         />
       </div>
@@ -701,6 +702,7 @@ function LoadingScreen() {
         <img
           src={`${BASE}gari-icon-new-nobg.png`}
           alt="Gari"
+          className="gari-settings-icon"
           style={{ width: 52, height: 52, objectFit: "contain" }}
         />
       </div>
@@ -1206,7 +1208,7 @@ function LandingPage({
             <ShuffleText text={title} charset="letters" />
           </h1>
           <button onClick={onOpenSettings} className="gari-logo-bob gari-tap" style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
+            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" className="gari-settings-icon" style={{ height: 26, width: "auto", display: "block" }} />
           </button>
         </div>
 
@@ -2002,7 +2004,7 @@ function DocumentsPage({
               </svg>
             </button>
             <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-              <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
+              <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" className="gari-settings-icon" style={{ height: 26, width: "auto", display: "block" }} />
             </button>
           </div>
         </div>
@@ -2592,7 +2594,7 @@ function FinancesPage({
             Finances
           </h1>
           <button onClick={onOpenSettings} className="gari-logo-bob gari-tap" style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
+            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" className="gari-settings-icon" style={{ height: 26, width: "auto", display: "block" }} />
           </button>
         </div>
 
@@ -2824,7 +2826,7 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
             Parts
           </h1>
           <button onClick={onOpenSettings} className="gari-logo-bob gari-tap" style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
+            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" className="gari-settings-icon" style={{ height: 26, width: "auto", display: "block" }} />
           </button>
         </div>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 20px" }}>
@@ -2947,7 +2949,7 @@ function DiagnosticsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpen
             Diagnostics
           </h1>
           <button onClick={onOpenSettings} className="gari-logo-bob gari-tap" style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
+            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" className="gari-settings-icon" style={{ height: 26, width: "auto", display: "block" }} />
           </button>
         </div>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 24px" }}>
