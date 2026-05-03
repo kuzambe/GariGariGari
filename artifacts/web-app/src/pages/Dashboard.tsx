@@ -599,11 +599,6 @@ function LandingPage({
           >
             {title}
           </h1>
-          <img
-            src={`${BASE}gari-icon-new-nobg.png`}
-            alt="Gari"
-            style={{ height: 34, width: "auto", flexShrink: 0, display: "block" }}
-          />
         </div>
 
         {/* Year Make Model Trim */}
