@@ -345,7 +345,7 @@ function LandingPage({
     >
       {/* Header: nickname + logo icon inline */}
       <div style={{ padding: "32px 24px 0" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, maxWidth: "100%", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
           <h1
             style={{
               fontFamily: "'Rajdhani', sans-serif",
@@ -357,7 +357,7 @@ function LandingPage({
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              flexShrink: 1,
+              flex: "0 1 auto",
               minWidth: 0,
             }}
           >
@@ -366,7 +366,7 @@ function LandingPage({
           <img
             src={`${BASE}logo-icon.png`}
             alt="Gari"
-            style={{ height: 32, width: "auto", objectFit: "contain", flexShrink: 0, display: "block" }}
+            style={{ height: 28, width: "auto", objectFit: "contain", flex: "0 0 auto" }}
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`;
             }}
