@@ -1,7 +1,76 @@
-import { useEffect, useRef, useState } from "react";
+import { CSSProperties, useEffect, useRef, useState } from "react";
 
-const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-const randChar = () => CHARS[Math.floor(Math.random() * CHARS.length)];
+const ALNUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const DIGITS = "0123456789";
+const ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+type Charset = "alnum" | "digits" | "letters";
+
+function getCharset(c: Charset, ch: string): string {
+  if (c === "digits") return DIGITS;
+  if (c === "letters") return ch >= "a" && ch <= "z" ? ALPHA.slice(26) : ALPHA.slice(0, 26);
+  return ALNUM;
+}
+
+const randFrom = (s: string) => s[Math.floor(Math.random() * s.length)];
+
+interface ShuffleTextProps {
+  text: string;
+  charset?: Charset;
+  tickMs?: number;
+  lockStepMs?: number;
+  style?: CSSProperties;
+  as?: "span" | "p" | "div";
+}
+
+export function ShuffleText({
+  text,
+  charset = "alnum",
+  tickMs = 45,
+  lockStepMs = 60,
+  style,
+  as = "span",
+}: ShuffleTextProps) {
+  const target = text || "";
+  const [display, setDisplay] = useState(() =>
+    target.split("").map((c) => (/\s|[^\w]/.test(c) ? c : randFrom(getCharset(charset, c)))).join(""),
+  );
+  const animatedFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!target) {
+      setDisplay("");
+      animatedFor.current = "";
+      return;
+    }
+    if (animatedFor.current === target) return;
+    animatedFor.current = target;
+
+    const startedAt = Date.now();
+    const tick = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const lockedCount = Math.min(target.length, Math.floor(elapsed / lockStepMs));
+      const next = target
+        .split("")
+        .map((ch, i) => {
+          if (/\s|[^\w]/.test(ch)) return ch;
+          if (i < lockedCount) return ch;
+          return randFrom(getCharset(charset, ch));
+        })
+        .join("");
+      setDisplay(next);
+      if (lockedCount >= target.length) {
+        window.clearInterval(tick);
+        setDisplay(target);
+      }
+    }, tickMs);
+
+    return () => window.clearInterval(tick);
+  }, [target, charset, tickMs, lockStepMs]);
+
+  const Tag = as as "span";
+  return <Tag style={{ fontVariantNumeric: "tabular-nums", ...style }}>{display || "\u00A0"}</Tag>;
+}
 
 interface LicensePlateProps {
   plate: string;
@@ -15,43 +84,6 @@ export function LicensePlate({
   lockStepMs = 70,
 }: LicensePlateProps) {
   const target = (plate || "").toUpperCase();
-  const [display, setDisplay] = useState(() =>
-    target.split("").map((c) => (c === " " ? " " : randChar())).join(""),
-  );
-  const animatedFor = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!target) {
-      setDisplay("");
-      animatedFor.current = "";
-      return;
-    }
-    if (animatedFor.current === target) return;
-    animatedFor.current = target;
-
-    let lockedCount = 0;
-    const startedAt = Date.now();
-
-    const tick = window.setInterval(() => {
-      const elapsed = Date.now() - startedAt;
-      lockedCount = Math.min(target.length, Math.floor(elapsed / lockStepMs));
-      const next = target
-        .split("")
-        .map((ch, i) => {
-          if (ch === " ") return " ";
-          if (i < lockedCount) return ch;
-          return randChar();
-        })
-        .join("");
-      setDisplay(next);
-      if (lockedCount >= target.length) {
-        window.clearInterval(tick);
-        setDisplay(target);
-      }
-    }, tickMs);
-
-    return () => window.clearInterval(tick);
-  }, [target, tickMs, lockStepMs]);
 
   return (
     <div
@@ -68,22 +100,37 @@ export function LicensePlate({
         animation: "lpFadeIn 0.4s ease both",
       }}
     >
-      <span
-        style={{
-          fontFamily: "'Rajdhani', sans-serif",
-          fontWeight: 700,
-          fontSize: 56,
-          color: "#0D1C0E",
-          letterSpacing: "0.08em",
-          lineHeight: 1,
-          textAlign: "center",
-          padding: "0 12px",
-          fontVariantNumeric: "tabular-nums",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {display || "—"}
-      </span>
+      {target ? (
+        <ShuffleText
+          text={target}
+          charset="alnum"
+          tickMs={tickMs}
+          lockStepMs={lockStepMs}
+          style={{
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 56,
+            color: "#0D1C0E",
+            letterSpacing: "0.08em",
+            lineHeight: 1,
+            textAlign: "center",
+            padding: "0 12px",
+            whiteSpace: "nowrap",
+          }}
+        />
+      ) : (
+        <span
+          style={{
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 56,
+            color: "#0D1C0E",
+            lineHeight: 1,
+          }}
+        >
+          —
+        </span>
+      )}
       <style>{`@keyframes lpFadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }`}</style>
     </div>
   );

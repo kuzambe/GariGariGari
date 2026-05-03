@@ -8,7 +8,7 @@ import { Vehicle } from "@/lib/api/vehicles";
 import { Mechanic, getMechanicByVehicleId, createMechanic, updateMechanic, deleteMechanic } from "@/lib/api/mechanics";
 import { RoadsideAssistance, getRoadsideByUserId, createRoadside, updateRoadside, deleteRoadside } from "@/lib/api/roadsideAssistance";
 import { GarageIcon } from "@/components/ui/GarageIcon";
-import { LicensePlate } from "@/components/car/LicensePlate";
+import { LicensePlate, ShuffleText } from "@/components/car/LicensePlate";
 import { AddDocumentSheet } from "@/components/documents/AddDocumentSheet";
 
 /* ── DESIGN TOKENS ─────────────────────────────────── */
@@ -1110,7 +1110,7 @@ function LandingPage({
       <div style={{ padding: "28px 20px 0" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 42, color: C.text, margin: 0 }}>
-            {title}
+            <ShuffleText text={title} charset="letters" lockStepMs={45} />
           </h1>
           <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
             <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
@@ -1135,7 +1135,7 @@ function LandingPage({
             margin: "10px 0 0",
             lineHeight: 1,
           }}>
-            {vehicle.mileage.toLocaleString()}
+            <ShuffleText text={vehicle.mileage.toLocaleString()} charset="digits" lockStepMs={50} />
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, fontSize: 14, color: C.muted, marginLeft: 5 }}>
               {vehicle.mileage_unit}
             </span>
