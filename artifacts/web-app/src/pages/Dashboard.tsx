@@ -563,10 +563,8 @@ function LandingPage({
   onGoToPage: (p: number) => void;
 }) {
   const yearMakeModel = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ");
-  const fullDesc = [vehicle.year, vehicle.make, vehicle.model, vehicle.trim].filter(Boolean).join(" ");
-  const hasNickname = Boolean(vehicle.nickname);
-  const title = hasNickname ? vehicle.nickname! : yearMakeModel || "Your car";
-  const subtitle = hasNickname ? fullDesc : "";
+  const title = vehicle.nickname?.trim() || "Your car";
+  const subtitle = yearMakeModel;
 
   return (
     <div
