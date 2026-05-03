@@ -5,6 +5,7 @@ import { useVehicle } from "@/context/VehicleContext";
 import { getDocumentsByVehicleId, Document, uploadDocument } from "@/lib/api/documents";
 import { getExpensesByVehicleId, Expense, addExpense } from "@/lib/api/expenses";
 import { Vehicle } from "@/lib/api/vehicles";
+import { GarageIcon } from "@/components/ui/GarageIcon";
 
 /* ── DESIGN TOKENS ─────────────────────────────────── */
 const C = {
@@ -68,26 +69,136 @@ function SculptedCar() {
   );
 }
 
-/* ── STAT PILL ─────────────────────────────────────── */
-function StatPill({ value, label, highlight }: { value: string; label: string; highlight?: boolean }) {
+/* ── WOODEN TOY CAR SVG ────────────────────────────── */
+function WoodenCar() {
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: 1,
-      background: highlight ? C.green : C.greenLight,
-      border: `1px solid ${highlight ? C.green : C.border}`,
-      borderRadius: 999,
-      padding: "6px 14px",
-      flexShrink: 0,
-    }}>
-      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: highlight ? "#fff" : C.text, lineHeight: 1.2 }}>
-        {value}
-      </span>
-      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: highlight ? "rgba(255,255,255,0.75)" : C.muted, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-        {label}
-      </span>
+    <svg width="280" height="130" viewBox="0 0 280 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="woodShadow" x="-10%" y="-10%" width="130%" height="160%">
+          <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#5C2E00" floodOpacity="0.18" />
+        </filter>
+      </defs>
+      {/* Body */}
+      <rect x="8" y="56" width="264" height="50" rx="16" fill="#C8783A" filter="url(#woodShadow)" />
+      {/* Body top highlight */}
+      <rect x="8" y="56" width="264" height="14" rx="16" fill="#DDA05A" opacity="0.55" />
+      {/* Wood grain lines */}
+      <line x1="12" y1="68" x2="268" y2="70" stroke="#A85C28" strokeWidth="1" opacity="0.35" />
+      <line x1="12" y1="78" x2="268" y2="76" stroke="#A85C28" strokeWidth="1" opacity="0.28" />
+      <line x1="12" y1="90" x2="268" y2="88" stroke="#A85C28" strokeWidth="1" opacity="0.22" />
+      {/* Door panel line */}
+      <line x1="138" y1="58" x2="138" y2="104" stroke="#A85C28" strokeWidth="1.5" opacity="0.4" />
+      {/* Cabin */}
+      <rect x="50" y="22" width="174" height="38" rx="14" fill="#B46830" />
+      {/* Cabin top highlight */}
+      <rect x="50" y="22" width="174" height="12" rx="14" fill="#CA8A50" opacity="0.5" />
+      {/* Rear window */}
+      <rect x="62" y="27" width="44" height="27" rx="7" fill="#A8D4E8" opacity="0.80" />
+      {/* Middle window */}
+      <rect x="116" y="27" width="44" height="27" rx="7" fill="#A8D4E8" opacity="0.75" />
+      {/* Front window */}
+      <rect x="170" y="27" width="44" height="27" rx="7" fill="#A8D4E8" opacity="0.80" />
+      {/* Rear wheel */}
+      <circle cx="68" cy="112" r="22" fill="#2A1500" />
+      <circle cx="68" cy="112" r="13" fill="#C8783A" />
+      <circle cx="68" cy="112" r="5" fill="#2A1500" />
+      <circle cx="68" cy="107" r="2" fill="#DDA05A" opacity="0.6" />
+      {/* Front wheel */}
+      <circle cx="210" cy="112" r="22" fill="#2A1500" />
+      <circle cx="210" cy="112" r="13" fill="#C8783A" />
+      <circle cx="210" cy="112" r="5" fill="#2A1500" />
+      <circle cx="210" cy="107" r="2" fill="#DDA05A" opacity="0.6" />
+    </svg>
+  );
+}
+
+/* ── HEALTH GAUGE ──────────────────────────────────── */
+function HealthGauge({ pct = 90 }: { pct?: number }) {
+  const R = 38;
+  const circ = 2 * Math.PI * R;
+  const dash = (pct / 100) * circ;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+      <div style={{ position: "relative", width: 100, height: 100 }}>
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r={R} fill="none" stroke={C.greenLight} strokeWidth="8" />
+          <circle
+            cx="50"
+            cy="50"
+            r={R}
+            fill="none"
+            stroke={C.green}
+            strokeWidth="8"
+            strokeDasharray={`${dash} ${circ}`}
+            strokeLinecap="round"
+            transform="rotate(-90 50 50)"
+          />
+        </svg>
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 1,
+        }}>
+          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 17, color: C.green, lineHeight: 1 }}>
+            Good
+          </span>
+          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            health
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── SHORTCUT GRID ─────────────────────────────────── */
+const SHORTCUT_LABELS = ["Service", "Fuel", "Insurance", "Repairs", "Wash", "Other"];
+
+function ShortcutGrid() {
+  return (
+    <div style={{ padding: "0 20px" }}>
+      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px", textAlign: "center" }}>
+        Quick Log
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+        {SHORTCUT_LABELS.map((label) => (
+          <button
+            key={label}
+            style={{
+              aspectRatio: "1",
+              borderRadius: "50%",
+              background: "#FFFFFF",
+              border: `1.5px solid ${C.border}`,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 3,
+              transition: "transform 0.12s, box-shadow 0.12s",
+              padding: 0,
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget;
+              el.style.transform = "scale(1.05)";
+              el.style.boxShadow = "0 4px 18px rgba(31,107,46,0.13)";
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget;
+              el.style.transform = "scale(1)";
+              el.style.boxShadow = "0 2px 12px rgba(0,0,0,0.07)";
+            }}
+          >
+            <span style={{ fontSize: 22, color: C.green, lineHeight: 1, fontWeight: 300 }}>+</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: C.muted, lineHeight: 1 }}>{label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -152,8 +263,6 @@ const SEGMENT_COLORS = ["#1F6B2E", "#2D7A3D", "#3A9650", "#5AB26B", "#85C993", "
 /* ── PAGE 1: LANDING ───────────────────────────────── */
 function LandingPage({
   vehicle,
-  expenses,
-  documents,
   onSignOut,
 }: {
   vehicle: Vehicle;
@@ -161,15 +270,9 @@ function LandingPage({
   documents: Document[];
   onSignOut: () => void;
 }) {
-  const logo = `${import.meta.env.BASE_URL}logo.png`;
-
-  // Most recent action (latest expense or document by created_at)
-  const allActions = [
-    ...expenses.map((e) => ({ date: e.created_at, text: `Logged ${e.type} expense — $${e.amount.toFixed(2)}` })),
-    ...documents.map((d) => ({ date: d.created_at, text: `Added ${d.type} document` })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-  const latestAction = allActions[0];
+  const yearMakeModel = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ");
+  const title = vehicle.nickname || yearMakeModel || "My Car";
+  const subtitle = vehicle.nickname ? yearMakeModel : "";
 
   return (
     <div
@@ -182,49 +285,77 @@ function LandingPage({
         background: C.bg,
         display: "flex",
         flexDirection: "column",
-        padding: "28px 20px 0",
       }}
     >
-      {/* Header: car nickname + logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 36, color: C.text, lineHeight: 1 }}>
-          {vehicle.nickname}
+      {/* Header: nickname left, garage icon right */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "30px 22px 2px",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 34,
+            color: C.text,
+            lineHeight: 1,
+            flex: 1,
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {title}
         </span>
-        <img src={logo} alt="Gari" style={{ height: 26, objectFit: "contain" }} />
+        <GarageIcon width={28} height={24} stroke={C.green} />
       </div>
 
-      {/* Stats row */}
-      <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 28, paddingBottom: 4 }}>
-        <StatPill
-          value={vehicle.mileage ? `${vehicle.mileage.toLocaleString()} ${vehicle.mileage_unit}` : "—"}
-          label="odometer"
-        />
-        <StatPill value={vehicle.year ? String(vehicle.year) : "—"} label="year" />
-        <StatPill value="Good" label="health" highlight />
-        {vehicle.make && <StatPill value={vehicle.make} label="make" />}
-      </div>
-
-      {/* Car visual */}
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
-        <SculptedCar />
-      </div>
-
-      {/* Most recent action */}
-      {latestAction ? (
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 16px", textAlign: "center" }}>
-          {latestAction.text} · {new Date(latestAction.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-        </p>
-      ) : (
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 16px", textAlign: "center" }}>
-          No activity logged yet. Swipe to add documents or expenses.
+      {/* Year Make Model subtitle */}
+      {subtitle && (
+        <p
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 14,
+            color: C.muted,
+            margin: "5px 22px 0",
+            padding: 0,
+            lineHeight: 1,
+          }}
+        >
+          {subtitle}
         </p>
       )}
 
-      {/* Alert strip — only if there's something urgent */}
+      {/* Wooden toy car */}
+      <div style={{ display: "flex", justifyContent: "center", padding: "22px 0 12px" }}>
+        <WoodenCar />
+      </div>
+
+      {/* Health gauge */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 22 }}>
+        <HealthGauge pct={90} />
+      </div>
+
+      {/* 6 shortcut circles */}
+      <ShortcutGrid />
+
       <div style={{ flex: 1 }} />
 
       {/* Swipe hint */}
-      <p style={{ textAlign: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.border, margin: "0 0 8px" }}>
+      <p
+        style={{
+          textAlign: "center",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 11,
+          color: C.border,
+          margin: "0 0 6px",
+        }}
+      >
         Swipe to explore →
       </p>
 
@@ -241,7 +372,7 @@ function LandingPage({
           textAlign: "center",
           width: "100%",
           minHeight: 44,
-          paddingBottom: 4,
+          paddingBottom: 6,
         }}
       >
         Sign out

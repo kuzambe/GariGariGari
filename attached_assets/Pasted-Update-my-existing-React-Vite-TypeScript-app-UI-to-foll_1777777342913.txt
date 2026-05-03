@@ -1,0 +1,79 @@
+Update my existing React + Vite + TypeScript app UI to follow a clean, minimal, car-focused design system.
+
+Do NOT add new pages or backend logic. Only modify UI components and styling.
+
+DESIGN DIRECTION:
+- Clean, minimal, premium feel
+- Soft, warm background (not stark white)
+- Dark readable text
+- One consistent accent color used sparingly
+- Rounded corners throughout
+- Subtle shadows, no harsh borders
+- Generous spacing
+- No default or generic styling
+
+---
+
+AUTH PAGE (SIGN IN / SIGN UP):
+- Remove all default styling (especially generic blue UI)
+- Apply the new design direction
+- Keep layout centered and simple
+- Inputs should be clean, rounded, and easy to read
+- Buttons should use the accent style
+
+---
+
+DASHBOARD / LANDING PAGE:
+
+HEADER BEHAVIOR:
+- Top left should show:
+  IF user has a car nickname:
+    → display the nickname as the main title
+    → display ONLY the Gari icon (garage icon), NOT the full "Gari" text logo
+  IF no nickname:
+    → fallback to vehicle name
+
+---
+
+VEHICLE TITLE:
+- Directly under the header, display:
+  → "Year Make Model" as ONE continuous string
+  Example: "2010 Buick Allure"
+- This should come from VIN data already stored
+
+---
+
+CAR VISUAL:
+- Replace current vehicle image with:
+  → a simple wooden toy car style illustration (placeholder)
+- Center this visually
+
+---
+
+HEALTH SECTION:
+- Below the car image
+- Display a clean "Vehicle Health" section or meter
+- Minimal, centered, easy to read
+
+---
+
+SHORTCUT SYSTEM:
+- Below the health section
+- Create 6 circular buttons in a grid layout
+- Each circle:
+  - contains a "+" icon
+  - represents a customizable shortcut
+- Even spacing and symmetry
+- Soft shadows and rounded (perfect circles)
+- Clicking can trigger placeholder actions for now
+
+---
+
+GENERAL RULES:
+- Remove any SaaS-style dashboard elements (no activity feed, no generic stats)
+- Avoid layouts that look like admin panels or templates
+- The UI should feel like it belongs to the car, not a generic app
+- Maintain strong visual hierarchy and spacing
+
+Do not modify routing or authentication logic.
+Focus only on UI structure and styling.

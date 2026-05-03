@@ -2,21 +2,13 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { GarageIcon } from "@/components/ui/GarageIcon";
-import { AmberButton } from "@/components/ui/AmberButton";
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  background: "#fff",
-  border: "1.5px solid #E0DED8",
-  borderRadius: 12,
-  padding: "14px 16px",
-  fontFamily: "'DM Sans', sans-serif",
-  fontSize: 15,
-  color: "#1A1A1A",
-  outline: "none",
-  transition: "border-color 0.15s",
-  boxSizing: "border-box",
-};
+const BG = "#F7F4F0";
+const GREEN = "#1F6B2E";
+const TEXT = "#1A1A1A";
+const MUTED = "#7A7268";
+const BORDER = "#DDD8D0";
+const ERROR = "#C0392B";
 
 function GariInput({
   type = "text",
@@ -39,9 +31,18 @@ function GariInput({
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
       style={{
-        ...inputStyle,
-        borderColor: focused ? "#EF9F27" : "#E0DED8",
-        boxShadow: focused ? "0 0 0 3px rgba(239,159,39,0.12)" : "none",
+        width: "100%",
+        background: "#FFFFFF",
+        border: `1.5px solid ${focused ? GREEN : BORDER}`,
+        borderRadius: 14,
+        padding: "15px 18px",
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 15,
+        color: TEXT,
+        outline: "none",
+        boxSizing: "border-box",
+        boxShadow: focused ? `0 0 0 3px rgba(31,107,46,0.10)` : "0 1px 3px rgba(0,0,0,0.04)",
+        transition: "border-color 0.15s, box-shadow 0.15s",
       }}
     />
   );
@@ -120,127 +121,261 @@ export default function AuthPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#FAFAF8",
+        background: BG,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "24px 16px",
+        padding: "32px 20px",
       }}
     >
-      <div style={{ width: "100%", maxWidth: 380 }}>
-        {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 8 }}>
-            <GarageIcon width={40} height={34} stroke="#1A1A1A" />
+      <div style={{ width: "100%", maxWidth: 360 }}>
+
+        {/* Brand mark */}
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              background: "#FFFFFF",
+              borderRadius: 20,
+              padding: "14px 24px",
+              boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
+              marginBottom: 14,
+            }}
+          >
+            <GarageIcon width={30} height={26} stroke={GREEN} />
             <span
               style={{
                 fontFamily: "'Rajdhani', sans-serif",
                 fontWeight: 700,
-                fontSize: 48,
-                color: "#1A1A1A",
+                fontSize: 32,
+                color: TEXT,
+                letterSpacing: "0.04em",
                 lineHeight: 1,
-                letterSpacing: "0.02em",
               }}
             >
               GARI
             </span>
           </div>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#888888", margin: 0 }}>
+          <p
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 14,
+              color: MUTED,
+              margin: 0,
+            }}
+          >
             Your garage in your pocket.
           </p>
         </div>
 
-        {/* Tab toggle */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 32, marginBottom: 28 }}>
-          {(["signin", "signup"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => { setTab(t); setSignInError(""); setSignUpError(""); }}
-              style={{
-                background: "none",
-                border: "none",
-                borderBottom: tab === t ? "2px solid #EF9F27" : "2px solid transparent",
-                paddingBottom: 6,
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 15,
-                fontWeight: 500,
-                color: tab === t ? "#1A1A1A" : "#888888",
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              {t === "signin" ? "Sign In" : "Sign Up"}
-            </button>
-          ))}
+        {/* Card */}
+        <div
+          style={{
+            background: "#FFFFFF",
+            borderRadius: 24,
+            padding: "28px 24px",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
+          }}
+        >
+          {/* Tab toggle */}
+          <div
+            style={{
+              display: "flex",
+              background: BG,
+              borderRadius: 12,
+              padding: 4,
+              marginBottom: 24,
+            }}
+          >
+            {(["signin", "signup"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => {
+                  setTab(t);
+                  setSignInError("");
+                  setSignUpError("");
+                }}
+                style={{
+                  flex: 1,
+                  background: tab === t ? "#FFFFFF" : "transparent",
+                  border: "none",
+                  borderRadius: 9,
+                  padding: "9px 0",
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 14,
+                  fontWeight: tab === t ? 600 : 400,
+                  color: tab === t ? TEXT : MUTED,
+                  cursor: "pointer",
+                  boxShadow: tab === t ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                  transition: "all 0.15s",
+                }}
+              >
+                {t === "signin" ? "Sign In" : "Sign Up"}
+              </button>
+            ))}
+          </div>
+
+          {/* Sign In form */}
+          {tab === "signin" && (
+            <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <GariInput
+                type="email"
+                placeholder="Email address"
+                value={signInEmail}
+                onChange={setSignInEmail}
+              />
+              <GariInput
+                type="password"
+                placeholder="Password"
+                value={signInPassword}
+                onChange={setSignInPassword}
+              />
+              {signInError && (
+                <p
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13,
+                    color: ERROR,
+                    margin: 0,
+                  }}
+                >
+                  {signInError}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  marginTop: 4,
+                  background: GREEN,
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: 14,
+                  padding: "15px 0",
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontWeight: 700,
+                  fontSize: 17,
+                  letterSpacing: "0.06em",
+                  cursor: loading ? "default" : "pointer",
+                  opacity: loading ? 0.7 : 1,
+                  width: "100%",
+                  transition: "opacity 0.15s",
+                }}
+              >
+                {loading ? "SIGNING IN…" : "SIGN IN"}
+              </button>
+            </form>
+          )}
+
+          {/* Sign Up form */}
+          {tab === "signup" && (
+            <form onSubmit={handleSignUp} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <GariInput
+                type="email"
+                placeholder="Email address"
+                value={signUpEmail}
+                onChange={setSignUpEmail}
+              />
+              <GariInput
+                type="password"
+                placeholder="Password"
+                value={signUpPassword}
+                onChange={setSignUpPassword}
+              />
+              <GariInput
+                type="password"
+                placeholder="Confirm password"
+                value={signUpConfirm}
+                onChange={setSignUpConfirm}
+              />
+              {signUpError && (
+                <p
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13,
+                    color: ERROR,
+                    margin: 0,
+                  }}
+                >
+                  {signUpError}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  marginTop: 4,
+                  background: GREEN,
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: 14,
+                  padding: "15px 0",
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontWeight: 700,
+                  fontSize: 17,
+                  letterSpacing: "0.06em",
+                  cursor: loading ? "default" : "pointer",
+                  opacity: loading ? 0.7 : 1,
+                  width: "100%",
+                  transition: "opacity 0.15s",
+                }}
+              >
+                {loading ? "CREATING ACCOUNT…" : "SIGN UP"}
+              </button>
+            </form>
+          )}
         </div>
 
-        {/* Sign In form */}
-        {tab === "signin" && (
-          <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <GariInput
-              type="email"
-              placeholder="Email address"
-              value={signInEmail}
-              onChange={setSignInEmail}
-            />
-            <GariInput
-              type="password"
-              placeholder="Password"
-              value={signInPassword}
-              onChange={setSignInPassword}
-            />
-            {signInError && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#E24B4A", margin: 0 }}>
-                {signInError}
-              </p>
-            )}
-            <AmberButton type="submit" fullWidth disabled={loading}>
-              {loading ? "SIGNING IN..." : "SIGN IN"}
-            </AmberButton>
-          </form>
-        )}
-
-        {/* Sign Up form */}
-        {tab === "signup" && (
-          <form onSubmit={handleSignUp} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <GariInput
-              type="email"
-              placeholder="Email address"
-              value={signUpEmail}
-              onChange={setSignUpEmail}
-            />
-            <GariInput
-              type="password"
-              placeholder="Password"
-              value={signUpPassword}
-              onChange={setSignUpPassword}
-            />
-            <GariInput
-              type="password"
-              placeholder="Confirm password"
-              value={signUpConfirm}
-              onChange={setSignUpConfirm}
-            />
-            {signUpError && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#E24B4A", margin: 0 }}>
-                {signUpError}
-              </p>
-            )}
-            <AmberButton type="submit" fullWidth disabled={loading}>
-              {loading ? "SIGNING UP..." : "SIGN UP"}
-            </AmberButton>
-          </form>
-        )}
-
         {/* Toggle link */}
-        <p style={{ textAlign: "center", marginTop: 20, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#888888", margin: "20px 0 0" }}>
+        <p
+          style={{
+            textAlign: "center",
+            marginTop: 20,
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 13,
+            color: MUTED,
+          }}
+        >
           {tab === "signin" ? (
-            <>Don't have an account?{" "}
-              <button onClick={() => setTab("signup")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1A1A1A", fontWeight: 500, fontFamily: "'DM Sans', sans-serif", fontSize: 13, padding: 0 }}>Sign up</button>
+            <>
+              Don't have an account?{" "}
+              <button
+                onClick={() => setTab("signup")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: GREEN,
+                  fontWeight: 600,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 13,
+                  padding: 0,
+                }}
+              >
+                Sign up
+              </button>
             </>
           ) : (
-            <>Already have an account?{" "}
-              <button onClick={() => setTab("signin")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1A1A1A", fontWeight: 500, fontFamily: "'DM Sans', sans-serif", fontSize: 13, padding: 0 }}>Sign in</button>
+            <>
+              Already have an account?{" "}
+              <button
+                onClick={() => setTab("signin")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: GREEN,
+                  fontWeight: 600,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 13,
+                  padding: 0,
+                }}
+              >
+                Sign in
+              </button>
             </>
           )}
         </p>
