@@ -588,7 +588,7 @@ function LandingPage({
     >
       {/* Header: nickname + logo icon inline */}
       <div style={{ padding: "32px 24px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, overflow: "hidden" }}>
           <h1
             style={{
               fontFamily: "'Rajdhani', sans-serif",
@@ -606,13 +606,11 @@ function LandingPage({
           >
             {title}
           </h1>
-          <div style={{ width: 50, height: 50, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <img
-              src={`${BASE}gari-icon-new-nobg.png`}
-              alt="Gari"
-              style={{ width: 50, height: 50, objectFit: "contain" }}
-            />
-          </div>
+          <img
+            src={`${BASE}gari-icon-new-nobg.png`}
+            alt="Gari"
+            style={{ width: 60, height: "auto", flexShrink: 0, display: "block" }}
+          />
         </div>
 
         {/* Year Make Model Trim */}
