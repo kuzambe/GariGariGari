@@ -1301,9 +1301,55 @@ export default function Dashboard() {
   const PAGE_LABELS = ["Home", "Documents", "Finances", "Parts", "Diagnostics"];
 
   return (
-    <div style={{ height: "100vh", background: C.bg, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      {/* Persistent top bar */}
-      <TopBar userEmail={user?.email} onProfile={() => setShowSettings(true)} />
+    <div style={{ height: "100vh", background: C.bg, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+      {/* Floating top-right controls */}
+      <div style={{
+        position: "absolute",
+        top: 32,
+        right: 20,
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        pointerEvents: "auto",
+      }}>
+        <img
+          src={`${BASE}logo-icon.png`}
+          alt="Gari"
+          style={{ height: 28, width: "auto", objectFit: "contain" }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`; }}
+        />
+        <button
+          onClick={() => setShowSettings(true)}
+          style={{
+            background: "none",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+          }}
+        >
+          <div style={{
+            width: 34,
+            height: 34,
+            borderRadius: "50%",
+            background: C.greenLight,
+            border: `1.5px solid ${C.border}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}>
+            <span style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontWeight: 700,
+              fontSize: 15,
+              color: C.green,
+              lineHeight: 1,
+            }}>
+              {user?.email ? user.email[0].toUpperCase() : "?"}
+            </span>
+          </div>
+        </button>
+      </div>
 
       {/* Swipe container */}
       <div
