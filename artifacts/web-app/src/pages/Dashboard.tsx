@@ -1161,9 +1161,6 @@ function LandingPage({
           gap: 8,
         }}
       >
-        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em" }}>
-          License Plate
-        </span>
         <span
           style={{
             fontFamily: "'Rajdhani', sans-serif",
@@ -1289,18 +1286,6 @@ function LandingPage({
             <span style={{ fontSize: 16, color: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "#FFFFFF" : C.muted, lineHeight: 1 }}>↑</span>
           </button>
         </div>
-        {/* Remaining questions counter */}
-        <p style={{
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: 11,
-          color: carGptRemaining <= 5 && carGptRemaining > 0 ? C.warning : C.muted,
-          margin: "6px 0 0",
-          textAlign: "right",
-        }}>
-          {carGptRemaining === 0
-            ? "Daily limit reached"
-            : `${carGptRemaining} question${carGptRemaining === 1 ? "" : "s"} remaining today`}
-        </p>
       </div>
 
       {/* Roadside + Mechanic */}
