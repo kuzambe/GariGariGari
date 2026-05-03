@@ -261,6 +261,59 @@ const DOC_CATEGORIES = [
 const EXPENSE_TYPES = ["Fuel", "Maintenance", "Repairs", "Parts", "Insurance", "Other"];
 const SEGMENT_COLORS = ["#1F6B2E", "#2D7A3D", "#3A9650", "#5AB26B", "#85C993", "#B3DDB9"];
 
+/* ── VIN COPY ──────────────────────────────────────── */
+function VinCopy({ vin }: { vin: string }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(vin).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    }).catch(() => {
+      const el = document.createElement("textarea");
+      el.value = vin;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      style={{
+        background: "none",
+        border: "none",
+        padding: "4px 0 0",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        textAlign: "left",
+      }}
+    >
+      <span style={{
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 11,
+        color: copied ? C.green : C.muted,
+        letterSpacing: "0.06em",
+        transition: "color 0.2s",
+      }}>
+        {copied ? "Copied!" : `VIN ${vin}`}
+      </span>
+      {!copied && (
+        <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+          <rect x="4" y="1" width="9" height="9" rx="1.5" stroke={C.border} strokeWidth="1.5"/>
+          <path d="M1 5v7a1 1 0 001 1h7" stroke={C.border} strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      )}
+    </button>
+  );
+}
+
 /* ── PAGE 1: LANDING ───────────────────────────────── */
 function LandingPage({
   vehicle,
@@ -290,9 +343,9 @@ function LandingPage({
         flexDirection: "column",
       }}
     >
-      {/* Header: nickname + logo icon inline at same size */}
+      {/* Header: nickname + logo icon inline */}
       <div style={{ padding: "32px 24px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, maxWidth: "100%", overflow: "hidden" }}>
           <h1
             style={{
               fontFamily: "'Rajdhani', sans-serif",
@@ -313,16 +366,40 @@ function LandingPage({
           <img
             src={`${BASE}logo-icon.png`}
             alt="Gari"
-            style={{ height: 32, width: "auto", objectFit: "contain", flexShrink: 0 }}
+            style={{ height: 32, width: "auto", objectFit: "contain", flexShrink: 0, display: "block" }}
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`;
             }}
           />
         </div>
+
+        {/* Year Make Model */}
         {subtitle && (
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "5px 0 0", padding: 0 }}>
             {subtitle}
           </p>
+        )}
+
+        {/* Mileage */}
+        {vehicle.mileage != null && (
+          <p style={{
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 26,
+            color: C.text,
+            margin: "10px 0 0",
+            lineHeight: 1,
+          }}>
+            {vehicle.mileage.toLocaleString()}
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, fontSize: 14, color: C.muted, marginLeft: 5 }}>
+              {vehicle.mileage_unit}
+            </span>
+          </p>
+        )}
+
+        {/* VIN — tap to copy */}
+        {vehicle.vin && (
+          <VinCopy vin={vehicle.vin} />
         )}
       </div>
 
