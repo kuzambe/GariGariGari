@@ -650,30 +650,39 @@ function LandingPage({
   onOpenSettings: () => void;
 }) {
   const [carGptInput, setCarGptInput] = useState("");
-  const [carGptMessages, setCarGptMessages] = useState<CarGptMessage[]>(
-    () => getCarGptHistory(vehicle.id),
-  );
+  // hydratedVehicleRef tracks which vehicle's history is currently in state.
+  // Initialized synchronously so the save guard is accurate from the first render.
+  const hydratedVehicleRef = useRef(vehicle.id);
+  const [carGptMessages, setCarGptMessages] = useState<CarGptMessage[]>(() => {
+    hydratedVehicleRef.current = vehicle.id;
+    return getCarGptHistory(vehicle.id);
+  });
   const [carGptLoading, setCarGptLoading] = useState(false);
   const [carGptRemaining, setCarGptRemaining] = useState(() => getRemainingCarGptQuestions());
   const carGptBottomRef = useRef<HTMLDivElement>(null);
 
-  // Persist conversation to localStorage on every change (skip loading bubbles)
+  // Save effect runs BEFORE the hydration effect so that on a vehicle.id change,
+  // the guard below prevents the previous vehicle's messages from being written
+  // under the new vehicle's key (hydratedVehicleRef is still the old id at that point).
   useEffect(() => {
+    if (hydratedVehicleRef.current !== vehicle.id) return;
     saveCarGptHistory(vehicle.id, carGptMessages);
   }, [carGptMessages, vehicle.id]);
 
-  // Keep counter fresh: reset when tab regains focus and poll every minute for day rollover
+  // Reload history when vehicle changes (runs after save effect, safe).
+  useEffect(() => {
+    hydratedVehicleRef.current = vehicle.id;
+    setCarGptMessages(getCarGptHistory(vehicle.id));
+  }, [vehicle.id]);
+
+  // Keep counter fresh and clear history on day rollover.
   useEffect(() => {
     function refresh() {
       setCarGptRemaining(getRemainingCarGptQuestions());
-      // Also clear history if day has rolled over
-      setCarGptMessages((prev) => {
-        const restored = getCarGptHistory(vehicle.id);
-        // If localStorage returned empty but we had messages, day changed → clear
-        return restored.length === 0 && prev.filter((m) => m.role !== "loading").length > 0
-          ? []
-          : prev;
-      });
+      // getCarGptHistory returns [] when the stored date ≠ today (day rollover).
+      if (getCarGptHistory(vehicle.id).length === 0) {
+        setCarGptMessages([]);
+      }
     }
     document.addEventListener("visibilitychange", refresh);
     const timer = setInterval(refresh, 60_000);
