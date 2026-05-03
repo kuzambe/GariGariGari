@@ -18,7 +18,7 @@ interface ShuffleTextProps {
   text: string;
   charset?: Charset;
   tickMs?: number;
-  lockStepMs?: number;
+  durationMs?: number;
   style?: CSSProperties;
   as?: "span" | "p" | "div";
 }
@@ -27,7 +27,7 @@ export function ShuffleText({
   text,
   charset = "alnum",
   tickMs = 45,
-  lockStepMs = 60,
+  durationMs = 1000,
   style,
   as = "span",
 }: ShuffleTextProps) {
@@ -46,6 +46,7 @@ export function ShuffleText({
     if (animatedFor.current === target) return;
     animatedFor.current = target;
 
+    const lockStepMs = Math.max(20, durationMs / Math.max(1, target.length));
     const startedAt = Date.now();
     const tick = window.setInterval(() => {
       const elapsed = Date.now() - startedAt;
@@ -66,7 +67,7 @@ export function ShuffleText({
     }, tickMs);
 
     return () => window.clearInterval(tick);
-  }, [target, charset, tickMs, lockStepMs]);
+  }, [target, charset, tickMs, durationMs]);
 
   const Tag = as as "span";
   return <Tag style={{ fontVariantNumeric: "tabular-nums", ...style }}>{display || "\u00A0"}</Tag>;
@@ -75,13 +76,13 @@ export function ShuffleText({
 interface LicensePlateProps {
   plate: string;
   tickMs?: number;
-  lockStepMs?: number;
+  durationMs?: number;
 }
 
 export function LicensePlate({
   plate,
   tickMs = 45,
-  lockStepMs = 70,
+  durationMs = 1000,
 }: LicensePlateProps) {
   const target = (plate || "").toUpperCase();
 
@@ -105,7 +106,7 @@ export function LicensePlate({
           text={target}
           charset="alnum"
           tickMs={tickMs}
-          lockStepMs={lockStepMs}
+          durationMs={durationMs}
           style={{
             fontFamily: "'Rajdhani', sans-serif",
             fontWeight: 700,

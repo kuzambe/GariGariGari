@@ -1110,7 +1110,7 @@ function LandingPage({
       <div style={{ padding: "28px 20px 0" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 42, color: C.text, margin: 0 }}>
-            <ShuffleText text={title} charset="letters" lockStepMs={45} />
+            <ShuffleText text={title} charset="letters" />
           </h1>
           <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
             <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
@@ -1135,7 +1135,7 @@ function LandingPage({
             margin: "10px 0 0",
             lineHeight: 1,
           }}>
-            <ShuffleText text={vehicle.mileage.toLocaleString()} charset="digits" lockStepMs={50} />
+            <ShuffleText text={vehicle.mileage.toLocaleString()} charset="digits" />
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, fontSize: 14, color: C.muted, marginLeft: 5 }}>
               {vehicle.mileage_unit}
             </span>
