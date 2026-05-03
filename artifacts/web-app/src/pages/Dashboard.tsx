@@ -204,6 +204,185 @@ function ShortcutGrid() {
   );
 }
 
+/* ── PERSISTENT TOP BAR ────────────────────────────── */
+const BASE = import.meta.env.BASE_URL as string;
+
+function TopBar({ userEmail, onProfile }: { userEmail?: string; onProfile: () => void }) {
+  const initial = userEmail ? userEmail[0].toUpperCase() : "?";
+  return (
+    <div style={{
+      height: 52,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "0 20px",
+      background: C.bg,
+      borderBottom: `1px solid ${C.border}`,
+      flexShrink: 0,
+      zIndex: 40,
+    }}>
+      {/* Profile avatar */}
+      <button
+        onClick={onProfile}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <div style={{
+          width: 34,
+          height: 34,
+          borderRadius: "50%",
+          background: C.greenLight,
+          border: `1.5px solid ${C.border}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}>
+          <span style={{
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 15,
+            color: C.green,
+            lineHeight: 1,
+          }}>
+            {initial}
+          </span>
+        </div>
+      </button>
+
+      {/* Gari icon */}
+      <img
+        src={`${BASE}logo-icon.png`}
+        alt="Gari"
+        style={{ height: 26, width: "auto", objectFit: "contain" }}
+        onError={(e) => { (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`; }}
+      />
+    </div>
+  );
+}
+
+/* ── SETTINGS SHEET ────────────────────────────────── */
+function SettingsSheet({ userEmail, onSignOut, onClose }: { userEmail?: string; onSignOut: () => void; onClose: () => void }) {
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+      onClick={onClose}
+    >
+      {/* Backdrop */}
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)" }} />
+
+      {/* Sheet */}
+      <div
+        style={{
+          position: "relative",
+          background: C.bg,
+          borderRadius: "22px 22px 0 0",
+          padding: "12px 24px 40px",
+          maxWidth: 430,
+          width: "100%",
+          margin: "0 auto",
+          boxShadow: "0 -4px 32px rgba(0,0,0,0.12)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 24px" }} />
+
+        {/* Account section */}
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
+          Account
+        </p>
+        <div style={{
+          background: C.sage,
+          borderRadius: 14,
+          padding: "14px 16px",
+          marginBottom: 20,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            background: C.greenLight,
+            border: `1.5px solid ${C.border}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}>
+            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, color: C.green }}>
+              {userEmail ? userEmail[0].toUpperCase() : "?"}
+            </span>
+          </div>
+          <div>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14, color: C.text, margin: 0 }}>
+              {userEmail ?? "—"}
+            </p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>
+              Gari account
+            </p>
+          </div>
+        </div>
+
+        {/* Settings rows */}
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
+          Settings
+        </p>
+        <div style={{ background: C.sage, borderRadius: 14, marginBottom: 20, overflow: "hidden" }}>
+          {[
+            { label: "Notifications", icon: "🔔" },
+            { label: "Units & Display", icon: "📏" },
+            { label: "Privacy", icon: "🔒" },
+          ].map(({ label, icon }, i, arr) => (
+            <div key={label} style={{
+              display: "flex",
+              alignItems: "center",
+              padding: "14px 16px",
+              borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none",
+              cursor: "pointer",
+            }}>
+              <span style={{ fontSize: 16, marginRight: 12 }}>{icon}</span>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>{label}</span>
+              <span style={{ color: C.border, fontSize: 16 }}>›</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Sign out */}
+        <button
+          onClick={onSignOut}
+          style={{
+            width: "100%",
+            background: "none",
+            border: `1.5px solid ${C.border}`,
+            borderRadius: 14,
+            padding: "14px 16px",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 14,
+            color: "#C0392B",
+            cursor: "pointer",
+            textAlign: "left",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <span>Sign out</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── GREEN BUTTON ──────────────────────────────────── */
 function GreenButton({ label, onClick, fullWidth, small }: { label: string; onClick?: () => void; fullWidth?: boolean; small?: boolean }) {
   return (
@@ -324,7 +503,6 @@ function LandingPage({
   documents: Document[];
   onSignOut: () => void;
 }) {
-  const BASE = import.meta.env.BASE_URL;
   const yearMakeModel = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ");
   const hasNickname = Boolean(vehicle.nickname);
   const title = hasNickname ? vehicle.nickname! : yearMakeModel || "Your car";
@@ -345,33 +523,21 @@ function LandingPage({
     >
       {/* Header: nickname + logo icon inline */}
       <div style={{ padding: "32px 24px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
-          <h1
-            style={{
-              fontFamily: "'Rajdhani', sans-serif",
-              fontWeight: 700,
-              fontSize: 32,
-              color: C.text,
-              lineHeight: 1,
-              margin: 0,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              flex: "0 1 auto",
-              minWidth: 0,
-            }}
-          >
-            {title}
-          </h1>
-          <img
-            src={`${BASE}logo-icon.png`}
-            alt="Gari"
-            style={{ height: 28, width: "auto", objectFit: "contain", flex: "0 0 auto" }}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`;
-            }}
-          />
-        </div>
+        <h1
+          style={{
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 32,
+            color: C.text,
+            lineHeight: 1,
+            margin: 0,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {title}
+        </h1>
 
         {/* Year Make Model */}
         {subtitle && (
@@ -449,24 +615,6 @@ function LandingPage({
         Swipe to explore →
       </p>
 
-      {/* Sign out */}
-      <button
-        onClick={onSignOut}
-        style={{
-          background: "none",
-          border: "none",
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: 13,
-          color: C.muted,
-          cursor: "pointer",
-          textAlign: "center",
-          width: "100%",
-          minHeight: 44,
-          paddingBottom: 6,
-        }}
-      >
-        Sign out
-      </button>
     </div>
   );
 }
@@ -1109,6 +1257,7 @@ export default function Dashboard() {
   const { user, signOut } = useAuth();
   const { vehicle, loading } = useVehicle();
   const [currentPage, setCurrentPage] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -1153,6 +1302,9 @@ export default function Dashboard() {
 
   return (
     <div style={{ height: "100vh", background: C.bg, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Persistent top bar */}
+      <TopBar userEmail={user?.email} onProfile={() => setShowSettings(true)} />
+
       {/* Swipe container */}
       <div
         ref={scrollRef}
@@ -1174,6 +1326,15 @@ export default function Dashboard() {
         <PartsPage vehicle={vehicle} />
         <DiagnosticsPage vehicle={vehicle} />
       </div>
+
+      {/* Settings sheet */}
+      {showSettings && (
+        <SettingsSheet
+          userEmail={user?.email}
+          onSignOut={handleSignOut}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
 
       {/* Page dot indicators */}
       <div
