@@ -528,7 +528,7 @@ function LandingPage({
             style={{
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700,
-              fontSize: 32,
+              fontSize: 42,
               color: C.text,
               lineHeight: 1,
               margin: 0,
@@ -544,7 +544,7 @@ function LandingPage({
           <img
             src={`${BASE}settings-icon.png`}
             alt="Gari"
-            style={{ height: 32, width: "auto", objectFit: "contain", flex: "0 0 auto" }}
+            style={{ height: 42, width: "auto", objectFit: "contain", flex: "0 0 auto" }}
           />
         </div>
 
