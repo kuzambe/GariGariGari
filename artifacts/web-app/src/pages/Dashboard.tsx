@@ -609,7 +609,7 @@ function LandingPage({
           <img
             src={`${BASE}gari-icon-new-nobg.png`}
             alt="Gari"
-            style={{ width: 60, height: "auto", flexShrink: 0, display: "block" }}
+            style={{ height: 42, width: "auto", flexShrink: 0, display: "block" }}
           />
         </div>
 
