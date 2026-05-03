@@ -162,7 +162,16 @@ function HealthGauge({ pct = 90 }: { pct?: number }) {
 }
 
 /* ── SHORTCUT GRID ─────────────────────────────────── */
-function ShortcutGrid() {
+const QUICK_MENU = [
+  { label: "Documents", icon: "📄", page: 1 },
+  { label: "Parts",     icon: "🔩", page: 3 },
+  { label: "Market",    icon: "🏪", page: null },
+  { label: "Diagnostics", icon: "🔬", page: 4 },
+];
+
+function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
+  const [open, setOpen] = useState(false);
+
   return (
     <div style={{ padding: "0 20px" }}>
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px", textAlign: "center" }}>
@@ -172,6 +181,7 @@ function ShortcutGrid() {
         {[0, 1, 2, 3, 4, 5].map((i) => (
           <button
             key={i}
+            onClick={() => setOpen(true)}
             style={{
               aspectRatio: "1",
               borderRadius: "50%",
@@ -200,6 +210,58 @@ function ShortcutGrid() {
           </button>
         ))}
       </div>
+
+      {/* Quick-access popup */}
+      {open && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 150, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+          onClick={() => setOpen(false)}
+        >
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)" }} />
+          <div
+            style={{
+              position: "relative",
+              background: C.bg,
+              borderRadius: "22px 22px 0 0",
+              padding: "12px 24px 40px",
+              maxWidth: 430,
+              width: "100%",
+              margin: "0 auto",
+              boxShadow: "0 -4px 32px rgba(0,0,0,0.12)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 20px" }} />
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 8px" }}>
+              Go to
+            </p>
+            <div style={{ background: C.sage, borderRadius: 14, overflow: "hidden" }}>
+              {QUICK_MENU.map(({ label, icon, page }, idx) => (
+                <button
+                  key={label}
+                  onClick={() => { if (page !== null) onGoToPage(page); setOpen(false); }}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    padding: "15px 18px",
+                    background: "none",
+                    border: "none",
+                    borderBottom: idx < QUICK_MENU.length - 1 ? `1px solid ${C.border}` : "none",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>{icon}</span>
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.text, flex: 1 }}>{label}</span>
+                  <span style={{ color: C.border, fontSize: 18 }}>›</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -497,16 +559,20 @@ function VinCopy({ vin }: { vin: string }) {
 function LandingPage({
   vehicle,
   onSignOut,
+  onGoToPage,
 }: {
   vehicle: Vehicle;
   expenses: Expense[];
   documents: Document[];
   onSignOut: () => void;
+  onGoToPage: (p: number) => void;
 }) {
+  const [showTrimPicker, setShowTrimPicker] = useState(false);
   const yearMakeModel = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ");
+  const fullDesc = [vehicle.year, vehicle.make, vehicle.model, vehicle.trim].filter(Boolean).join(" ");
   const hasNickname = Boolean(vehicle.nickname);
   const title = hasNickname ? vehicle.nickname! : yearMakeModel || "Your car";
-  const subtitle = hasNickname ? yearMakeModel : "";
+  const subtitle = hasNickname ? fullDesc : "";
 
   return (
     <div
@@ -548,11 +614,83 @@ function LandingPage({
           />
         </div>
 
-        {/* Year Make Model */}
+        {/* Year Make Model Trim */}
         {subtitle && (
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "5px 0 0", padding: 0 }}>
             {subtitle}
           </p>
+        )}
+
+        {/* Trim selector — shown when trim is missing */}
+        {!vehicle.trim && (
+          <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>Trim</span>
+            <button
+              onClick={() => setShowTrimPicker(true)}
+              style={{
+                background: "none",
+                border: `1px solid ${C.border}`,
+                borderRadius: 8,
+                padding: "3px 10px",
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 12,
+                color: C.muted,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              Select trim <span style={{ fontSize: 10 }}>▾</span>
+            </button>
+          </div>
+        )}
+
+        {/* Trim picker sheet */}
+        {showTrimPicker && (
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 160, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+            onClick={() => setShowTrimPicker(false)}
+          >
+            <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)" }} />
+            <div
+              style={{
+                position: "relative",
+                background: C.bg,
+                borderRadius: "22px 22px 0 0",
+                padding: "12px 24px 48px",
+                maxWidth: 430,
+                width: "100%",
+                margin: "0 auto",
+                boxShadow: "0 -4px 32px rgba(0,0,0,0.12)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 20px" }} />
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, margin: "0 0 16px" }}>
+                Select Trim
+              </p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", padding: "20px 0" }}>
+                No trim options available yet.
+              </p>
+              <button
+                onClick={() => setShowTrimPicker(false)}
+                style={{
+                  width: "100%",
+                  background: C.sage,
+                  border: "none",
+                  borderRadius: 14,
+                  padding: "14px",
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 14,
+                  color: C.muted,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Mileage */}
@@ -606,7 +744,7 @@ function LandingPage({
       </div>
 
       {/* Quick log shortcuts */}
-      <ShortcutGrid />
+      <ShortcutGrid onGoToPage={onGoToPage} />
 
       <div style={{ flex: 1 }} />
 
@@ -1365,7 +1503,7 @@ export default function Dashboard() {
           msOverflowStyle: "none",
         } as React.CSSProperties}
       >
-        <LandingPage vehicle={vehicle} expenses={expenses} documents={documents} onSignOut={handleSignOut} />
+        <LandingPage vehicle={vehicle} expenses={expenses} documents={documents} onSignOut={handleSignOut} onGoToPage={goToPage} />
         <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} />
         <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} />
         <PartsPage vehicle={vehicle} />
