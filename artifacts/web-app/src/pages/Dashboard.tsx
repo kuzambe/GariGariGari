@@ -1203,21 +1203,13 @@ function LandingPage({
             textAlign: "left",
           }}
         >
-          <div style={{
-            width: 36, height: 36, borderRadius: "50%",
-            background: C.greenLight, display: "flex",
-            alignItems: "center", justifyContent: "center",
-            flexShrink: 0,
-          }}>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.green, lineHeight: 1 }}>AI</span>
-          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text, margin: 0 }}>
               Car-GPT
             </p>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {carGptMessages.length > 0
-                ? `${carGptMessages.length} message${carGptMessages.length === 1 ? "" : "s"} · tap to continue`
+                ? "Continue chat"
                 : `Ask anything about ${title}`}
             </p>
           </div>
