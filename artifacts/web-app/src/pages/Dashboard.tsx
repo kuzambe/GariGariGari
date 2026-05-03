@@ -1646,6 +1646,7 @@ function DocumentsPage({
 }) {
   const [sheetType, setSheetType] = useState<string | null>(null);
   const [sheetLabel, setSheetLabel] = useState<string>("");
+  const [sheetReplacing, setSheetReplacing] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [uploadingType, setUploadingType] = useState<string | null>(null);
   const [viewDoc, setViewDoc] = useState<Document | null>(null);
@@ -1657,9 +1658,18 @@ function DocumentsPage({
 
   const getDoc = useCallback((type: string) => documents.find((d) => d.type === type), [documents]);
 
-  function openSheet(type: string, label: string) {
+  function openSheet(type: string, label: string, replacing = false) {
     setSheetType(type);
     setSheetLabel(label);
+    setSheetReplacing(replacing);
+  }
+
+  function handleReplace() {
+    if (!viewDoc) return;
+    const cat = DOC_CATEGORIES.find((c) => c.type === viewDoc.type);
+    const label = cat?.label ?? viewDoc.type;
+    setViewDoc(null);
+    openSheet(viewDoc.type, label, true);
   }
 
   function showToast(message: string, color: string) {
@@ -1667,13 +1677,13 @@ function DocumentsPage({
     setTimeout(() => setToast(null), 2000);
   }
 
-  async function handleFileSelected(file: File, type: string) {
+  async function handleFileSelected(file: File, type: string, replacing: boolean) {
     setSheetType(null);
     setUploadingType(type);
     try {
       await uploadDocument(file, userId, vehicle.id, type);
       onRefresh();
-      showToast("Document saved", C.success);
+      showToast(replacing ? "Document updated" : "Document saved", C.success);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Upload failed";
       if (msg.toLowerCase().includes("size") || msg.toLowerCase().includes("large")) {
@@ -1845,7 +1855,7 @@ function DocumentsPage({
         <AddDocumentSheet
           categoryLabel={sheetLabel}
           onClose={() => setSheetType(null)}
-          onFileSelected={(file) => handleFileSelected(file, sheetType)}
+          onFileSelected={(file) => handleFileSelected(file, sheetType, sheetReplacing)}
           onError={(msg) => { setSheetType(null); showToast(msg, C.error); }}
         />
       )}
@@ -1890,19 +1900,34 @@ function DocumentsPage({
             ✕
           </button>
 
-          {/* Delete button */}
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            style={{ position: "absolute", top: 52, right: 20, width: 44, height: 44, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}
-            aria-label="Delete document"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6"/><path d="M14 11v6"/>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
-          </button>
+          {/* Action buttons */}
+          <div style={{ position: "absolute", top: 52, right: 20, display: "flex", gap: 10, zIndex: 10 }}>
+            <button
+              onClick={handleReplace}
+              style={{ width: 44, height: 44, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              aria-label="Replace document"
+              title="Replace"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10"/>
+                <polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+                <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              style={{ width: 44, height: 44, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              aria-label="Delete document"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6"/><path d="M14 11v6"/>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            </button>
+          </div>
         </div>
       )}
 
