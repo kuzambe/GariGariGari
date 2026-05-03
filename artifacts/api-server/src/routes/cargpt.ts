@@ -26,6 +26,15 @@ function checkRateLimit(key: string): { allowed: boolean; remaining: number } {
   return { allowed: true, remaining: RATE_LIMIT - entry.count };
 }
 
+// Prune stale entries once per hour so the Map doesn't grow unboundedly
+// across days as unique IPs accumulate.
+setInterval(() => {
+  const today = new Date().toISOString().split("T")[0];
+  for (const [key, entry] of rateLimitStore) {
+    if (entry.date !== today) rateLimitStore.delete(key);
+  }
+}, 60 * 60 * 1000).unref();
+
 interface HistoryMessage {
   role: "user" | "model";
   text: string;
