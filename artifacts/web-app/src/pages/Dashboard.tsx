@@ -8,6 +8,7 @@ import { Vehicle } from "@/lib/api/vehicles";
 import { Mechanic, getMechanicByVehicleId, createMechanic, updateMechanic, deleteMechanic } from "@/lib/api/mechanics";
 import { RoadsideAssistance, getRoadsideByUserId, createRoadside, updateRoadside, deleteRoadside } from "@/lib/api/roadsideAssistance";
 import { GarageIcon } from "@/components/ui/GarageIcon";
+import { LicensePlate } from "@/components/car/LicensePlate";
 import { AddDocumentSheet } from "@/components/documents/AddDocumentSheet";
 
 /* ── DESIGN TOKENS ─────────────────────────────────── */
@@ -1148,35 +1149,7 @@ function LandingPage({
       </div>
 
       {/* License plate */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          margin: "24px 24px 16px",
-          height: 140,
-          borderRadius: 16,
-          border: `1.5px solid ${C.border}`,
-          background: C.sage,
-          gap: 8,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "'Rajdhani', sans-serif",
-            fontWeight: 700,
-            fontSize: 56,
-            color: C.text,
-            letterSpacing: "0.08em",
-            lineHeight: 1,
-            textAlign: "center",
-            padding: "0 12px",
-          }}
-        >
-          {vehicle.license_plate ? vehicle.license_plate.toUpperCase() : "—"}
-        </span>
-      </div>
+      <LicensePlate plate={vehicle.license_plate || ""} />
 
       {/* Health gauge */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
