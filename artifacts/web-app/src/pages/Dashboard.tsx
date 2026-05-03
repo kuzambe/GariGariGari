@@ -112,45 +112,51 @@ function WoodenCar() {
   );
 }
 
-/* ── HEALTH GAUGE ──────────────────────────────────── */
+/* ── HEALTH BAR ────────────────────────────────────── */
 function HealthGauge({ pct = 90 }: { pct?: number }) {
-  const R = 38;
-  const circ = 2 * Math.PI * R;
-  const dash = (pct / 100) * circ;
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-      <div style={{ position: "relative", width: 100, height: 100 }}>
-        <svg width="100" height="100" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r={R} fill="none" stroke={C.greenLight} strokeWidth="8" />
-          <circle
-            cx="50"
-            cy="50"
-            r={R}
-            fill="none"
-            stroke={C.green}
-            strokeWidth="8"
-            strokeDasharray={`${dash} ${circ}`}
-            strokeLinecap="round"
-            transform="rotate(-90 50 50)"
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", padding: "0 24px", boxSizing: "border-box" }}>
+      {/* Bar track */}
+      <div style={{ position: "relative", height: 12, borderRadius: 999, background: C.greenLight, overflow: "hidden" }}>
+        {/* Fill */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: `${pct}%`,
+            background: C.green,
+            borderRadius: 999,
+            transition: "width 0.4s ease",
+          }}
+        />
+        {/* 4 dividers (creating 5 segments) */}
+        {[20, 40, 60, 80].map((pos) => (
+          <div
+            key={pos}
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: `${pos}%`,
+              width: 2,
+              background: "#FFFFFF",
+              opacity: 0.6,
+            }}
           />
-        </svg>
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 1,
-        }}>
-          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 17, color: C.green, lineHeight: 1 }}>
-            Good
-          </span>
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            health
-          </span>
-        </div>
+        ))}
       </div>
+      {/* Label */}
+      <p style={{
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 12,
+        color: C.muted,
+        margin: 0,
+        letterSpacing: "0.01em",
+      }}>
+        Health status : <span style={{ color: C.green, fontWeight: 600 }}>Good</span>
+      </p>
     </div>
   );
 }
