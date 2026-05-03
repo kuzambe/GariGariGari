@@ -553,6 +553,32 @@ function VinCopy({ vin }: { vin: string }) {
 /* ── CARGPT DAILY LIMIT HELPERS ─────────────────────── */
 const CARGPT_LIMIT = 20;
 const CARGPT_LS_KEY = "cargpt_usage";
+const CARGPT_HISTORY_KEY = "cargpt_history";
+const CARGPT_HISTORY_LIMIT = 10;
+
+function getCarGptHistory(vehicleId: string): CarGptMessage[] {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const raw = localStorage.getItem(`${CARGPT_HISTORY_KEY}_${vehicleId}`);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as { date: string; messages: CarGptMessage[] };
+    if (parsed.date !== today) return [];          // new day — clear
+    return parsed.messages ?? [];
+  } catch { return []; }
+}
+
+function saveCarGptHistory(vehicleId: string, messages: CarGptMessage[]) {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const persisted = messages
+      .filter((m) => m.role !== "loading")
+      .slice(-CARGPT_HISTORY_LIMIT);
+    localStorage.setItem(
+      `${CARGPT_HISTORY_KEY}_${vehicleId}`,
+      JSON.stringify({ date: today, messages: persisted }),
+    );
+  } catch { /* storage full or unavailable */ }
+}
 
 function getCarGptUsage(): { date: string; count: number } {
   try {
@@ -624,18 +650,35 @@ function LandingPage({
   onOpenSettings: () => void;
 }) {
   const [carGptInput, setCarGptInput] = useState("");
-  const [carGptMessages, setCarGptMessages] = useState<CarGptMessage[]>([]);
+  const [carGptMessages, setCarGptMessages] = useState<CarGptMessage[]>(
+    () => getCarGptHistory(vehicle.id),
+  );
   const [carGptLoading, setCarGptLoading] = useState(false);
   const [carGptRemaining, setCarGptRemaining] = useState(() => getRemainingCarGptQuestions());
   const carGptBottomRef = useRef<HTMLDivElement>(null);
 
+  // Persist conversation to localStorage on every change (skip loading bubbles)
+  useEffect(() => {
+    saveCarGptHistory(vehicle.id, carGptMessages);
+  }, [carGptMessages, vehicle.id]);
+
   // Keep counter fresh: reset when tab regains focus and poll every minute for day rollover
   useEffect(() => {
-    function refresh() { setCarGptRemaining(getRemainingCarGptQuestions()); }
+    function refresh() {
+      setCarGptRemaining(getRemainingCarGptQuestions());
+      // Also clear history if day has rolled over
+      setCarGptMessages((prev) => {
+        const restored = getCarGptHistory(vehicle.id);
+        // If localStorage returned empty but we had messages, day changed → clear
+        return restored.length === 0 && prev.filter((m) => m.role !== "loading").length > 0
+          ? []
+          : prev;
+      });
+    }
     document.addEventListener("visibilitychange", refresh);
     const timer = setInterval(refresh, 60_000);
     return () => { document.removeEventListener("visibilitychange", refresh); clearInterval(timer); };
-  }, []);
+  }, [vehicle.id]);
 
   useEffect(() => {
     carGptBottomRef.current?.scrollIntoView({ behavior: "smooth" });
