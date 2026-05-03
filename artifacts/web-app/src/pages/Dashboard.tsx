@@ -1313,12 +1313,16 @@ export default function Dashboard() {
         gap: 6,
         pointerEvents: "auto",
       }}>
-        {/* Garage icon → opens settings */}
+        {/* Settings icon → opens settings */}
         <button
           onClick={() => setShowSettings(true)}
           style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center" }}
         >
-          <GarageIcon stroke={C.text} width={26} height={22} />
+          <img
+            src={`${BASE}settings-icon.png`}
+            alt="Settings"
+            style={{ height: 28, width: "auto", objectFit: "contain" }}
+          />
         </button>
 
         {/* Profile avatar */}
