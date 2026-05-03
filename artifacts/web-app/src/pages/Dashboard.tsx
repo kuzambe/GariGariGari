@@ -1408,7 +1408,7 @@ export default function Dashboard() {
       {/* Floating top-right controls */}
       <div style={{
         position: "absolute",
-        top: 32,
+        top: 69,
         right: 20,
         zIndex: 50,
         display: "flex",
