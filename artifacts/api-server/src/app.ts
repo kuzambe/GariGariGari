@@ -5,6 +5,10 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
+// Trust one proxy hop so req.ip reflects the real client address when
+// deployed behind Replit's reverse proxy. Express will verify the chain
+// length rather than blindly trusting raw x-forwarded-for header values.
+app.set("trust proxy", 1);
 
 app.use(
   pinoHttp({

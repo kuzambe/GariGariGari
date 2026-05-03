@@ -7,9 +7,9 @@ const RATE_LIMIT = 20;
 const rateLimitStore = new Map<string, { date: string; count: number }>();
 
 function getClientKey(req: Parameters<Parameters<IRouter["post"]>[1]>[0]): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0]) ?? req.ip ?? "unknown";
-  return ip.trim();
+  // req.ip is computed by Express using the configured trust-proxy chain —
+  // it is not directly client-controllable, unlike raw x-forwarded-for.
+  return req.ip ?? "unknown";
 }
 
 function checkRateLimit(key: string): { allowed: boolean; remaining: number } {
