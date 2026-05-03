@@ -983,9 +983,30 @@ function FinancesPage({
           )}
         </div>
 
-        {/* Add Expense button */}
-        <div style={{ padding: "16px 0 24px" }}>
+        {/* Add Expense + Scan Receipt buttons */}
+        <div style={{ padding: "16px 0 24px", display: "flex", flexDirection: "column", gap: 10 }}>
           <GreenButton label="Add Expense" fullWidth onClick={() => setShowModal(true)} />
+          <button
+            style={{
+              width: "100%",
+              background: "none",
+              border: `1.5px solid ${C.green}`,
+              borderRadius: 14,
+              padding: "14px 24px",
+              fontFamily: "'Rajdhani', sans-serif",
+              fontWeight: 700,
+              fontSize: 18,
+              letterSpacing: "0.04em",
+              color: C.green,
+              cursor: "pointer",
+              minHeight: 44,
+              transition: "opacity 0.15s",
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.7"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+          >
+            Scan Receipt
+          </button>
         </div>
       </div>
 
