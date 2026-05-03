@@ -624,8 +624,9 @@ function LandingPage({
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>Trim</span>
             <select
               defaultValue=""
+              size={1}
               style={{
-                background: "none",
+                background: C.bg,
                 border: `1px solid ${C.border}`,
                 borderRadius: 8,
                 padding: "3px 8px",
@@ -635,7 +636,11 @@ function LandingPage({
                 cursor: "pointer",
                 outline: "none",
                 appearance: "auto",
-              }}
+                WebkitAppearance: "auto",
+                display: "block",
+                height: "auto",
+                overflow: "hidden",
+              } as React.CSSProperties}
             >
               <option value="" disabled>Select trim</option>
               <option>Base</option>
