@@ -683,16 +683,16 @@ function LandingPage({
 
       {/* Roadside + Mechanic */}
       <div style={{ padding: "16px 20px 0", display: "flex", gap: 12 }}>
-        <div style={{ flex: 1, background: C.sage, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: "16px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={{ fontSize: 22 }}>🚨</span>
+        <button style={{ flex: 1, background: C.sage, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: "16px 14px", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", textAlign: "left" }}>
+          <span style={{ fontSize: 20, color: C.green, fontWeight: 300, lineHeight: 1 }}>+</span>
           <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text, margin: 0 }}>Roadside Assistance</p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>Get help fast wherever you are</p>
-        </div>
-        <div style={{ flex: 1, background: C.sage, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: "16px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={{ fontSize: 22 }}>🔧</span>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>Add plan and coverage</p>
+        </button>
+        <button style={{ flex: 1, background: C.sage, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: "16px 14px", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", textAlign: "left" }}>
+          <span style={{ fontSize: 20, color: C.green, fontWeight: 300, lineHeight: 1 }}>+</span>
           <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text, margin: 0 }}>Mechanic</p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>Find trusted mechanics nearby</p>
-        </div>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>Add regular mechanic info</p>
+        </button>
       </div>
 
       <div style={{ flex: 1 }} />
