@@ -1007,6 +1007,15 @@ function FinancesPage({
           >
             Scan Receipt
           </button>
+          <p style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 12,
+            color: C.muted,
+            margin: "2px 4px 0",
+            lineHeight: 1.5,
+          }}>
+            Scan gas receipts and invoices to automatically be scanned and uploaded into Gari's Finances and Documents tracking.
+          </p>
         </div>
       </div>
 
