@@ -1,0 +1,12 @@
+The vehicle handbook feature needs to be fixed. When the app recognizes a vehicle and finds its handbook in the database the View Official Manual button must open the exact correct URL for that specific vehicle. Not a generic manufacturer homepage. The actual direct link to that vehicle's manual.
+Here is what needs to happen:
+Update the handbookDatabase.ts file so every entry has a specific direct URL that goes straight to the manual or the manufacturer's manual search page pre-filled with the vehicle details. Not just the homepage of the manufacturer website.
+For vehicles where the manufacturer has a direct PDF link use that PDF URL directly. For vehicles where the manufacturer uses a search portal construct the URL with the make model and year pre-filled as query parameters so the user lands directly on their manual page not the homepage.
+Examples of how the URLs should be constructed:
+Honda — https://owners.honda.com/vehicles/information/[year]/[model]/guides should be constructed dynamically using the vehicle year and model from VehicleContext. If Honda does not support that exact URL format use https://owners.honda.com and pre-fill the search.
+Toyota — https://www.toyota.com/t3Portal/prod/t3portal should include the model and year as parameters.
+Ford — https://www.fordservicecontent.com/Ford_Content/vdirsnet/OwnerManual should include model and year.
+For every vehicle in the database the URL stored must be the most specific and direct link possible. If a direct PDF exists link to the PDF. If a search portal exists construct the URL with year make and model pre-filled. If only a homepage exists append a search query to it.
+After updating the database — when the user taps View Official Manual on a recognized vehicle the button must open that exact specific URL in the browser. The URL must be dynamically constructed using the actual vehicle data from VehicleContext — year, make, model — so it always points to the right manual for their specific car.
+Test the logic by checking that a 2009 Honda Civic opens a Honda URL that includes 2009 and Civic in it. A 2018 Toyota Camry opens a Toyota URL that includes 2018 and Camry. And so on for every vehicle in the database.
+Also add a fallback — if the constructed URL fails to load or returns an error automatically fall back to a Google search URL: https://www.google.com/search?q=[year]+[make]+[model]+owner+manual+PDF+free with the actual vehicle data substituted in.

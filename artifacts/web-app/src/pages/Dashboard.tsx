@@ -10,6 +10,7 @@ import { RoadsideAssistance, getRoadsideByUserId, createRoadside, updateRoadside
 import { GarageIcon } from "@/components/ui/GarageIcon";
 import { LicensePlate, ShuffleText } from "@/components/car/LicensePlate";
 import { Odometer } from "@/components/car/Odometer";
+import { getManualUrl } from "@/lib/handbookDatabase";
 import { AddDocumentSheet } from "@/components/documents/AddDocumentSheet";
 
 /* ── DESIGN TOKENS ─────────────────────────────────── */
@@ -1945,6 +1946,11 @@ function DocumentsPage({
               }}
               onClick={() => {
                 if (isUploading) return;
+                if (cat.type === "vehicle-handbook") {
+                  const url = getManualUrl(vehicle.year, vehicle.make, vehicle.model);
+                  window.open(url, "_blank", "noopener,noreferrer");
+                  return;
+                }
                 if (count > 0) {
                   openList(cat.type, cat.label);
                 } else {
