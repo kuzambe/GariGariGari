@@ -7,6 +7,7 @@ interface VehicleContextType {
   loading: boolean;
   error: string | null;
   refetch: () => void;
+  setVehicle: (v: Vehicle) => void;
 }
 
 const VehicleContext = createContext<VehicleContextType>({
@@ -14,6 +15,7 @@ const VehicleContext = createContext<VehicleContextType>({
   loading: true,
   error: null,
   refetch: () => {},
+  setVehicle: () => {},
 });
 
 export function VehicleProvider({ children }: { children: ReactNode }) {
@@ -45,7 +47,7 @@ export function VehicleProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   return (
-    <VehicleContext.Provider value={{ vehicle, loading, error, refetch: fetchVehicle }}>
+    <VehicleContext.Provider value={{ vehicle, loading, error, refetch: fetchVehicle, setVehicle }}>
       {children}
     </VehicleContext.Provider>
   );

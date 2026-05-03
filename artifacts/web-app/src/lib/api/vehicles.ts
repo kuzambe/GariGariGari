@@ -16,6 +16,8 @@ export interface Vehicle {
   license_plate: string | null;
   country: string | null;
   mileage_unit: "km" | "mi";
+  paint_name: string | null;
+  paint_code: string | null;
   created_at: string;
 }
 
@@ -34,6 +36,8 @@ export interface CreateVehicleData {
   license_plate?: string;
   country?: string;
   mileage_unit?: "km" | "mi";
+  paint_name?: string;
+  paint_code?: string;
 }
 
 export async function getVehicleByUserId(userId: string): Promise<Vehicle | null> {

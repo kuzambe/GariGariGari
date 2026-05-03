@@ -1117,9 +1117,17 @@ function LandingPage({
           </button>
         </div>
 
-        {/* Year Make Model Trim */}
+        {/* Year Make Model */}
         {subtitle && (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, fontSize: 14, color: C.muted, margin: "5px 0 0", padding: 0 }}>
+          <p style={{
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 26,
+            color: C.text,
+            margin: "8px 0 0",
+            padding: 0,
+            lineHeight: 1.1,
+          }}>
             {subtitle}
           </p>
         )}
