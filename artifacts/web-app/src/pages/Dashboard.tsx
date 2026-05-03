@@ -582,26 +582,12 @@ function LandingPage({
       }}
     >
       {/* Header: nickname + logo icon inline */}
-      <div style={{ padding: "64px 24px 0" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-          <h1
-            style={{
-              fontFamily: "'Rajdhani', sans-serif",
-              fontWeight: 700,
-              fontSize: 42,
-              color: C.text,
-              lineHeight: 1,
-              margin: 0,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              flex: "1 1 auto",
-              minWidth: 0,
-            }}
-          >
+      <div style={{ padding: "28px 20px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
             {title}
           </h1>
-          <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", flexShrink: 0 }}>
+          <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
             <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
           </button>
         </div>
