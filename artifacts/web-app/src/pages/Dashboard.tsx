@@ -1107,7 +1107,7 @@ function LandingPage({
         )}
       </div>
 
-      {/* Car image placeholder */}
+      {/* License plate */}
       <div
         style={{
           display: "flex",
@@ -1117,15 +1117,27 @@ function LandingPage({
           margin: "24px 24px 16px",
           height: 140,
           borderRadius: 16,
-          border: `1.5px dashed ${C.border}`,
+          border: `1.5px solid ${C.border}`,
           background: C.sage,
-          cursor: "pointer",
-          gap: 6,
+          gap: 8,
         }}
       >
-        <span style={{ fontSize: 32, color: C.border, lineHeight: 1, fontWeight: 200 }}>+</span>
-        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted }}>
-          Add image / rendering
+        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em" }}>
+          License Plate
+        </span>
+        <span
+          style={{
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 56,
+            color: C.text,
+            letterSpacing: "0.08em",
+            lineHeight: 1,
+            textAlign: "center",
+            padding: "0 12px",
+          }}
+        >
+          {vehicle.license_plate ? vehicle.license_plate.toUpperCase() : "—"}
         </span>
       </div>
 
