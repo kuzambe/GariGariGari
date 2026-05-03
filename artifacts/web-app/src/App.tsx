@@ -2,6 +2,7 @@ import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { VehicleProvider, useVehicle } from "@/context/VehicleContext";
+import { PreferencesProvider, usePreferences } from "@/context/PreferencesContext";
 import AuthPage from "@/pages/AuthPage";
 import VehicleSetup from "@/pages/VehicleSetup";
 import Dashboard from "@/pages/Dashboard";
@@ -60,22 +61,25 @@ function HomeRoute() {
 }
 
 function PhoneFrame({ children }: { children: React.ReactNode }) {
+  const { darkMode } = usePreferences();
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "#1A1A1A",
+        background: darkMode ? "#060d07" : "#1A1A1A",
         display: "flex",
         justifyContent: "center",
+        transition: "background 0.3s ease",
       }}
     >
       <div
         style={{
           width: "100%",
           maxWidth: 430,
-          background: "#FAFAF8",
+          background: "var(--gc-bg)",
           minHeight: "100vh",
           position: "relative",
+          transition: "background 0.3s ease",
         }}
       >
         {children}
@@ -101,11 +105,13 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <VehicleProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <PhoneFrame>
-              <Router />
-            </PhoneFrame>
-          </WouterRouter>
+          <PreferencesProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <PhoneFrame>
+                <Router />
+              </PhoneFrame>
+            </WouterRouter>
+          </PreferencesProvider>
         </VehicleProvider>
       </AuthProvider>
     </QueryClientProvider>

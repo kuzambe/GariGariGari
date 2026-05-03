@@ -3,10 +3,11 @@ import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 
 const ACCENT = "#1F6B2E";
-const TEXT = "#111111";
-const MUTED = "#888888";
 const ERROR = "#C0392B";
 const BASE = import.meta.env.BASE_URL;
+/* Use CSS vars so dark mode applies automatically */
+const TEXT = "var(--gc-text)";
+const MUTED = "var(--gc-muted)";
 
 function Field({
   type = "text",
@@ -45,7 +46,7 @@ function Field({
           width: "100%",
           background: "transparent",
           border: "none",
-          borderBottom: `1.5px solid ${focused ? ACCENT : "#E0E0E0"}`,
+          borderBottom: `1.5px solid ${focused ? ACCENT : "var(--gc-border)"}`,
           padding: "10px 0",
           fontFamily: "'DM Sans', sans-serif",
           fontSize: 17,
@@ -135,7 +136,7 @@ export default function AuthPage() {
       className="gari-mount"
       style={{
         minHeight: "100vh",
-        background: "#FFFFFF",
+        background: "var(--gc-bg)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",

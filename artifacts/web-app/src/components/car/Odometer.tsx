@@ -1,5 +1,3 @@
-import { useEffect, useRef, useState } from "react";
-
 interface OdometerProps {
   value: number;
   unit?: string;
@@ -10,29 +8,20 @@ export function Odometer({ value, unit }: OdometerProps) {
   const chars = formatted.split("");
 
   return (
-    <div
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 8,
-        marginTop: 10,
-      }}
-    >
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 10 }}>
       <div style={{ display: "inline-flex", gap: 4 }}>
         {chars.map((ch, i) => (
           <OdometerCell key={`${i}-${ch}`} ch={ch} delay={i * 60} />
         ))}
       </div>
       {unit && (
-        <span
-          style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontWeight: 500,
-            fontSize: 14,
-            color: "#6B7C6D",
-            letterSpacing: "0.04em",
-          }}
-        >
+        <span style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontWeight: 500,
+          fontSize: 14,
+          color: "var(--gc-muted)",
+          letterSpacing: "0.04em",
+        }}>
           {unit}
         </span>
       )}
@@ -52,49 +41,45 @@ function OdometerCell({ ch, delay }: { ch: string; delay: number }) {
 
   if (isSep) {
     return (
-      <span
-        style={{
-          fontFamily: "'Rajdhani', sans-serif",
-          fontWeight: 700,
-          fontSize: 26,
-          color: "#0D1C0E",
-          alignSelf: "flex-end",
-          padding: "0 1px",
-          lineHeight: 1.2,
-        }}
-      >
+      <span style={{
+        fontFamily: "'Rajdhani', sans-serif",
+        fontWeight: 700,
+        fontSize: 26,
+        color: "var(--gc-text)",
+        alignSelf: "flex-end",
+        padding: "0 1px",
+        lineHeight: 1.2,
+      }}>
         {ch}
       </span>
     );
   }
 
   return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minWidth: 22,
-        height: 32,
-        borderRadius: 6,
-        background: "#F4F7F2",
-        border: "1px solid #D4DDD5",
-        boxShadow: "inset 0 1px 1px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.6)",
-        overflow: "hidden",
-      }}
-    >
-      <span
-        style={{
-          fontFamily: "'Rajdhani', sans-serif",
-          fontWeight: 700,
-          fontSize: 22,
-          color: "#0D1C0E",
-          fontVariantNumeric: "tabular-nums",
-          lineHeight: 1,
-          display: "inline-block",
-          animation: isDigit ? `odoRoll 0.45s ${delay}ms cubic-bezier(0.22, 0.9, 0.32, 1) both` : undefined,
-        }}
-      >
+    <span style={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minWidth: 22,
+      height: 32,
+      borderRadius: 6,
+      background: "var(--gc-sage)",
+      border: "1px solid var(--gc-border)",
+      boxShadow: "inset 0 1px 1px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.08)",
+      overflow: "hidden",
+    }}>
+      <span style={{
+        fontFamily: "'Rajdhani', sans-serif",
+        fontWeight: 700,
+        fontSize: 22,
+        color: "var(--gc-text)",
+        fontVariantNumeric: "tabular-nums",
+        lineHeight: 1,
+        display: "inline-block",
+        animation: isDigit
+          ? `odoRoll 0.45s ${delay}ms cubic-bezier(0.22, 0.9, 0.32, 1) both`
+          : undefined,
+      }}>
         {ch}
       </span>
     </span>

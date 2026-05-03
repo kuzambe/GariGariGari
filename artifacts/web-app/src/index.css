@@ -450,3 +450,28 @@ input:-webkit-autofill:focus {
 /* Universal smoothing */
 html, body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 button { -webkit-tap-highlight-color: transparent; }
+
+/* ── GARI THEME VARIABLES ─────────────────────────── */
+:root {
+  --gc-bg: #FFFFFF;
+  --gc-sage: #F4F7F2;
+  --gc-text: #0D1C0E;
+  --gc-muted: #6B7C6D;
+  --gc-greenLight: #E8F0E9;
+  --gc-border: #D4DDD5;
+}
+
+[data-gari-dark="1"] {
+  --gc-bg: #0E1510;
+  --gc-sage: #141E15;
+  --gc-text: #E8F3E9;
+  --gc-muted: #7A9E7C;
+  --gc-greenLight: #1A3020;
+  --gc-border: #2C4030;
+}
+
+/* Auth + setup pages dark background */
+[data-gari-dark="1"] body,
+[data-gari-dark="1"] #root {
+  background: #0E1510;
+}

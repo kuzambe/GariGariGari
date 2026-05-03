@@ -12,19 +12,22 @@ import { LicensePlate, ShuffleText } from "@/components/car/LicensePlate";
 import { Odometer } from "@/components/car/Odometer";
 import { getManualUrl } from "@/lib/handbookDatabase";
 import { AddDocumentSheet } from "@/components/documents/AddDocumentSheet";
+import { usePreferences } from "@/context/PreferencesContext";
 
 /* ── DESIGN TOKENS ─────────────────────────────────── */
+/* Themeable values use CSS custom properties (switched by data-gari-dark attr).
+   Green and status colours stay constant across themes. */
 const C = {
-  bg: "#FFFFFF",
-  sage: "#F4F7F2",
-  text: "#0D1C0E",
-  muted: "#6B7C6D",
-  green: "#1F6B2E",
-  greenLight: "#E8F0E9",
-  border: "#D4DDD5",
-  success: "#2D9E4A",
-  warning: "#E5A020",
-  error: "#C0392B",
+  bg:         "var(--gc-bg)",
+  sage:       "var(--gc-sage)",
+  text:       "var(--gc-text)",
+  muted:      "var(--gc-muted)",
+  green:      "#1F6B2E",
+  greenLight: "var(--gc-greenLight)",
+  border:     "var(--gc-border)",
+  success:    "#2D9E4A",
+  warning:    "#E5A020",
+  error:      "#C0392B",
 };
 
 /* ── SCULPTURAL TOY CAR SVG ────────────────────────── */
@@ -471,15 +474,53 @@ function TopBar({ userEmail, onProfile }: { userEmail?: string; onProfile: () =>
   );
 }
 
+/* ── PILL TOGGLE ───────────────────────────────────── */
+function PillToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      className="gari-tap"
+      style={{
+        width: 44,
+        height: 26,
+        borderRadius: 13,
+        background: on ? C.green : "var(--gc-border)",
+        border: "none",
+        padding: 0,
+        cursor: "pointer",
+        position: "relative",
+        flexShrink: 0,
+        transition: "background 0.22s ease",
+      }}
+    >
+      <span style={{
+        position: "absolute",
+        top: 3,
+        left: on ? 21 : 3,
+        width: 20,
+        height: 20,
+        borderRadius: "50%",
+        background: "#FFFFFF",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+        transition: "left 0.22s cubic-bezier(0.22, 1, 0.36, 1)",
+        display: "block",
+      }} />
+    </button>
+  );
+}
+
 /* ── SETTINGS SHEET ────────────────────────────────── */
 function SettingsSheet({ userEmail, onSignOut, onClose }: { userEmail?: string; onSignOut: () => void; onClose: () => void }) {
+  const { darkMode, setDarkMode, distanceUnit, setDistanceUnit } = usePreferences();
+  const [showUnits, setShowUnits] = useState(false);
+
   return (
     <div
       style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
       onClick={onClose}
     >
       {/* Backdrop */}
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)" }} />
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} />
 
       {/* Sheet */}
       <div
@@ -487,11 +528,12 @@ function SettingsSheet({ userEmail, onSignOut, onClose }: { userEmail?: string; 
           position: "relative",
           background: C.bg,
           borderRadius: "22px 22px 0 0",
-          padding: "12px 24px 40px",
+          padding: "12px 24px 44px",
           maxWidth: 430,
           width: "100%",
           margin: "0 auto",
-          boxShadow: "0 -4px 32px rgba(0,0,0,0.12)",
+          boxShadow: "0 -4px 32px rgba(0,0,0,0.18)",
+          animation: "gariSlideUp 0.3s cubic-bezier(0.22,1,0.36,1)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -502,55 +544,105 @@ function SettingsSheet({ userEmail, onSignOut, onClose }: { userEmail?: string; 
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
           Account
         </p>
-        <div style={{
-          background: C.sage,
-          borderRadius: 14,
-          padding: "14px 16px",
-          marginBottom: 20,
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-        }}>
+        <div style={{ background: C.sage, borderRadius: 14, padding: "14px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            background: C.greenLight,
-            border: `1.5px solid ${C.border}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
+            width: 40, height: 40, borderRadius: "50%", background: C.greenLight,
+            border: `1.5px solid var(--gc-border)`, display: "flex", alignItems: "center",
+            justifyContent: "center", flexShrink: 0,
           }}>
             <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, color: C.green }}>
               {userEmail ? userEmail[0].toUpperCase() : "?"}
             </span>
           </div>
           <div>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14, color: C.text, margin: 0 }}>
-              {userEmail ?? "—"}
-            </p>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>
-              Gari account
-            </p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14, color: C.text, margin: 0 }}>{userEmail ?? "—"}</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>Gari account</p>
           </div>
         </div>
 
-        {/* Settings rows */}
+        {/* Settings section */}
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
           Settings
         </p>
         <div style={{ background: C.sage, borderRadius: 14, marginBottom: 20, overflow: "hidden" }}>
-          {["Notifications", "Units & Display", "Privacy"].map((label, i, arr) => (
+
+          {/* Units & Display — expandable */}
+          <div
+            onClick={() => setShowUnits((p) => !p)}
+            style={{ display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: `1px solid var(--gc-border)`, cursor: "pointer" }}
+          >
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>Units &amp; Display</span>
+            <span style={{
+              color: C.muted, fontSize: 13,
+              transform: showUnits ? "rotate(90deg)" : "rotate(0deg)",
+              transition: "transform 0.22s ease",
+              display: "inline-block",
+            }}>›</span>
+          </div>
+
+          {/* Expanded panel */}
+          {showUnits && (
+            <div style={{ padding: "4px 0 8px", borderBottom: `1px solid var(--gc-border)` }}>
+
+              {/* Distance unit */}
+              <div style={{ display: "flex", alignItems: "center", padding: "10px 16px" }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: C.text, margin: 0 }}>
+                    Distance unit
+                  </p>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>
+                    Currently showing in <strong>{distanceUnit}</strong>
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  {(["km", "mi"] as const).map((u) => (
+                    <button
+                      key={u}
+                      onClick={(e) => { e.stopPropagation(); setDistanceUnit(u); }}
+                      className="gari-press"
+                      style={{
+                        padding: "6px 14px",
+                        borderRadius: 20,
+                        border: "none",
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontWeight: 600,
+                        fontSize: 13,
+                        cursor: "pointer",
+                        background: distanceUnit === u ? C.green : "var(--gc-border)",
+                        color: distanceUnit === u ? "#fff" : C.text,
+                        transition: "all 0.18s ease",
+                      }}
+                    >
+                      {u}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dark mode */}
+              <div style={{ display: "flex", alignItems: "center", padding: "10px 16px" }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: C.text, margin: 0 }}>
+                    Dark mode
+                  </p>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>
+                    {darkMode ? "On — dark theme active" : "Off — light theme active"}
+                  </p>
+                </div>
+                <PillToggle on={darkMode} onToggle={() => { setDarkMode(!darkMode); }} />
+              </div>
+            </div>
+          )}
+
+          {/* Other rows */}
+          {["Notifications", "Privacy"].map((label, i, arr) => (
             <div key={label} style={{
-              display: "flex",
-              alignItems: "center",
-              padding: "14px 16px",
-              borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none",
+              display: "flex", alignItems: "center", padding: "14px 16px",
+              borderBottom: i < arr.length - 1 ? `1px solid var(--gc-border)` : "none",
               cursor: "pointer",
             }}>
               <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>{label}</span>
-              <span style={{ color: C.border, fontSize: 16 }}>›</span>
+              <span style={{ color: C.muted, fontSize: 13 }}>›</span>
             </div>
           ))}
         </div>
@@ -558,20 +650,12 @@ function SettingsSheet({ userEmail, onSignOut, onClose }: { userEmail?: string; 
         {/* Sign out */}
         <button
           onClick={onSignOut}
+          className="gari-press"
           style={{
-            width: "100%",
-            background: "none",
-            border: `1.5px solid ${C.border}`,
-            borderRadius: 14,
-            padding: "14px 16px",
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 14,
-            color: "#C0392B",
-            cursor: "pointer",
-            textAlign: "left",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
+            width: "100%", background: "none", border: `1.5px solid var(--gc-border)`,
+            borderRadius: 14, padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
+            fontSize: 14, color: "#C0392B", cursor: "pointer", textAlign: "left",
+            display: "flex", alignItems: "center", gap: 10,
           }}
         >
           <span>Sign out</span>
@@ -798,6 +882,7 @@ function LandingPage({
   onGoToPage: (p: number) => void;
   onOpenSettings: () => void;
 }) {
+  const { distanceUnit } = usePreferences();
   const [carGptInput, setCarGptInput] = useState("");
   // hydratedVehicleRef tracks which vehicle's history is currently in state.
   // Initialized synchronously so the save guard is accurate from the first render.
@@ -1143,7 +1228,10 @@ function LandingPage({
 
         {/* Mileage — odometer */}
         {vehicle.mileage != null && (
-          <Odometer value={vehicle.mileage} unit={vehicle.mileage_unit} />
+          <Odometer
+            value={distanceUnit === "mi" ? Math.round(vehicle.mileage * 0.621371) : vehicle.mileage}
+            unit={distanceUnit === "mi" ? "mi" : (vehicle.mileage_unit ?? "km")}
+          />
         )}
 
         {/* VIN — tap to copy */}

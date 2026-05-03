@@ -23,6 +23,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Auth**: Supabase Auth (email/password)
 - **Supabase**: `@supabase/supabase-js` client at `src/lib/supabase.ts`
 - **Auth context**: `src/context/AuthContext.tsx` — provides `session`, `user`, `loading`, `signOut`
+- **Preferences context**: `src/context/PreferencesContext.tsx` — provides `darkMode`/`setDarkMode`, `distanceUnit`/`setDistanceUnit`; persisted in localStorage; sets `data-gari-dark` attribute on `<html>` for CSS variable switching
 - **Pages**:
   - `/auth` — Sign in / Sign up tabs
   - `/dashboard` — Protected overview page with stats cards
