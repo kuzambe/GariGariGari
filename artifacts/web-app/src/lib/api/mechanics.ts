@@ -24,15 +24,26 @@ export interface MechanicData {
   notes?: string;
 }
 
-export async function getMechanicByVehicleId(vehicleId: string): Promise<Mechanic | null> {
-  const { data, error } = await supabase
+export async function getMechanicByVehicleId(
+  vehicleId: string,
+  userId?: string,
+): Promise<Mechanic | null> {
+  let query = supabase
     .from("mechanics")
     .select("*")
-    .eq("vehicle_id", vehicleId)
-    .maybeSingle();
+    .eq("vehicle_id", vehicleId);
 
-  if (error) throw error;
-  return data;
+  if (userId) query = query.eq("user_id", userId);
+
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    console.error("[mechanics] getMechanicByVehicleId failed", error);
+    throw error;
+  }
+  return data && data.length > 0 ? data[0] : null;
 }
 
 export async function createMechanic(data: MechanicData): Promise<Mechanic> {

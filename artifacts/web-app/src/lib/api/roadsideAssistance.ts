@@ -23,10 +23,14 @@ export async function getRoadsideByUserId(userId: string): Promise<RoadsideAssis
     .from("roadside_assistance")
     .select("*")
     .eq("user_id", userId)
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(1);
 
-  if (error) throw error;
-  return data;
+  if (error) {
+    console.error("[roadside] getRoadsideByUserId failed", error);
+    throw error;
+  }
+  return data && data.length > 0 ? data[0] : null;
 }
 
 export async function createRoadside(data: RoadsideData): Promise<RoadsideAssistance> {

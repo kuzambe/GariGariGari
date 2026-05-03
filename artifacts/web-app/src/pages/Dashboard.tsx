@@ -834,13 +834,13 @@ function LandingPage({
 
   // Load mechanic + roadside on mount / vehicle change
   useEffect(() => {
-    getMechanicByVehicleId(vehicle.id).then(setMechanic).catch(() => {
-      setContactToast("Could not load mechanic info.");
-      setTimeout(() => setContactToast(null), 2500);
+    getMechanicByVehicleId(vehicle.id, userId).then(setMechanic).catch((err) => {
+      console.error("[dashboard] load mechanic failed", err);
+      setMechanic(null);
     });
-    getRoadsideByUserId(userId).then(setRoadside).catch(() => {
-      setContactToast("Could not load roadside assistance info.");
-      setTimeout(() => setContactToast(null), 2500);
+    getRoadsideByUserId(userId).then(setRoadside).catch((err) => {
+      console.error("[dashboard] load roadside failed", err);
+      setRoadside(null);
     });
   }, [vehicle.id, userId]);
 
