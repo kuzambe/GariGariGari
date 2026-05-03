@@ -57,3 +57,12 @@ export async function updateMechanic(id: string, data: Partial<MechanicData>): P
   if (error) throw error;
   return result;
 }
+
+export async function deleteMechanic(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("mechanics")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}

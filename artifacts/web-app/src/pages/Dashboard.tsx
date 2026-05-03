@@ -5,8 +5,8 @@ import { useVehicle } from "@/context/VehicleContext";
 import { getDocumentsByVehicleId, Document, uploadDocument, deleteDocumentWithFile } from "@/lib/api/documents";
 import { getExpensesByVehicleId, Expense, addExpense } from "@/lib/api/expenses";
 import { Vehicle } from "@/lib/api/vehicles";
-import { Mechanic, getMechanicByVehicleId, createMechanic, updateMechanic } from "@/lib/api/mechanics";
-import { RoadsideAssistance, getRoadsideByUserId, createRoadside, updateRoadside } from "@/lib/api/roadsideAssistance";
+import { Mechanic, getMechanicByVehicleId, createMechanic, updateMechanic, deleteMechanic } from "@/lib/api/mechanics";
+import { RoadsideAssistance, getRoadsideByUserId, createRoadside, updateRoadside, deleteRoadside } from "@/lib/api/roadsideAssistance";
 import { GarageIcon } from "@/components/ui/GarageIcon";
 import { AddDocumentSheet } from "@/components/documents/AddDocumentSheet";
 
@@ -812,6 +812,8 @@ function LandingPage({
   const [mechHours, setMechHours] = useState("");
   const [mechNotes, setMechNotes] = useState("");
   const [mechSaving, setMechSaving] = useState(false);
+  const [mechDeleting, setMechDeleting] = useState(false);
+  const [mechConfirmDelete, setMechConfirmDelete] = useState(false);
 
   // ── Roadside state ──────────────────────────────────────────────────────────
   const [roadside, setRoadside] = useState<RoadsideAssistance | null>(null);
@@ -822,6 +824,8 @@ function LandingPage({
   const [roadPhone, setRoadPhone] = useState("");
   const [roadCoverage, setRoadCoverage] = useState("");
   const [roadSaving, setRoadSaving] = useState(false);
+  const [roadDeleting, setRoadDeleting] = useState(false);
+  const [roadConfirmDelete, setRoadConfirmDelete] = useState(false);
   const [memberCopied, setMemberCopied] = useState(false);
 
   // ── Shared contact toast ────────────────────────────────────────────────────
@@ -858,6 +862,7 @@ function LandingPage({
     } else {
       setMechMode("view");
     }
+    setMechConfirmDelete(false);
     setMechSheetOpen(true);
   }
 
@@ -898,6 +903,22 @@ function LandingPage({
     }
   }
 
+  async function handleDeleteMech() {
+    if (!mechanic) return;
+    setMechDeleting(true);
+    try {
+      await deleteMechanic(mechanic.id);
+      setMechanic(null);
+      setMechConfirmDelete(false);
+      setMechSheetOpen(false);
+      showContactToast("Mechanic removed");
+    } catch {
+      showContactToast("Failed to remove mechanic. Please try again.");
+    } finally {
+      setMechDeleting(false);
+    }
+  }
+
   function openRoadSheet() {
     if (!roadside) {
       setRoadProvider(""); setRoadMember(""); setRoadPhone(""); setRoadCoverage("");
@@ -905,6 +926,7 @@ function LandingPage({
     } else {
       setRoadMode("view");
     }
+    setRoadConfirmDelete(false);
     setRoadSheetOpen(true);
   }
 
@@ -937,6 +959,22 @@ function LandingPage({
       showContactToast("Failed to save. Please try again.");
     } finally {
       setRoadSaving(false);
+    }
+  }
+
+  async function handleDeleteRoad() {
+    if (!roadside) return;
+    setRoadDeleting(true);
+    try {
+      await deleteRoadside(roadside.id);
+      setRoadside(null);
+      setRoadConfirmDelete(false);
+      setRoadSheetOpen(false);
+      showContactToast("Roadside Assistance removed");
+    } catch {
+      showContactToast("Failed to remove. Please try again.");
+    } finally {
+      setRoadDeleting(false);
     }
   }
 
@@ -1342,9 +1380,28 @@ function LandingPage({
                   <button onClick={startMechEdit} style={{ width: "100%", background: "none", border: "1.5px solid #1F6B2E", borderRadius: 14, padding: "12px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: "#1F6B2E", cursor: "pointer", letterSpacing: "0.04em" }}>
                     Edit
                   </button>
-                  <button onClick={() => setMechSheetOpen(false)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", padding: "8px 0" }}>
+                  <button onClick={() => { setMechConfirmDelete(false); setMechSheetOpen(false); }} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", padding: "8px 0" }}>
                     Cancel
                   </button>
+                  {!mechConfirmDelete ? (
+                    <button onClick={() => setMechConfirmDelete(true)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#C0392B", cursor: "pointer", padding: "4px 0", textDecoration: "underline" }}>
+                      Remove mechanic
+                    </button>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px", background: "#FBEAE7", borderRadius: 12 }}>
+                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#0D1C0E", margin: 0, textAlign: "center" }}>
+                        Remove this mechanic? This cannot be undone.
+                      </p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => setMechConfirmDelete(false)} disabled={mechDeleting} style={{ flex: 1, background: "none", border: "1.5px solid #6B7C6D", borderRadius: 10, padding: "10px", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: mechDeleting ? "default" : "pointer" }}>
+                          Cancel
+                        </button>
+                        <button onClick={handleDeleteMech} disabled={mechDeleting} style={{ flex: 1, background: "#C0392B", border: "none", borderRadius: 10, padding: "10px", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#fff", cursor: mechDeleting ? "default" : "pointer", opacity: mechDeleting ? 0.7 : 1 }}>
+                          {mechDeleting ? "Removing…" : "Remove"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
@@ -1426,9 +1483,28 @@ function LandingPage({
                   <button onClick={startRoadEdit} style={{ width: "100%", background: "none", border: "1.5px solid #1F6B2E", borderRadius: 14, padding: "12px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: "#1F6B2E", cursor: "pointer", letterSpacing: "0.04em" }}>
                     Edit
                   </button>
-                  <button onClick={() => setRoadSheetOpen(false)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", padding: "8px 0" }}>
+                  <button onClick={() => { setRoadConfirmDelete(false); setRoadSheetOpen(false); }} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", padding: "8px 0" }}>
                     Cancel
                   </button>
+                  {!roadConfirmDelete ? (
+                    <button onClick={() => setRoadConfirmDelete(true)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#C0392B", cursor: "pointer", padding: "4px 0", textDecoration: "underline" }}>
+                      Remove roadside assistance
+                    </button>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px", background: "#FBEAE7", borderRadius: 12 }}>
+                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#0D1C0E", margin: 0, textAlign: "center" }}>
+                        Remove this roadside assistance plan? This cannot be undone.
+                      </p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => setRoadConfirmDelete(false)} disabled={roadDeleting} style={{ flex: 1, background: "none", border: "1.5px solid #6B7C6D", borderRadius: 10, padding: "10px", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: roadDeleting ? "default" : "pointer" }}>
+                          Cancel
+                        </button>
+                        <button onClick={handleDeleteRoad} disabled={roadDeleting} style={{ flex: 1, background: "#C0392B", border: "none", borderRadius: 10, padding: "10px", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#fff", cursor: roadDeleting ? "default" : "pointer", opacity: roadDeleting ? 0.7 : 1 }}>
+                          {roadDeleting ? "Removing…" : "Remove"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (

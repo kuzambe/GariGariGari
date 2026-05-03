@@ -54,3 +54,12 @@ export async function updateRoadside(
   if (error) throw error;
   return result;
 }
+
+export async function deleteRoadside(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("roadside_assistance")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
