@@ -1,0 +1,178 @@
+ The entire app is already connected to Supabase for auth and database. Do not touch the Supabase connection, do not recreate tables, do not modify environment variables. Everything in Supabase is already set up.
+Here is the complete technical specification. Follow every detail exactly with no shortcuts, no placeholder styling, no generic UI, no default component library styling showing through anywhere.
+TECH STACK:
+React with TypeScript, Vite, Supabase for auth and database, Tailwind CSS for styling. Import Rajdhani Bold and DM Sans from Google Fonts and use them everywhere. No other fonts.
+DATABASE TABLES ALREADY EXIST IN SUPABASE:
+vehicles — id, user_id, nickname, vin, make, model, year, trim, engine, fuel_type, body_style, mileage, license_plate, country, mileage_unit, created_at
+documents — id, user_id, vehicle_id, type, file_url, created_at
+expenses — id, user_id, vehicle_id, type, amount, description, receipt_url, created_at
+Storage bucket — vehicle-docs
+FILE STRUCTURE TO CREATE:
+src/
+├── app/
+│   ├── App.tsx
+│   ├── routes.tsx
+├── pages/
+│   ├── AuthPage.tsx
+│   ├── Dashboard.tsx
+│   ├── VehicleSetup.tsx
+├── components/
+│   ├── layout/
+│   │   ├── AppShell.tsx
+│   │   ├── Header.tsx
+│   ├── car/
+│   │   ├── CarHero.tsx
+│   │   ├── CarStats.tsx
+│   │   ├── CarSilhouette.tsx
+│   ├── documents/
+│   │   ├── DocumentGrid.tsx
+│   │   ├── UploadDocumentModal.tsx
+│   ├── finance/
+│   │   ├── ExpenseList.tsx
+│   │   ├── AddExpenseModal.tsx
+│   ├── ui/
+│   │   ├── GarageIcon.tsx
+│   │   ├── AmberButton.tsx
+│   │   ├── StatPill.tsx
+│   │   ├── FeatureTile.tsx
+│   │   ├── AlertStrip.tsx
+├── lib/
+│   ├── supabaseClient.ts
+│   ├── api/
+│   │   ├── vehicles.ts
+│   │   ├── documents.ts
+│   │   ├── expenses.ts
+├── context/
+│   ├── AuthContext.tsx
+│   ├── VehicleContext.tsx
+ROUTING:
+/auth — login and signup, redirect to /dashboard if already logged in
+/setup — vehicle setup flow, only accessible if logged in and no vehicle exists
+/dashboard — main car dashboard, protected, redirect to /setup if no vehicle exists
+/ — redirect to /dashboard if logged in, /auth if not
+DESIGN SYSTEM — apply to every single element with zero exceptions:
+Background color: #FAFAF8
+Primary text: #1A1A1A
+Accent color: #EF9F27 — amber, used for buttons, active states, highlights, borders on alerts
+Surface color: #F0EFE9 — used for cards, tiles, pills
+Muted text: #888888
+Error color: #E24B4A
+Success color: #639922
+Font for all headings, car name, logo text, tile labels: Rajdhani Bold 700
+Font for all body text, descriptions, inputs, small labels: DM Sans 400 and 500
+Border radius on all cards and tiles: 16px
+Border radius on all buttons and inputs: 12px
+Border radius on pills: 999px
+Box shadow on cards: 0 2px 12px rgba(0,0,0,0.06)
+No blue anywhere in the entire app — not on buttons, not on links, not on focus states, not on any element
+No purple anywhere
+No gradients anywhere
+No sidebar anywhere
+No bottom navigation dock
+No top navigation bar with profile icons or hamburger menus
+No generic SaaS language anywhere — no "workspace", no "dashboard overview", no "total items", no "activity feed"
+GARAGE DOOR SVG ICON — use this exact SVG everywhere the brand icon appears. This is the Gari brand mark. Do not use an emoji or a different icon:
+Create a component called GarageIcon.tsx that renders this:
+A rectangular outline with rounded corners representing a garage door frame. Inside the frame, three evenly spaced horizontal lines representing the garage door panels. The lines should have a slightly hand-drawn quality — not perfectly straight but close. The whole icon should be about 28x24px when used inline with text. Make it in pure SVG with stroke color passed as a prop defaulting to #1A1A1A. Stroke width 2. Fill none.
+AUTH PAGE — AuthPage.tsx:
+Full screen, background #FAFAF8, everything centered vertically and horizontally.
+At the top center — the GarageIcon component at 40x34px, below it the word GARI in Rajdhani Bold 48px color #1A1A1A. Together these form the logo. Below the logo in DM Sans 14px color #888888 — the tagline "Your garage in your pocket."
+Below that — a toggle between Sign In and Sign Up. Two text options side by side. Active option has an amber underline and #1A1A1A text. Inactive option has #888888 text. No pill background, no border, just the underline.
+Sign In form contains:
+Email input — full width, background white, border 1.5px solid #E0DED8, border radius 12px, padding 14px 16px, font DM Sans 15px, placeholder color #BBBBBB, focus border color #EF9F27 with no blue outline anywhere
+Password input — same styling as email
+Sign In button — full width, background #EF9F27, text white, Rajdhani Bold 18px letter spacing 0.05em, border radius 12px, padding 16px, no border, hover state darkens to #D48E1F
+Sign Up form contains:
+Email input — same styling
+Password input — same styling
+Confirm password input — same styling
+Sign Up button — same styling as Sign In button but says SIGN UP
+Below the form — a small text link in DM Sans 13px color #888888 that toggles between the two forms. "Don't have an account? Sign up" and "Already have an account? Sign in"
+On successful sign in redirect to /dashboard.
+On successful sign up redirect to /setup.
+Show inline error messages in #E24B4A below the relevant input if auth fails. Never use alert() or console.log for user-facing errors.
+VEHICLE SETUP PAGE — VehicleSetup.tsx:
+Only shown to authenticated users with no vehicle in the vehicles table.
+Full screen background #FAFAF8.
+At the top — small GarageIcon 24px beside text "GARI" in Rajdhani Bold 20px. Below that a progress indicator showing which step the user is on. Three dots, active dot is amber filled, inactive dots are #E0DED8.
+Step 1 — Car Nickname:
+Large heading in Rajdhani Bold 32px: "What do you call your car?"
+Subtext in DM Sans 14px #888888: "This is how Gari will refer to your vehicle."
+Single text input full width same styling as auth inputs.
+Placeholder: "Blue Thunder, Rana's Civic..."
+Continue button in amber full width.
+Validate that the field is not empty before proceeding.
+Step 2 — VIN Entry:
+Large heading: "What's your VIN?"
+Subtext: "Found on your dashboard or door frame. 17 characters."
+Text input with a live character counter showing X/17 in the bottom right of the input. Counter turns amber when exactly 17 characters are entered.
+Validate that VIN is exactly 17 characters and contains no I, O, or Q before calling the API.
+On submit call: https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/VINHERE?format=json
+Parse the response and extract: Make, Model, Model Year, Trim, Engine Displacement (L), Fuel Type - Primary, Body Class.
+Display the results in a clean confirmation card with background #F0EFE9 border radius 16px padding 20px. Show each field as a row with the field name in DM Sans 12px #888888 and the value in DM Sans 15px #1A1A1A bold.
+Show a Confirm button in amber and a "Enter manually instead" text link below it.
+If the API returns no data or all fields are empty automatically show the manual entry form.
+Manual entry form has inputs for Make, Model, Year, Trim. All same styling as other inputs.
+Step 3 — Mileage and Plate:
+Large heading: "Last few details"
+Subtext: "We'll use this to track your car's history."
+Mileage input — number type, placeholder "Current mileage"
+License plate input — text type, placeholder "e.g. ABCD 123"
+Two buttons side by side at the bottom — Back button with outline style in #1A1A1A and Finish button in amber.
+On Finish — save all collected data from all three steps to the vehicles table in Supabase using the authenticated user's ID. Then redirect to /dashboard.
+DASHBOARD PAGE — Dashboard.tsx:
+This is the heart of the app. The car is the main character. Never use generic SaaS language here.
+Query the vehicles table for the current user's vehicle on page load using VehicleContext.
+Show a loading state while the query runs — just the GarageIcon centered on screen with a subtle pulse animation, nothing else.
+HEADER — component Header.tsx:
+Left side — the vehicle nickname in Rajdhani Bold 28px color #1A1A1A. Beside it the GarageIcon at 24x20px. This replaces all Gari branding. The car's name IS the header.
+Right side — nothing. No profile avatar, no settings icon, no hamburger menu. Nothing.
+AMBIENT STATS ROW:
+Three StatPill components in a horizontal scrollable row with padding 0 20px.
+StatPill 1 — shows the mileage value followed by km or mi based on mileage_unit. Label below: "odometer"
+StatPill 2 — shows the vehicle year. Label below: "year"
+StatPill 3 — shows "Good" in #639922. Label below: "health"
+StatPill styling — background #F0EFE9, border radius 999px, padding 8px 16px, DM Sans, value in 14px bold #1A1A1A, label in 11px #888888, gap 2px between value and label.
+CAR HERO SECTION — component CarHero.tsx and CarSilhouette.tsx:
+This is the most important visual element in the app. Give it maximum screen real estate.
+Centered horizontally, margin top 20px.
+CarSilhouette component renders a detailed SVG side profile of a generic sedan. The car should face right. Include: roof line, windshield, rear window, A and C pillars, door line, front and rear bumpers, front and rear wheel arches with detailed rims showing spokes, headlight shape, taillight shape, side mirror, door handles, body accent line along the lower third of the body. The car should be approximately 340px wide and 160px tall. Fill the body with #E8E6DF. Stroke color #C8C6BF. Wheels filled with #2A2A2A. Window glass filled with rgba(212,232,244,0.6).
+Below the car SVG — a ground shadow. A horizontal ellipse with background radial-gradient(ellipse, rgba(0,0,0,0.08) 0%, transparent 70%), width 260px, height 12px, centered.
+Subtle ambient glow behind the car — a large blurred circle with background radial-gradient(circle, rgba(239,159,39,0.06) 0%, transparent 70%), positioned absolutely behind the car SVG.
+FEATURE TILES GRID — 2x2 grid below the car:
+Padding 0 20px, gap 12px.
+Four FeatureTile components.
+FeatureTile styling — background #F0EFE9, border radius 16px, padding 20px 16px, display flex column align items center gap 8px, box shadow 0 2px 12px rgba(0,0,0,0.04), position relative overflow hidden, cursor pointer.
+On hover — border bottom 3px solid #EF9F27 and background rgba(239,159,39,0.05). Smooth transition 0.2s.
+Each tile has a large emoji icon at 28px and a label in Rajdhani Bold 15px #1A1A1A.
+Tile 1 — icon 📁 label Documents
+Tile 2 — icon 💰 label Finances
+Tile 3 — icon 🔩 label Parts — show a small pill badge saying "Coming soon" in 9px #888888 background #E0DED8 border radius 999px
+Tile 4 — icon 🔧 label Diagnostics — same Coming soon badge
+ALERT STRIP — AlertStrip component at the bottom:
+Background rgba(239,159,39,0.08), border left 3px solid #EF9F27, border radius 12px, margin 16px 20px, padding 12px 16px, display flex align items center gap 10px.
+Left — a small amber filled circle 8px diameter with a subtle pulse animation.
+Middle — text in DM Sans 13px #1A1A1A: "Keep your mileage up to date to get accurate insights."
+Right — a small arrow → in #EF9F27.
+SIGN OUT:
+At the very bottom of the dashboard page below everything else — center aligned text link in DM Sans 13px #888888 that says "Sign out". On click call Supabase signOut and redirect to /auth. No button, just text.
+VEHICLE CONTEXT — VehicleContext.tsx:
+Create a React context that fetches the current user's vehicle from Supabase on load and makes it available throughout the app. Include loading state and error state. The dashboard and all future feature pages will consume this context to know which vehicle's data to show.
+API LAYER:
+Create these functions in the lib/api folder:
+vehicles.ts — getVehicleByUserId(userId), createVehicle(vehicleData), updateVehicle(vehicleId, updates)
+documents.ts — getDocumentsByVehicleId(vehicleId), uploadDocument(file, userId, vehicleId, type), deleteDocument(documentId)
+expenses.ts — getExpensesByVehicleId(vehicleId), addExpense(expenseData), deleteExpense(expenseId)
+All API functions should handle errors gracefully and return typed responses using TypeScript interfaces.
+PERFORMANCE AND POLISH:
+All page transitions should be smooth — use CSS opacity and transform transitions not hard cuts.
+All buttons should have a subtle scale down on press — transform scale 0.97 on active.
+All inputs should have smooth border color transitions on focus.
+Images and heavy components should use lazy loading.
+The app should feel fast and native, not like a web page.
+MOBILE FIRST:
+Max width of the entire app is 430px centered on screen with background #1A1A1A outside the phone area when viewed on desktop. This simulates a phone frame on desktop. On actual mobile it fills the screen.
+All touch targets minimum 44px height.
+No horizontal scroll anywhere.
+Font sizes optimized for mobile — nothing smaller than 11px.
+BUILD AUTH PAGE FIRST. Show me the result. Then build setup page. Then dashboard. Do not build everything at once — show me each page after it is built so I can review before continuing.
