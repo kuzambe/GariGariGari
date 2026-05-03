@@ -693,8 +693,14 @@ function LandingPage({
 
   // Load mechanic + roadside on mount / vehicle change
   useEffect(() => {
-    getMechanicByVehicleId(vehicle.id).then(setMechanic).catch(() => {});
-    getRoadsideByUserId(userId).then(setRoadside).catch(() => {});
+    getMechanicByVehicleId(vehicle.id).then(setMechanic).catch(() => {
+      setContactToast("Could not load mechanic info.");
+      setTimeout(() => setContactToast(null), 2500);
+    });
+    getRoadsideByUserId(userId).then(setRoadside).catch(() => {
+      setContactToast("Could not load roadside assistance info.");
+      setTimeout(() => setContactToast(null), 2500);
+    });
   }, [vehicle.id, userId]);
 
   function showContactToast(msg: string) {
@@ -1155,13 +1161,15 @@ function LandingPage({
         Swipe to explore →
       </p>
 
+      {/* Shared keyframe for both bottom sheets */}
+      <style>{`@keyframes gariSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
+
       {/* ── Mechanic Bottom Sheet ─────────────────────── */}
       {mechSheetOpen && (
         <div
           style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
           onClick={() => setMechSheetOpen(false)}
         >
-          <style>{`@keyframes gariSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
           <div
             style={{ position: "relative", background: "#FFFFFF", borderRadius: "22px 22px 0 0", padding: "12px 24px 48px", maxWidth: 430, width: "100%", margin: "0 auto", boxShadow: "0 -4px 32px rgba(0,0,0,0.12)", maxHeight: "90vh", overflowY: "auto", animation: "gariSlideUp 0.3s ease" }}

@@ -60,3 +60,10 @@ create policy "Users can update own roadside"
 create policy "Users can delete own roadside"
   on roadside_assistance for delete
   using (auth.uid() = user_id);
+
+-- ── Unique constraints (one record per user+vehicle / per user) ───────────────
+alter table mechanics
+  add constraint mechanics_user_vehicle_unique unique (user_id, vehicle_id);
+
+alter table roadside_assistance
+  add constraint roadside_user_unique unique (user_id);
