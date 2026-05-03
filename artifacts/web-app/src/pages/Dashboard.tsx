@@ -565,7 +565,6 @@ function LandingPage({
   onSignOut: () => void;
   onGoToPage: (p: number) => void;
 }) {
-  const [showTrimPicker, setShowTrimPicker] = useState(false);
   const yearMakeModel = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ");
   const fullDesc = [vehicle.year, vehicle.make, vehicle.model, vehicle.trim].filter(Boolean).join(" ");
   const hasNickname = Boolean(vehicle.nickname);
@@ -623,71 +622,40 @@ function LandingPage({
         {!vehicle.trim && (
           <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>Trim</span>
-            <button
-              onClick={() => setShowTrimPicker(true)}
+            <select
+              defaultValue=""
               style={{
                 background: "none",
                 border: `1px solid ${C.border}`,
                 borderRadius: 8,
-                padding: "3px 10px",
+                padding: "3px 8px",
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: 12,
                 color: C.muted,
                 cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
+                outline: "none",
+                appearance: "auto",
               }}
             >
-              Select trim <span style={{ fontSize: 10 }}>▾</span>
-            </button>
-          </div>
-        )}
-
-        {/* Trim picker sheet */}
-        {showTrimPicker && (
-          <div
-            style={{ position: "fixed", inset: 0, zIndex: 160, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
-            onClick={() => setShowTrimPicker(false)}
-          >
-            <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)" }} />
-            <div
-              style={{
-                position: "relative",
-                background: C.bg,
-                borderRadius: "22px 22px 0 0",
-                padding: "12px 24px 48px",
-                maxWidth: 430,
-                width: "100%",
-                margin: "0 auto",
-                boxShadow: "0 -4px 32px rgba(0,0,0,0.12)",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 20px" }} />
-              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, margin: "0 0 16px" }}>
-                Select Trim
-              </p>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", padding: "20px 0" }}>
-                No trim options available yet.
-              </p>
-              <button
-                onClick={() => setShowTrimPicker(false)}
-                style={{
-                  width: "100%",
-                  background: C.sage,
-                  border: "none",
-                  borderRadius: 14,
-                  padding: "14px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 14,
-                  color: C.muted,
-                  cursor: "pointer",
-                }}
-              >
-                Cancel
-              </button>
-            </div>
+              <option value="" disabled>Select trim</option>
+              <option>Base</option>
+              <option>LS</option>
+              <option>LT</option>
+              <option>LTZ</option>
+              <option>Premier</option>
+              <option>RS</option>
+              <option>SS</option>
+              <option>Sport</option>
+              <option>Limited</option>
+              <option>EX</option>
+              <option>SE</option>
+              <option>SL</option>
+              <option>SV</option>
+              <option>Platinum</option>
+              <option>Touring</option>
+              <option>XLE</option>
+              <option>XSE</option>
+            </select>
           </div>
         )}
 
