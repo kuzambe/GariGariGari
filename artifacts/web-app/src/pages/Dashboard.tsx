@@ -1310,27 +1310,25 @@ export default function Dashboard() {
         zIndex: 50,
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: 6,
         pointerEvents: "auto",
       }}>
-        <img
-          src={`${BASE}logo-icon.png`}
-          alt="Gari"
-          style={{ height: 28, width: "auto", objectFit: "contain" }}
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`; }}
-        />
+        {/* Garage icon → opens settings */}
         <button
           onClick={() => setShowSettings(true)}
-          style={{
-            background: "none",
-            border: "none",
-            padding: 0,
-            cursor: "pointer",
-          }}
+          style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center" }}
+        >
+          <GarageIcon stroke={C.text} width={26} height={22} />
+        </button>
+
+        {/* Profile avatar */}
+        <button
+          onClick={() => setShowSettings(true)}
+          style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
         >
           <div style={{
-            width: 34,
-            height: 34,
+            width: 32,
+            height: 32,
             borderRadius: "50%",
             background: C.greenLight,
             border: `1.5px solid ${C.border}`,
@@ -1341,7 +1339,7 @@ export default function Dashboard() {
             <span style={{
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700,
-              fontSize: 15,
+              fontSize: 14,
               color: C.green,
               lineHeight: 1,
             }}>
