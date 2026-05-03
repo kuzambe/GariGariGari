@@ -626,6 +626,7 @@ function LandingPage({
   const [carGptInput, setCarGptInput] = useState("");
   const [carGptMessages, setCarGptMessages] = useState<CarGptMessage[]>([]);
   const [carGptLoading, setCarGptLoading] = useState(false);
+  const [carGptRemaining, setCarGptRemaining] = useState(() => getRemainingCarGptQuestions());
   const carGptBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -647,6 +648,7 @@ function LandingPage({
     }
 
     incrementCarGptUsage();
+    setCarGptRemaining(getRemainingCarGptQuestions());
 
     const history: { role: "user" | "model"; text: string }[] = carGptMessages
       .filter((m) => m.role !== "loading")
@@ -853,15 +855,15 @@ function LandingPage({
         {/* Input row */}
         <div style={{ position: "relative" }}>
           <input
-            placeholder={`Any questions regarding ${title}...`}
+            placeholder={carGptRemaining === 0 ? "Daily limit reached. Come back tomorrow." : `Any questions regarding ${title}...`}
             value={carGptInput}
             onChange={(e) => setCarGptInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleCarGptSubmit(); }}
-            disabled={carGptLoading}
+            disabled={carGptLoading || carGptRemaining === 0}
             style={{
               width: "100%",
               background: C.sage,
-              border: `1.5px solid ${C.border}`,
+              border: `1.5px solid ${carGptRemaining === 0 ? C.border : C.border}`,
               borderRadius: 12,
               padding: "12px 44px 12px 16px",
               fontFamily: "'DM Sans', sans-serif",
@@ -869,7 +871,7 @@ function LandingPage({
               color: C.text,
               outline: "none",
               boxSizing: "border-box",
-              opacity: carGptLoading ? 0.6 : 1,
+              opacity: carGptLoading || carGptRemaining === 0 ? 0.5 : 1,
             }}
           />
           <button
@@ -896,6 +898,18 @@ function LandingPage({
             <span style={{ fontSize: 16, color: carGptInput.trim() && !carGptLoading ? "#FFFFFF" : C.muted, lineHeight: 1 }}>↑</span>
           </button>
         </div>
+        {/* Remaining questions counter */}
+        <p style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 11,
+          color: carGptRemaining <= 5 && carGptRemaining > 0 ? C.warning : C.muted,
+          margin: "6px 0 0",
+          textAlign: "right",
+        }}>
+          {carGptRemaining === 0
+            ? "Daily limit reached"
+            : `${carGptRemaining} question${carGptRemaining === 1 ? "" : "s"} remaining today`}
+        </p>
       </div>
 
       {/* Roadside + Mechanic */}
