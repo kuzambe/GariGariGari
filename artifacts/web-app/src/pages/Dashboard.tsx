@@ -735,31 +735,31 @@ function DocumentsPage({
       }}
     >
       {/* Header */}
-      <div style={{ padding: "28px 20px 16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
-            Documents
-          </h1>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "4px 0 0" }}>
+      <div style={{ padding: "28px 20px 16px" }}>
+        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
+          Documents
+        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: 0 }}>
             {documents.length} {documents.length === 1 ? "document" : "documents"} stored
           </p>
+          <button
+            onClick={() => { setUploadType("other"); fileRef.current?.click(); }}
+            style={{
+              background: "none",
+              border: `1.5px solid ${C.green}`,
+              borderRadius: 999,
+              padding: "4px 12px",
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 12,
+              color: C.green,
+              cursor: "pointer",
+              fontWeight: 500,
+            }}
+          >
+            + Add
+          </button>
         </div>
-        <button
-          onClick={() => { setUploadType("other"); fileRef.current?.click(); }}
-          style={{
-            background: "none",
-            border: `1.5px solid ${C.green}`,
-            borderRadius: 999,
-            padding: "6px 14px",
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 13,
-            color: C.green,
-            cursor: "pointer",
-            fontWeight: 500,
-          }}
-        >
-          + Add
-        </button>
       </div>
 
       {/* Hidden file input */}
@@ -821,7 +821,7 @@ function DocumentsPage({
                   padding: "3px 10px",
                   fontWeight: 500,
                 }}>
-                  Add
+                  {cat.type === "vehicle-handbook" ? "View" : "Add"}
                 </span>
               )}
             </div>
