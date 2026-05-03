@@ -166,7 +166,6 @@ function HealthGauge({ pct = 90 }: { pct?: number }) {
 
 /* ── SHORTCUT GRID ─────────────────────────────────── */
 type QuickOption = { label: string; route: string; page: number };
-type QuickSlot = QuickOption | null;
 
 const QUICK_OPTIONS: QuickOption[] = [
   { label: "Home",        route: "/",            page: 0 },
@@ -176,67 +175,156 @@ const QUICK_OPTIONS: QuickOption[] = [
   { label: "Diagnostics", route: "/diagnostics", page: 4 },
 ];
 
-const QUICK_STORAGE_KEY = "gari.quickAccess.v1";
+const QUICK_STORAGE_KEY = "gari.quickAccess.v2";
 
-function loadQuickAccess(): QuickSlot[] {
-  const empty: QuickSlot[] = [null, null, null, null, null, null];
+function loadQuickAccess(): QuickOption[] {
   try {
     const raw = localStorage.getItem(QUICK_STORAGE_KEY);
-    if (!raw) return empty;
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return empty;
-    return empty.map((_, i) => {
-      const s = parsed[i];
-      if (s && typeof s.label === "string" && typeof s.route === "string" && typeof s.page === "number") {
-        return { label: s.label, route: s.route, page: s.page };
-      }
-      return null;
-    });
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((s) => s && typeof s.label === "string" && typeof s.route === "string" && typeof s.page === "number")
+      .map((s) => ({ label: s.label as string, route: s.route as string, page: s.page as number }));
   } catch {
-    return empty;
+    return [];
   }
 }
 
 function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
-  const [slots, setSlots] = useState<QuickSlot[]>(() => loadQuickAccess());
-  const [pickerIdx, setPickerIdx] = useState<number | null>(null);
+  const [items, setItems] = useState<QuickOption[]>(() => loadQuickAccess());
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
-    try { localStorage.setItem(QUICK_STORAGE_KEY, JSON.stringify(slots)); } catch { /* ignore quota / disabled storage */ }
-  }, [slots]);
-
-  function handleSlotTap(i: number) {
-    const slot = slots[i];
-    if (slot) onGoToPage(slot.page);
-    else setPickerIdx(i);
-  }
+    try { localStorage.setItem(QUICK_STORAGE_KEY, JSON.stringify(items)); } catch { /* ignore quota / disabled storage */ }
+  }, [items]);
 
   function handlePick(opt: QuickOption) {
-    if (pickerIdx === null) return;
-    setSlots((prev) => {
-      const next = [...prev];
-      next[pickerIdx] = opt;
-      return next;
-    });
-    setPickerIdx(null);
+    setItems((prev) => [...prev, opt]);
+    setPickerOpen(false);
   }
+
+  function handleRemove(i: number) {
+    setItems((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  const isEmpty = items.length === 0;
 
   return (
     <div style={{ padding: "0 20px" }}>
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px", textAlign: "center" }}>
         Quick Access
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-        {slots.map((slot, i) => (
+
+      {isEmpty ? (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "8px 0" }}>
           <button
-            key={i}
-            onClick={() => handleSlotTap(i)}
-            aria-label={slot ? `Go to ${slot.label}` : "Add quick access shortcut"}
+            onClick={() => setPickerOpen(true)}
+            aria-label="Add quick access shortcut"
             style={{
+              width: "32%",
               aspectRatio: "1",
               borderRadius: "50%",
               background: "#FFFFFF",
               border: `1.5px solid ${C.border}`,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+            }}
+          >
+            <span style={{ fontSize: 26, color: C.green, lineHeight: 1, fontWeight: 300 }}>+</span>
+          </button>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
+            Add a shortcut
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+          {items.map((item, i) => (
+            <div key={`${item.label}-${i}`} style={{ position: "relative" }}>
+              <button
+                onClick={() => onGoToPage(item.page)}
+                aria-label={`Go to ${item.label}`}
+                style={{
+                  width: "100%",
+                  aspectRatio: "1",
+                  borderRadius: "50%",
+                  background: "#FFFFFF",
+                  border: `1.5px solid ${C.border}`,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "transform 0.12s, box-shadow 0.12s",
+                  padding: 0,
+                }}
+                onMouseEnter={(e) => {
+                  const el = e.currentTarget;
+                  el.style.transform = "scale(1.05)";
+                  el.style.boxShadow = "0 4px 18px rgba(31,107,46,0.13)";
+                }}
+                onMouseLeave={(e) => {
+                  const el = e.currentTarget;
+                  el.style.transform = "scale(1)";
+                  el.style.boxShadow = "0 2px 12px rgba(0,0,0,0.07)";
+                }}
+              >
+                <span style={{
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  color: C.text,
+                  textAlign: "center",
+                  lineHeight: 1.1,
+                  padding: "0 6px",
+                  letterSpacing: "0.02em",
+                }}>
+                  {item.label}
+                </span>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleRemove(i); }}
+                aria-label={`Remove ${item.label} shortcut`}
+                title="Remove"
+                style={{
+                  position: "absolute",
+                  top: -4,
+                  right: -4,
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  background: "#FFFFFF",
+                  border: `1.5px solid ${C.border}`,
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                  color: C.muted,
+                  fontSize: 14,
+                  lineHeight: 1,
+                  zIndex: 2,
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+
+          {/* Trailing add button */}
+          <button
+            onClick={() => setPickerOpen(true)}
+            aria-label="Add quick access shortcut"
+            style={{
+              aspectRatio: "1",
+              borderRadius: "50%",
+              background: "#FFFFFF",
+              border: `1.5px dashed ${C.border}`,
               boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
               cursor: "pointer",
               display: "flex",
@@ -256,31 +344,16 @@ function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
               el.style.boxShadow = "0 2px 12px rgba(0,0,0,0.07)";
             }}
           >
-            {slot ? (
-              <span style={{
-                fontFamily: "'Rajdhani', sans-serif",
-                fontWeight: 700,
-                fontSize: 13,
-                color: C.text,
-                textAlign: "center",
-                lineHeight: 1.1,
-                padding: "0 6px",
-                letterSpacing: "0.02em",
-              }}>
-                {slot.label}
-              </span>
-            ) : (
-              <span style={{ fontSize: 26, color: C.green, lineHeight: 1, fontWeight: 300 }}>+</span>
-            )}
+            <span style={{ fontSize: 26, color: C.green, lineHeight: 1, fontWeight: 300 }}>+</span>
           </button>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Quick-access picker */}
-      {pickerIdx !== null && (
+      {pickerOpen && (
         <div
           style={{ position: "fixed", inset: 0, zIndex: 150, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
-          onClick={() => setPickerIdx(null)}
+          onClick={() => setPickerOpen(false)}
         >
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)" }} />
           <div
