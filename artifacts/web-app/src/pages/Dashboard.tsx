@@ -1,13 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/context/AuthContext";
 import { useVehicle } from "@/context/VehicleContext";
-import { getDocumentsByVehicleId, Document, uploadDocument } from "@/lib/api/documents";
+import { getDocumentsByVehicleId, Document, uploadDocument, deleteDocumentWithFile } from "@/lib/api/documents";
 import { getExpensesByVehicleId, Expense, addExpense } from "@/lib/api/expenses";
 import { Vehicle } from "@/lib/api/vehicles";
 import { Mechanic, getMechanicByVehicleId, createMechanic, updateMechanic } from "@/lib/api/mechanics";
 import { RoadsideAssistance, getRoadsideByUserId, createRoadside, updateRoadside } from "@/lib/api/roadsideAssistance";
 import { GarageIcon } from "@/components/ui/GarageIcon";
+import { AddDocumentSheet } from "@/components/documents/AddDocumentSheet";
 
 /* ── DESIGN TOKENS ─────────────────────────────────── */
 const C = {
@@ -1470,6 +1471,102 @@ function LandingPage({
   );
 }
 
+/* ── PULSE SKELETON ────────────────────────────────── */
+function DocRowSkeleton({ i }: { i: number }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "0 20px",
+        height: 64,
+        borderBottom: `1px solid ${C.border}`,
+        borderTop: i === 0 ? `1px solid ${C.border}` : "none",
+      }}
+    >
+      <div style={{ flex: 1, height: 14, borderRadius: 6, background: C.border, maxWidth: 160, animation: "docSkeletonPulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.1}s` }} />
+      <div style={{ height: 26, width: 50, borderRadius: 8, background: C.border, animation: "docSkeletonPulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.1 + 0.2}s` }} />
+      <style>{`@keyframes docSkeletonPulse { 0%,100%{opacity:0.45} 50%{opacity:0.9} }`}</style>
+    </div>
+  );
+}
+
+/* ── TOAST ─────────────────────────────────────────── */
+function DocToast({ message, color }: { message: string; color: string }) {
+  return (
+    <div style={{
+      position: "fixed",
+      top: 24,
+      left: "50%",
+      transform: "translateX(-50%)",
+      background: color,
+      color: "#fff",
+      fontFamily: "'DM Sans', sans-serif",
+      fontSize: 14,
+      fontWeight: 500,
+      padding: "12px 24px",
+      borderRadius: 12,
+      zIndex: 500,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+      whiteSpace: "nowrap",
+      pointerEvents: "none",
+    }}>
+      {message}
+    </div>
+  );
+}
+
+/* ── CATEGORY PICKER SHEET ─────────────────────────── */
+function CategoryPickerSheet({ onSelect, onClose }: { onSelect: (type: string, label: string) => void; onClose: () => void }) {
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 250, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+      onClick={onClose}
+    >
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)" }} />
+      <div
+        style={{ position: "relative", background: C.bg, borderRadius: "20px 20px 0 0", padding: "12px 24px 48px", maxWidth: 430, width: "100%", margin: "0 auto", boxShadow: "0 -4px 32px rgba(0,0,0,0.12)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 20px" }} />
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, margin: "0 0 16px" }}>
+          Select Category
+        </p>
+        <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
+          {DOC_CATEGORIES.map((cat, i) => (
+            <button
+              key={cat.type}
+              onClick={() => onSelect(cat.type, cat.label)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "16px 18px",
+                background: C.bg,
+                border: "none",
+                borderBottom: i < DOC_CATEGORIES.length - 1 ? `1px solid ${C.border}` : "none",
+                cursor: "pointer",
+                textAlign: "left",
+                minHeight: 44,
+              }}
+            >
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text }}>{cat.label}</span>
+              <span style={{ color: C.border, fontSize: 18 }}>›</span>
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={onClose}
+          style={{ display: "block", width: "100%", marginTop: 20, background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.muted, cursor: "pointer", textAlign: "center", minHeight: 44 }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── PAGE 2: DOCUMENTS ─────────────────────────────── */
 function DocumentsPage({
   vehicle,
@@ -1477,31 +1574,99 @@ function DocumentsPage({
   userId,
   onRefresh,
   onOpenSettings,
+  docsLoading,
 }: {
   vehicle: Vehicle;
   documents: Document[];
   userId: string;
   onRefresh: () => void;
   onOpenSettings: () => void;
+  docsLoading: boolean;
 }) {
-  const [uploadType, setUploadType] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [viewUrl, setViewUrl] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [sheetType, setSheetType] = useState<string | null>(null);
+  const [sheetLabel, setSheetLabel] = useState<string>("");
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [uploadingType, setUploadingType] = useState<string | null>(null);
+  const [viewDoc, setViewDoc] = useState<Document | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; color: string } | null>(null);
+  const [scale, setScale] = useState(1);
+  const lastTouchDist = useRef<number | null>(null);
 
-  const getDoc = (type: string) => documents.find((d) => d.type === type);
+  const getDoc = useCallback((type: string) => documents.find((d) => d.type === type), [documents]);
 
-  async function handleFile(file: File, type: string) {
-    setUploading(true);
+  function openSheet(type: string, label: string) {
+    setSheetType(type);
+    setSheetLabel(label);
+  }
+
+  function showToast(message: string, color: string) {
+    setToast({ message, color });
+    setTimeout(() => setToast(null), 2000);
+  }
+
+  async function handleFileSelected(file: File, type: string) {
+    setSheetType(null);
+    setUploadingType(type);
     try {
       await uploadDocument(file, userId, vehicle.id, type);
       onRefresh();
-    } catch {
-      // silent
+      showToast("Document saved", C.success);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      if (msg.toLowerCase().includes("size") || msg.toLowerCase().includes("large")) {
+        showToast("File is too large (max 10 MB)", C.error);
+      } else {
+        showToast("Upload failed. Please try again.", C.error);
+      }
     } finally {
-      setUploading(false);
-      setUploadType(null);
+      setUploadingType(null);
     }
+  }
+
+  async function handleDelete() {
+    if (!viewDoc) return;
+    setDeleting(true);
+    try {
+      await deleteDocumentWithFile(viewDoc.id, userId, vehicle.id, viewDoc.type);
+      setViewDoc(null);
+      setShowDeleteConfirm(false);
+      onRefresh();
+      showToast("Document deleted", C.muted);
+    } catch (err) {
+      showToast("Delete failed. Please try again.", C.error);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const isPdf = (doc: Document) => {
+    const url = doc.file_url.toLowerCase();
+    return url.includes(".pdf") || url.includes("pdf");
+  };
+
+  function handleTouchStart(e: React.TouchEvent) {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDist.current = Math.hypot(dx, dy);
+    }
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (e.touches.length === 2 && lastTouchDist.current !== null) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const ratio = dist / lastTouchDist.current;
+      setScale((prev) => Math.min(5, Math.max(1, prev * ratio)));
+      lastTouchDist.current = dist;
+    }
+  }
+
+  function handleTouchEnd() {
+    lastTouchDist.current = null;
   }
 
   return (
@@ -1523,50 +1688,31 @@ function DocumentsPage({
           <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
             Documents
           </h1>
-          <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
-          </button>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: 0 }}>
-            {documents.length} {documents.length === 1 ? "document" : "documents"} stored
-          </p>
-          <button
-            onClick={() => { setUploadType("other"); fileRef.current?.click(); }}
-            style={{
-              background: "none",
-              border: `1.5px solid ${C.green}`,
-              borderRadius: 999,
-              padding: "4px 12px",
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 12,
-              color: C.green,
-              cursor: "pointer",
-              fontWeight: 500,
-            }}
-          >
-            + Add
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button
+              onClick={() => setShowCategoryPicker(true)}
+              style={{ background: "none", border: "none", padding: 4, cursor: "pointer", display: "flex", alignItems: "center" }}
+              aria-label="Add document"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2.5" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+            <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+              <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
+            </button>
+          </div>
         </div>
       </div>
-
-      {/* Hidden file input */}
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*,.pdf"
-        style={{ display: "none" }}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file && uploadType) handleFile(file, uploadType);
-          e.target.value = "";
-        }}
-      />
 
       {/* Category rows */}
       <div style={{ flex: 1 }}>
         {DOC_CATEGORIES.map((cat, i) => {
           const doc = getDoc(cat.type);
+          const isUploading = uploadingType === cat.type;
+
+          if (docsLoading) return <DocRowSkeleton key={cat.type} i={i} />;
+
           return (
             <div
               key={cat.type}
@@ -1577,25 +1723,33 @@ function DocumentsPage({
                 height: 64,
                 borderBottom: `1px solid ${C.border}`,
                 borderTop: i === 0 ? `1px solid ${C.border}` : "none",
-                cursor: "pointer",
+                cursor: isUploading ? "default" : "pointer",
                 background: C.bg,
                 transition: "background 0.15s",
               }}
               onClick={() => {
+                if (isUploading) return;
                 if (doc) {
-                  setViewUrl(doc.file_url);
+                  setScale(1);
+                  setViewDoc(doc);
                 } else {
-                  setUploadType(cat.type);
-                  fileRef.current?.click();
+                  openSheet(cat.type, cat.label);
                 }
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = C.sage; }}
+              onMouseEnter={(e) => { if (!isUploading) (e.currentTarget as HTMLDivElement).style.background = C.sage; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = C.bg; }}
             >
               <span style={{ flex: 1, fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text }}>
                 {cat.label}
               </span>
-              {doc ? (
+
+              {isUploading ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 16, height: 16, border: `2px solid ${C.border}`, borderTopColor: C.green, borderRadius: "50%", animation: "docSpin 0.8s linear infinite" }} />
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>Uploading…</span>
+                  <style>{`@keyframes docSpin { to { transform: rotate(360deg); } }`}</style>
+                </div>
+              ) : doc ? (
                 <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted }}>
                   {new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </span>
@@ -1604,12 +1758,12 @@ function DocumentsPage({
                   fontFamily: "'DM Sans', sans-serif",
                   fontSize: 12,
                   color: C.green,
-                  border: `1px solid ${C.green}`,
-                  borderRadius: 999,
-                  padding: "3px 10px",
+                  border: `1.5px solid ${C.green}`,
+                  borderRadius: 8,
+                  padding: "4px 12px",
                   fontWeight: 500,
                 }}>
-                  {cat.type === "vehicle-handbook" ? "View" : "Add"}
+                  Add
                 </span>
               )}
             </div>
@@ -1617,24 +1771,117 @@ function DocumentsPage({
         })}
       </div>
 
-      {uploading && (
-        <div style={{ textAlign: "center", padding: 20, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted }}>
-          Uploading…
-        </div>
+      {/* Category picker (from global +) */}
+      {showCategoryPicker && (
+        <CategoryPickerSheet
+          onSelect={(type, label) => { setShowCategoryPicker(false); openSheet(type, label); }}
+          onClose={() => setShowCategoryPicker(false)}
+        />
       )}
 
-      {/* Document viewer overlay */}
-      {viewUrl && (
+      {/* Add document sheet */}
+      {sheetType && (
+        <AddDocumentSheet
+          categoryLabel={sheetLabel}
+          onClose={() => setSheetType(null)}
+          onFileSelected={(file) => handleFileSelected(file, sheetType)}
+          onError={(msg) => { setSheetType(null); showToast(msg, C.error); }}
+        />
+      )}
+
+      {/* Full-screen document viewer */}
+      {viewDoc && !showDeleteConfirm && (
         <div
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 20 }}
-          onClick={() => setViewUrl(null)}
+          style={{ position: "fixed", inset: 0, background: "#000", zIndex: 200, display: "flex", flexDirection: "column", touchAction: "pinch-zoom" }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
-          <img src={viewUrl} alt="Document" style={{ maxWidth: "90%", maxHeight: "80vh", borderRadius: 12, objectFit: "contain" }} onError={() => { window.open(viewUrl, "_blank"); setViewUrl(null); }} />
-          <button style={{ color: "#fff", background: "none", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, padding: "8px 20px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: "pointer" }}>
-            Tap to close
+          {isPdf(viewDoc) ? (
+            <iframe
+              src={viewDoc.file_url}
+              style={{ flex: 1, border: "none", background: "#fff" }}
+              title="Document"
+            />
+          ) : (
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+              <img
+                src={viewDoc.file_url}
+                alt="Document"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                  transform: `scale(${scale})`,
+                  transformOrigin: "center center",
+                  transition: lastTouchDist.current !== null ? "none" : "transform 0.1s",
+                }}
+                onError={() => { window.open(viewDoc.file_url, "_blank"); setViewDoc(null); }}
+              />
+            </div>
+          )}
+
+          {/* Close button */}
+          <button
+            onClick={() => setViewDoc(null)}
+            style={{ position: "absolute", top: 52, left: 20, width: 44, height: 44, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}
+          >
+            ✕
+          </button>
+
+          {/* Delete button */}
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            style={{ position: "absolute", top: 52, right: 20, width: 44, height: 44, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}
+            aria-label="Delete document"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
           </button>
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      {showDeleteConfirm && viewDoc && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div
+            style={{ background: C.bg, borderRadius: 20, padding: 28, maxWidth: 360, width: "100%", boxShadow: "0 8px 40px rgba(0,0,0,0.25)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, margin: "0 0 10px" }}>
+              Delete this document?
+            </h2>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, margin: "0 0 24px", lineHeight: 1.5 }}>
+              This cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                style={{ flex: 1, background: "none", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "13px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, cursor: "pointer", minHeight: 44 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{ flex: 1, background: C.error, border: "none", borderRadius: 12, padding: "13px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: "#fff", cursor: "pointer", minHeight: 44, opacity: deleting ? 0.7 : 1 }}
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && <DocToast message={toast.message} color={toast.color} />}
     </div>
   );
 }
@@ -2480,6 +2727,7 @@ export default function Dashboard() {
   const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [docsLoading, setDocsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !vehicle) navigate("/setup");
@@ -2487,7 +2735,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (vehicle) {
-      getDocumentsByVehicleId(vehicle.id).then(setDocuments).catch(() => {});
+      setDocsLoading(true);
+      getDocumentsByVehicleId(vehicle.id)
+        .then(setDocuments)
+        .catch(() => {})
+        .finally(() => setDocsLoading(false));
       getExpensesByVehicleId(vehicle.id).then(setExpenses).catch(() => {});
     }
   }, [vehicle]);
@@ -2512,7 +2764,9 @@ export default function Dashboard() {
   }
 
   function refreshDocs() {
-    if (vehicle) getDocumentsByVehicleId(vehicle.id).then(setDocuments).catch(() => {});
+    if (vehicle) {
+      getDocumentsByVehicleId(vehicle.id).then(setDocuments).catch(() => {});
+    }
   }
   function refreshExpenses() {
     if (vehicle) getExpensesByVehicleId(vehicle.id).then(setExpenses).catch(() => {});
@@ -2541,7 +2795,7 @@ export default function Dashboard() {
         } as React.CSSProperties}
       >
         <LandingPage vehicle={vehicle} expenses={expenses} documents={documents} userId={user?.id ?? ""} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} />
-        <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} onOpenSettings={() => setShowSettings(true)} />
+        <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} onOpenSettings={() => setShowSettings(true)} docsLoading={docsLoading} />
         <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} onOpenSettings={() => setShowSettings(true)} />
         <PartsPage vehicle={vehicle} onOpenSettings={() => setShowSettings(true)} />
         <DiagnosticsPage vehicle={vehicle} onOpenSettings={() => setShowSettings(true)} />
