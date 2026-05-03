@@ -145,11 +145,11 @@ export default function AuthPage() {
       <div style={{ width: "100%", maxWidth: 340 }}>
 
         {/* Logo */}
-        <div style={{ marginBottom: 44, textAlign: "left" }}>
+        <div style={{ marginBottom: 44, marginTop: -12, display: "flex", justifyContent: "center" }}>
           <img
             src={`${BASE}logo-wordmark.png`}
             alt="Gari"
-            style={{ height: 36, objectFit: "contain" }}
+            style={{ height: 56, objectFit: "contain" }}
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`;
             }}
