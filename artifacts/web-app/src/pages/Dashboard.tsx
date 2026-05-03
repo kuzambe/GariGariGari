@@ -564,7 +564,8 @@ function LandingPage({
   onGoToPage: (p: number) => void;
   onOpenSettings: () => void;
 }) {
-  const yearMakeModel = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ");
+  const make = vehicle.make ? vehicle.make.charAt(0).toUpperCase() + vehicle.make.slice(1).toLowerCase() : "";
+  const yearMakeModel = [vehicle.year, make, vehicle.model].filter(Boolean).join(" ");
   const title = vehicle.nickname?.trim() || "Your car";
   const subtitle = yearMakeModel;
 
@@ -594,7 +595,7 @@ function LandingPage({
 
         {/* Year Make Model Trim */}
         {subtitle && (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 13, color: C.muted, margin: "5px 0 0", padding: 0 }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, fontSize: 14, color: C.muted, margin: "5px 0 0", padding: 0 }}>
             {subtitle}
           </p>
         )}
