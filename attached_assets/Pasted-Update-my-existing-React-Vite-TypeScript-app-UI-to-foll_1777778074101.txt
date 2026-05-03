@@ -1,0 +1,95 @@
+Update my existing React + Vite + TypeScript app UI to follow a clean, minimal style inspired by Wealthsimple.
+
+Do NOT add new pages or backend logic. Only update UI, layout, typography, and component styling.
+
+---
+
+DESIGN DIRECTION:
+- Extremely clean and minimal
+- Lots of white/empty space
+- Soft, friendly, modern feel
+- Simple illustrations instead of complex visuals
+- Clear, human wording (not technical or robotic)
+- No clutter, no unnecessary UI elements
+- Smooth, calm layout (nothing loud or busy)
+
+---
+
+BRANDING:
+- Use the logo I have attached/uploaded as the primary logo
+- Do NOT generate or substitute any logo
+- If a car nickname exists:
+  → show the nickname as the main header
+  → show ONLY the icon version of the logo (garage icon)
+- If no nickname:
+  → fallback to vehicle name
+
+---
+
+AUTH PAGE (SIGN IN / SIGN UP):
+- Redesign to feel simple and premium
+- Centered layout
+- Minimal text
+- Friendly wording (e.g. “Welcome back” instead of technical labels)
+- Clean input fields with lots of spacing
+- No default or generic UI styles
+
+---
+
+DASHBOARD / LANDING PAGE:
+
+HEADER:
+- Top left:
+  → nickname (if available)
+  → logo icon (not full wordmark when nickname exists)
+
+---
+
+VEHICLE TITLE:
+- Under header:
+  → display "Year Make Model" as one continuous title
+  Example: “2010 Buick Allure”
+- Pull from VIN data already stored
+
+---
+
+VISUAL STYLE:
+- Use simple, soft illustrations (like a toy/wooden car style)
+- Avoid realistic or overly detailed images
+- Keep visuals subtle and supportive, not dominant
+
+---
+
+HEALTH SECTION:
+- Clean and minimal
+- Easy-to-read status or meter
+- No complex charts or clutter
+
+---
+
+SHORTCUTS:
+- 6 circular buttons in a clean grid
+- Each has a "+" icon
+- Even spacing, balanced layout
+- Simple interaction (no heavy styling)
+- These represent customizable shortcuts (no backend logic needed yet)
+
+---
+
+WORDING STYLE:
+- Use plain, friendly language
+- Avoid technical labels
+- Example:
+  - “Add expense” instead of “Create transaction”
+  - “Your car” instead of “Vehicle profile”
+
+---
+
+GENERAL RULES:
+- Remove any SaaS-style dashboard elements
+- Avoid anything that looks like an admin panel
+- Keep everything calm, simple, and intentional
+- The UI should feel personal and easy, not complex
+
+Do not modify routing, authentication, or backend logic.
+Only update UI and component structure.

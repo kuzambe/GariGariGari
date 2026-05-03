@@ -270,9 +270,11 @@ function LandingPage({
   documents: Document[];
   onSignOut: () => void;
 }) {
+  const BASE = import.meta.env.BASE_URL;
   const yearMakeModel = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ");
-  const title = vehicle.nickname || yearMakeModel || "My Car";
-  const subtitle = vehicle.nickname ? yearMakeModel : "";
+  const hasNickname = Boolean(vehicle.nickname);
+  const title = hasNickname ? vehicle.nickname! : yearMakeModel || "Your car";
+  const subtitle = hasNickname ? yearMakeModel : "";
 
   return (
     <div
@@ -287,61 +289,67 @@ function LandingPage({
         flexDirection: "column",
       }}
     >
-      {/* Header: nickname left, garage icon right */}
+      {/* Header */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "30px 22px 2px",
+          padding: "32px 24px 0",
         }}
       >
-        <span
-          style={{
-            fontFamily: "'Rajdhani', sans-serif",
-            fontWeight: 700,
-            fontSize: 34,
-            color: C.text,
-            lineHeight: 1,
-            flex: 1,
-            minWidth: 0,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h1
+            style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontWeight: 700,
+              fontSize: 32,
+              color: C.text,
+              lineHeight: 1,
+              margin: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {title}
+          </h1>
+          {subtitle && (
+            <p
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13,
+                color: C.muted,
+                margin: "5px 0 0",
+                padding: 0,
+              }}
+            >
+              {subtitle}
+            </p>
+          )}
+        </div>
+        {/* Logo icon — uploaded brand mark */}
+        <img
+          src={`${BASE}logo-icon.png`}
+          alt="Gari"
+          style={{ height: 30, objectFit: "contain", marginLeft: 12, flexShrink: 0 }}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`;
           }}
-        >
-          {title}
-        </span>
-        <GarageIcon width={28} height={24} stroke={C.green} />
+        />
       </div>
 
-      {/* Year Make Model subtitle */}
-      {subtitle && (
-        <p
-          style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 14,
-            color: C.muted,
-            margin: "5px 22px 0",
-            padding: 0,
-            lineHeight: 1,
-          }}
-        >
-          {subtitle}
-        </p>
-      )}
-
       {/* Wooden toy car */}
-      <div style={{ display: "flex", justifyContent: "center", padding: "22px 0 12px" }}>
+      <div style={{ display: "flex", justifyContent: "center", padding: "28px 0 16px" }}>
         <WoodenCar />
       </div>
 
       {/* Health gauge */}
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 22 }}>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
         <HealthGauge pct={90} />
       </div>
 
-      {/* 6 shortcut circles */}
+      {/* Quick log shortcuts */}
       <ShortcutGrid />
 
       <div style={{ flex: 1 }} />
@@ -354,6 +362,7 @@ function LandingPage({
           fontSize: 11,
           color: C.border,
           margin: "0 0 6px",
+          letterSpacing: "0.02em",
         }}
       >
         Swipe to explore →

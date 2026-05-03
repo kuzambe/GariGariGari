@@ -1,50 +1,61 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
-import { GarageIcon } from "@/components/ui/GarageIcon";
 
-const BG = "#F7F4F0";
-const GREEN = "#1F6B2E";
-const TEXT = "#1A1A1A";
-const MUTED = "#7A7268";
-const BORDER = "#DDD8D0";
+const ACCENT = "#1F6B2E";
+const TEXT = "#111111";
+const MUTED = "#888888";
 const ERROR = "#C0392B";
+const BASE = import.meta.env.BASE_URL;
 
-function GariInput({
+function Field({
   type = "text",
-  placeholder,
+  label,
   value,
   onChange,
 }: {
   type?: string;
-  placeholder: string;
+  label: string;
   value: string;
   onChange: (v: string) => void;
 }) {
   const [focused, setFocused] = useState(false);
   return (
-    <input
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      style={{
-        width: "100%",
-        background: "#FFFFFF",
-        border: `1.5px solid ${focused ? GREEN : BORDER}`,
-        borderRadius: 14,
-        padding: "15px 18px",
-        fontFamily: "'DM Sans', sans-serif",
-        fontSize: 15,
-        color: TEXT,
-        outline: "none",
-        boxSizing: "border-box",
-        boxShadow: focused ? `0 0 0 3px rgba(31,107,46,0.10)` : "0 1px 3px rgba(0,0,0,0.04)",
-        transition: "border-color 0.15s, box-shadow 0.15s",
-      }}
-    />
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label
+        style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 12,
+          fontWeight: 500,
+          color: focused ? ACCENT : MUTED,
+          textTransform: "uppercase",
+          letterSpacing: "0.07em",
+          transition: "color 0.15s",
+        }}
+      >
+        {label}
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          width: "100%",
+          background: "transparent",
+          border: "none",
+          borderBottom: `1.5px solid ${focused ? ACCENT : "#E0E0E0"}`,
+          padding: "10px 0",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 17,
+          color: TEXT,
+          outline: "none",
+          boxSizing: "border-box",
+          transition: "border-color 0.15s",
+        }}
+      />
+    </div>
   );
 }
 
@@ -74,9 +85,9 @@ export default function AuthPage() {
     if (error) {
       const msg = error.message.toLowerCase();
       if (msg.includes("email not confirmed")) {
-        setSignInError("Your email isn't confirmed yet. Check your inbox.");
+        setSignInError("Please confirm your email first — check your inbox.");
       } else if (msg.includes("invalid login credentials") || msg.includes("invalid password")) {
-        setSignInError("Incorrect email or password.");
+        setSignInError("Hmm, that email or password doesn't match.");
       } else {
         setSignInError(error.message);
       }
@@ -89,11 +100,11 @@ export default function AuthPage() {
     e.preventDefault();
     setSignUpError("");
     if (signUpPassword !== signUpConfirm) {
-      setSignUpError("Passwords don't match.");
+      setSignUpError("Those passwords don't match — give it another go.");
       return;
     }
     if (signUpPassword.length < 6) {
-      setSignUpError("Password must be at least 6 characters.");
+      setSignUpError("Password needs to be at least 6 characters.");
       return;
     }
     setLoading(true);
@@ -104,7 +115,7 @@ export default function AuthPage() {
     setLoading(false);
     if (error) {
       if (error.message.toLowerCase().includes("already registered")) {
-        setSignUpError("An account with this email already exists.");
+        setSignUpError("Looks like you already have an account. Try signing in.");
       } else {
         setSignUpError(error.message);
       }
@@ -113,271 +124,195 @@ export default function AuthPage() {
     if (data.session) {
       navigate("/setup");
     } else {
-      setSignUpError("Check your inbox to confirm your email, then sign in.");
+      setSignUpError("Almost there — check your inbox to confirm your email.");
     }
   }
+
+  const isSignIn = tab === "signin";
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: BG,
+        background: "#FFFFFF",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "32px 20px",
+        padding: "40px 32px",
       }}
     >
-      <div style={{ width: "100%", maxWidth: 360 }}>
+      <div style={{ width: "100%", maxWidth: 340 }}>
 
-        {/* Brand mark */}
-        <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <div
+        {/* Logo */}
+        <div style={{ marginBottom: 44, textAlign: "left" }}>
+          <img
+            src={`${BASE}logo-wordmark.png`}
+            alt="Gari"
+            style={{ height: 36, objectFit: "contain" }}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`;
+            }}
+          />
+        </div>
+
+        {/* Greeting */}
+        <div style={{ marginBottom: 36 }}>
+          <h1
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              background: "#FFFFFF",
-              borderRadius: 20,
-              padding: "14px 24px",
-              boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
-              marginBottom: 14,
+              fontFamily: "'Rajdhani', sans-serif",
+              fontWeight: 700,
+              fontSize: 34,
+              color: TEXT,
+              margin: "0 0 6px",
+              lineHeight: 1.1,
             }}
           >
-            <GarageIcon width={30} height={26} stroke={GREEN} />
-            <span
-              style={{
-                fontFamily: "'Rajdhani', sans-serif",
-                fontWeight: 700,
-                fontSize: 32,
-                color: TEXT,
-                letterSpacing: "0.04em",
-                lineHeight: 1,
-              }}
-            >
-              GARI
-            </span>
-          </div>
+            {isSignIn ? "Welcome back." : "Create your account."}
+          </h1>
           <p
             style={{
               fontFamily: "'DM Sans', sans-serif",
-              fontSize: 14,
+              fontSize: 15,
               color: MUTED,
               margin: 0,
             }}
           >
-            Your garage in your pocket.
+            {isSignIn
+              ? "Sign in to your Gari account."
+              : "It only takes a minute."}
           </p>
         </div>
 
-        {/* Card */}
-        <div
-          style={{
-            background: "#FFFFFF",
-            borderRadius: 24,
-            padding: "28px 24px",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
-          }}
-        >
-          {/* Tab toggle */}
-          <div
-            style={{
-              display: "flex",
-              background: BG,
-              borderRadius: 12,
-              padding: 4,
-              marginBottom: 24,
-            }}
-          >
-            {(["signin", "signup"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => {
-                  setTab(t);
-                  setSignInError("");
-                  setSignUpError("");
-                }}
-                style={{
-                  flex: 1,
-                  background: tab === t ? "#FFFFFF" : "transparent",
-                  border: "none",
-                  borderRadius: 9,
-                  padding: "9px 0",
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 14,
-                  fontWeight: tab === t ? 600 : 400,
-                  color: tab === t ? TEXT : MUTED,
-                  cursor: "pointer",
-                  boxShadow: tab === t ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-                  transition: "all 0.15s",
-                }}
-              >
-                {t === "signin" ? "Sign In" : "Sign Up"}
-              </button>
-            ))}
-          </div>
+        {/* Form */}
+        {isSignIn ? (
+          <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 26 }}>
+            <Field
+              type="email"
+              label="Email"
+              value={signInEmail}
+              onChange={setSignInEmail}
+            />
+            <Field
+              type="password"
+              label="Password"
+              value={signInPassword}
+              onChange={setSignInPassword}
+            />
 
-          {/* Sign In form */}
-          {tab === "signin" && (
-            <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <GariInput
-                type="email"
-                placeholder="Email address"
-                value={signInEmail}
-                onChange={setSignInEmail}
-              />
-              <GariInput
-                type="password"
-                placeholder="Password"
-                value={signInPassword}
-                onChange={setSignInPassword}
-              />
-              {signInError && (
-                <p
-                  style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 13,
-                    color: ERROR,
-                    margin: 0,
-                  }}
-                >
-                  {signInError}
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  marginTop: 4,
-                  background: GREEN,
-                  color: "#FFFFFF",
-                  border: "none",
-                  borderRadius: 14,
-                  padding: "15px 0",
-                  fontFamily: "'Rajdhani', sans-serif",
-                  fontWeight: 700,
-                  fontSize: 17,
-                  letterSpacing: "0.06em",
-                  cursor: loading ? "default" : "pointer",
-                  opacity: loading ? 0.7 : 1,
-                  width: "100%",
-                  transition: "opacity 0.15s",
-                }}
-              >
-                {loading ? "SIGNING IN…" : "SIGN IN"}
-              </button>
-            </form>
-          )}
+            {signInError && (
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: ERROR, margin: 0 }}>
+                {signInError}
+              </p>
+            )}
 
-          {/* Sign Up form */}
-          {tab === "signup" && (
-            <form onSubmit={handleSignUp} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <GariInput
-                type="email"
-                placeholder="Email address"
-                value={signUpEmail}
-                onChange={setSignUpEmail}
-              />
-              <GariInput
-                type="password"
-                placeholder="Password"
-                value={signUpPassword}
-                onChange={setSignUpPassword}
-              />
-              <GariInput
-                type="password"
-                placeholder="Confirm password"
-                value={signUpConfirm}
-                onChange={setSignUpConfirm}
-              />
-              {signUpError && (
-                <p
-                  style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 13,
-                    color: ERROR,
-                    margin: 0,
-                  }}
-                >
-                  {signUpError}
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  marginTop: 4,
-                  background: GREEN,
-                  color: "#FFFFFF",
-                  border: "none",
-                  borderRadius: 14,
-                  padding: "15px 0",
-                  fontFamily: "'Rajdhani', sans-serif",
-                  fontWeight: 700,
-                  fontSize: 17,
-                  letterSpacing: "0.06em",
-                  cursor: loading ? "default" : "pointer",
-                  opacity: loading ? 0.7 : 1,
-                  width: "100%",
-                  transition: "opacity 0.15s",
-                }}
-              >
-                {loading ? "CREATING ACCOUNT…" : "SIGN UP"}
-              </button>
-            </form>
-          )}
-        </div>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                marginTop: 8,
+                background: TEXT,
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 12,
+                padding: "16px 0",
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 600,
+                fontSize: 16,
+                cursor: loading ? "default" : "pointer",
+                opacity: loading ? 0.6 : 1,
+                width: "100%",
+                transition: "opacity 0.15s",
+                letterSpacing: "0.01em",
+              }}
+            >
+              {loading ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleSignUp} style={{ display: "flex", flexDirection: "column", gap: 26 }}>
+            <Field
+              type="email"
+              label="Email"
+              value={signUpEmail}
+              onChange={setSignUpEmail}
+            />
+            <Field
+              type="password"
+              label="Password"
+              value={signUpPassword}
+              onChange={setSignUpPassword}
+            />
+            <Field
+              type="password"
+              label="Confirm password"
+              value={signUpConfirm}
+              onChange={setSignUpConfirm}
+            />
 
-        {/* Toggle link */}
+            {signUpError && (
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: signUpError.includes("Almost") ? ACCENT : ERROR, margin: 0 }}>
+                {signUpError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                marginTop: 8,
+                background: TEXT,
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 12,
+                padding: "16px 0",
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 600,
+                fontSize: 16,
+                cursor: loading ? "default" : "pointer",
+                opacity: loading ? 0.6 : 1,
+                width: "100%",
+                transition: "opacity 0.15s",
+                letterSpacing: "0.01em",
+              }}
+            >
+              {loading ? "Creating account…" : "Create account"}
+            </button>
+          </form>
+        )}
+
+        {/* Toggle */}
         <p
           style={{
             textAlign: "center",
-            marginTop: 20,
+            marginTop: 32,
             fontFamily: "'DM Sans', sans-serif",
-            fontSize: 13,
+            fontSize: 14,
             color: MUTED,
           }}
         >
-          {tab === "signin" ? (
-            <>
-              Don't have an account?{" "}
-              <button
-                onClick={() => setTab("signup")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: GREEN,
-                  fontWeight: 600,
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 13,
-                  padding: 0,
-                }}
-              >
-                Sign up
-              </button>
-            </>
-          ) : (
-            <>
-              Already have an account?{" "}
-              <button
-                onClick={() => setTab("signin")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: GREEN,
-                  fontWeight: 600,
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 13,
-                  padding: 0,
-                }}
-              >
-                Sign in
-              </button>
-            </>
-          )}
+          {isSignIn ? "New to Gari? " : "Already have an account? "}
+          <button
+            onClick={() => {
+              setTab(isSignIn ? "signup" : "signin");
+              setSignInError("");
+              setSignUpError("");
+            }}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: TEXT,
+              fontWeight: 600,
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 14,
+              padding: 0,
+              textDecoration: "underline",
+              textUnderlineOffset: 2,
+            }}
+          >
+            {isSignIn ? "Sign up" : "Sign in"}
+          </button>
         </p>
       </div>
     </div>
