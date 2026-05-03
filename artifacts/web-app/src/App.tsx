@@ -19,14 +19,12 @@ function LoadingScreen() {
         justifyContent: "center",
       }}
     >
-      <div className="gari-pulse" style={{ opacity: 0.5 }}>
-        <svg width="40" height="34" viewBox="0 0 28 24" fill="none">
-          <rect x="1.5" y="1.5" width="25" height="21" rx="2.5" stroke="#EF9F27" strokeWidth="2" />
-          <path d="M5 8.5C9.2 8.3 18.8 8.7 23 8.5" stroke="#EF9F27" strokeWidth="2" strokeLinecap="round" />
-          <path d="M5 13C9.1 12.85 18.9 13.15 23 13" stroke="#EF9F27" strokeWidth="2" strokeLinecap="round" />
-          <path d="M5 17.5C9.3 17.4 18.7 17.6 23 17.5" stroke="#EF9F27" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      </div>
+      <img
+        src={`${import.meta.env.BASE_URL}gari-icon-new-nobg.png`}
+        alt="Gari"
+        className="gari-spin"
+        style={{ height: 48, width: "auto", objectFit: "contain" }}
+      />
     </div>
   );
 }

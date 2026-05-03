@@ -116,6 +116,17 @@ function WoodenCar() {
 function HealthGauge({ pct = 90 }: { pct?: number }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", padding: "0 24px", boxSizing: "border-box" }}>
+      {/* Label above bar */}
+      <p style={{
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 11,
+        color: C.muted,
+        margin: 0,
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+      }}>
+        Car Health
+      </p>
       {/* Bar track */}
       <div style={{ position: "relative", height: 12, borderRadius: 999, background: C.greenLight, overflow: "hidden" }}>
         {/* Fill */}
@@ -147,16 +158,6 @@ function HealthGauge({ pct = 90 }: { pct?: number }) {
           />
         ))}
       </div>
-      {/* Label */}
-      <p style={{
-        fontFamily: "'DM Sans', sans-serif",
-        fontSize: 12,
-        color: C.muted,
-        margin: 0,
-        letterSpacing: "0.01em",
-      }}>
-        Health status : <span style={{ color: C.green, fontWeight: 600 }}>Good</span>
-      </p>
     </div>
   );
 }
@@ -319,10 +320,9 @@ function TopBar({ userEmail, onProfile }: { userEmail?: string; onProfile: () =>
 
       {/* Gari icon */}
       <img
-        src={`${BASE}logo-icon.png`}
+        src={`${BASE}gari-icon-new-nobg.png`}
         alt="Gari"
         style={{ height: 26, width: "auto", objectFit: "contain" }}
-        onError={(e) => { (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`; }}
       />
     </div>
   );
@@ -475,13 +475,12 @@ function GreenButton({ label, onClick, fullWidth, small }: { label: string; onCl
 function LoadingScreen() {
   return (
     <div style={{ height: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ animation: "gari-pulse 1.8s ease-in-out infinite" }}>
-        <img
-          src={`${import.meta.env.BASE_URL}logo.png`}
-          alt="Gari"
-          style={{ height: 40, opacity: 0.5 }}
-        />
-      </div>
+      <img
+        src={`${BASE}gari-icon-new-nobg.png`}
+        alt="Gari"
+        className="gari-spin"
+        style={{ height: 48, width: "auto", objectFit: "contain" }}
+      />
     </div>
   );
 }
@@ -605,7 +604,7 @@ function LandingPage({
             {title}
           </h1>
           <img
-            src={`${BASE}settings-icon.png`}
+            src={`${BASE}gari-icon-new-nobg.png`}
             alt="Gari"
             style={{ height: 30, width: "auto", objectFit: "contain", flex: "0 0 auto" }}
           />
@@ -1376,7 +1375,9 @@ export default function Dashboard() {
   const { vehicle, loading } = useVehicle();
   const [currentPage, setCurrentPage] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [isSwiping, setIsSwiping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
@@ -1395,6 +1396,9 @@ export default function Dashboard() {
     if (!scrollRef.current) return;
     const page = Math.round(scrollRef.current.scrollLeft / scrollRef.current.clientWidth);
     setCurrentPage(page);
+    setIsSwiping(true);
+    if (swipeTimer.current) clearTimeout(swipeTimer.current);
+    swipeTimer.current = setTimeout(() => setIsSwiping(false), 300);
   };
 
   const goToPage = (p: number) => {
@@ -1429,7 +1433,9 @@ export default function Dashboard() {
         display: "flex",
         alignItems: "center",
         gap: 6,
-        pointerEvents: "auto",
+        pointerEvents: isSwiping ? "none" : "auto",
+        opacity: isSwiping ? 0 : 1,
+        transition: "opacity 0.2s ease",
       }}>
         {/* Profile avatar */}
         <button
