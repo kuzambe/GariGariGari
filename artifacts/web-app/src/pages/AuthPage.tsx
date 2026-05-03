@@ -132,6 +132,7 @@ export default function AuthPage() {
 
   return (
     <div
+      className="gari-mount"
       style={{
         minHeight: "100vh",
         background: "#FFFFFF",
@@ -149,6 +150,7 @@ export default function AuthPage() {
           <img
             src={`${BASE}logo-wordmark.png`}
             alt="Gari"
+            className="gari-logo-float"
             style={{ height: 56, objectFit: "contain" }}
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`;
@@ -209,6 +211,7 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={loading}
+              className="gari-press"
               style={{
                 marginTop: 8,
                 background: TEXT,
@@ -222,7 +225,6 @@ export default function AuthPage() {
                 cursor: loading ? "default" : "pointer",
                 opacity: loading ? 0.6 : 1,
                 width: "100%",
-                transition: "opacity 0.15s",
                 letterSpacing: "0.01em",
               }}
             >
@@ -259,6 +261,7 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={loading}
+              className="gari-press"
               style={{
                 marginTop: 8,
                 background: TEXT,
@@ -272,7 +275,6 @@ export default function AuthPage() {
                 cursor: loading ? "default" : "pointer",
                 opacity: loading ? 0.6 : 1,
                 width: "100%",
-                transition: "opacity 0.15s",
                 letterSpacing: "0.01em",
               }}
             >

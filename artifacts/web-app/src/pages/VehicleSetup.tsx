@@ -201,7 +201,7 @@ export default function VehicleSetup() {
 
       {/* Step 1 — Nickname */}
       {step === 1 && (
-        <div style={{ flex: 1 }}>
+        <div key="step1" className="gari-mount" style={{ flex: 1 }}>
           <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 32, color: "#1A1A1A", marginBottom: 8, lineHeight: 1.1 }}>
             What do you call your car?
           </h1>
@@ -227,7 +227,7 @@ export default function VehicleSetup() {
 
       {/* Step 2 — VIN */}
       {step === 2 && (
-        <div style={{ flex: 1 }}>
+        <div key="step2" className="gari-mount" style={{ flex: 1 }}>
           <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 32, color: "#1A1A1A", marginBottom: 8, lineHeight: 1.1 }}>
             What's your VIN?
           </h1>
@@ -338,7 +338,7 @@ export default function VehicleSetup() {
 
       {/* Step 3 — Mileage & Plate */}
       {step === 3 && (
-        <div style={{ flex: 1 }}>
+        <div key="step3" className="gari-mount" style={{ flex: 1 }}>
           <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 32, color: "#1A1A1A", marginBottom: 8, lineHeight: 1.1 }}>
             Last few details
           </h1>

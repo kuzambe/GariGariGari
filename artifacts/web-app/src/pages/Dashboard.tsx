@@ -23,6 +23,7 @@ const C = {
   border: "#D4DDD5",
   success: "#2D9E4A",
   warning: "#E5A020",
+  amber: "#EF9F27",
   error: "#C0392B",
 };
 
@@ -1119,7 +1120,7 @@ function LandingPage({
           <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 42, color: C.text, margin: 0 }}>
             <ShuffleText text={title} charset="letters" />
           </h1>
-          <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+          <button onClick={onOpenSettings} className="gari-logo-bob gari-tap" style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
             <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
           </button>
         </div>
@@ -2497,7 +2498,7 @@ function FinancesPage({
           <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
             Finances
           </h1>
-          <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+          <button onClick={onOpenSettings} className="gari-logo-bob gari-tap" style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
             <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
           </button>
         </div>
@@ -2729,7 +2730,7 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
           <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
             Parts
           </h1>
-          <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+          <button onClick={onOpenSettings} className="gari-logo-bob gari-tap" style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
             <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
           </button>
         </div>
@@ -2852,7 +2853,7 @@ function DiagnosticsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpen
           <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
             Diagnostics
           </h1>
-          <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+          <button onClick={onOpenSettings} className="gari-logo-bob gari-tap" style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
             <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
           </button>
         </div>
@@ -3040,7 +3041,21 @@ export default function Dashboard() {
   const PAGE_LABELS = ["Home", "Documents", "Finances", "Parts", "Diagnostics"];
 
   return (
-    <div style={{ height: "100vh", background: C.bg, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+    <div className="gari-mount-soft" style={{ height: "100vh", background: C.bg, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+
+      {/* Top scroll progress bar */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "transparent", zIndex: 50, pointerEvents: "none" }}>
+        <div
+          style={{
+            height: "100%",
+            width: `${((currentPage + 1) / 5) * 100}%`,
+            background: `linear-gradient(90deg, ${C.green} 0%, #2E8B3E 60%, ${C.amber} 100%)`,
+            borderRadius: "0 2px 2px 0",
+            transition: "width 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
+            boxShadow: `0 0 8px ${C.green}60`,
+          }}
+        />
+      </div>
 
       {/* Swipe container */}
       <div
@@ -3073,44 +3088,85 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Page dot indicators */}
+      {/* Page indicator — sliding capsule with active label */}
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 6,
-          padding: "10px 0 20px",
+          position: "relative",
+          padding: "14px 0 22px",
           background: C.bg,
           borderTop: `1px solid ${C.border}`,
         }}
       >
-        {PAGE_LABELS.map((label, i) => (
-          <button
-            key={i}
-            onClick={() => goToPage(i)}
-            title={label}
+        {/* Active page label */}
+        <div
+          key={currentPage}
+          style={{
+            textAlign: "center",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: C.muted,
+            marginBottom: 8,
+            opacity: isSwiping ? 0.35 : 1,
+            transition: "opacity 0.22s ease",
+            animation: !isSwiping ? "gariFadeIn 0.35s ease both" : undefined,
+          }}
+        >
+          {PAGE_LABELS[currentPage]}
+        </div>
+
+        {/* Dot row */}
+        <div style={{ position: "relative", width: 5 * 28, height: 12, margin: "0 auto" }}>
+          {/* Sliding active capsule */}
+          <div
             style={{
-              background: "none",
-              border: "none",
-              padding: "4px 2px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              position: "absolute",
+              top: 3,
+              left: currentPage * 28 + 3,
+              width: 22,
+              height: 6,
+              borderRadius: 3,
+              background: `linear-gradient(90deg, ${C.green} 0%, #2E8B3E 100%)`,
+              boxShadow: `0 2px 10px ${C.green}55, 0 0 0 1px ${C.green}25`,
+              transition: "left 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
+              pointerEvents: "none",
             }}
-          >
-            <div
+          />
+          {PAGE_LABELS.map((label, i) => (
+            <button
+              key={i}
+              onClick={() => goToPage(i)}
+              title={label}
+              className="gari-tap"
               style={{
-                width: i === currentPage ? 22 : 6,
-                height: 6,
-                borderRadius: 3,
-                background: i === currentPage ? C.green : C.border,
-                transition: "all 0.25s ease",
+                position: "absolute",
+                top: 0,
+                left: i * 28,
+                width: 28,
+                height: 12,
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
-            />
-          </button>
-        ))}
+            >
+              <div
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: i === currentPage ? "transparent" : C.border,
+                  transition: "background 0.25s ease",
+                }}
+              />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -390,3 +390,63 @@ input:-webkit-autofill:focus {
     inset: -1px;
   }
 }
+
+/* ── GARI MOTION SYSTEM ─────────────────────────────── */
+@keyframes gariFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes gariFadeInSoft {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes gariLogoBob {
+  0%   { transform: translateY(0) rotate(0deg); }
+  20%  { transform: translateY(-3px) rotate(-2deg); }
+  50%  { transform: translateY(0) rotate(2deg); }
+  80%  { transform: translateY(-1px) rotate(-1deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+@keyframes gariLogoFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+@keyframes gariShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.gari-mount        { animation: gariFadeIn 0.45s cubic-bezier(0.22,0.9,0.32,1) both; }
+.gari-mount-soft   { animation: gariFadeInSoft 0.35s ease both; }
+.gari-stagger > *  { animation: gariFadeIn 0.45s cubic-bezier(0.22,0.9,0.32,1) both; }
+.gari-stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.gari-stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.gari-stagger > *:nth-child(3) { animation-delay: 0.16s; }
+.gari-stagger > *:nth-child(4) { animation-delay: 0.22s; }
+.gari-stagger > *:nth-child(5) { animation-delay: 0.28s; }
+.gari-stagger > *:nth-child(6) { animation-delay: 0.34s; }
+
+.gari-logo-float { animation: gariLogoFloat 4.2s ease-in-out infinite; }
+
+.gari-press {
+  transition: transform 0.18s cubic-bezier(0.22,0.9,0.32,1),
+              opacity 0.18s ease,
+              box-shadow 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.gari-press:active { transform: scale(0.96); }
+
+.gari-tap {
+  transition: transform 0.16s cubic-bezier(0.22,0.9,0.32,1);
+  -webkit-tap-highlight-color: transparent;
+}
+.gari-tap:active { transform: scale(0.92); }
+
+.gari-logo-bob:active { animation: gariLogoBob 0.55s cubic-bezier(0.22,0.9,0.32,1); }
+
+/* Smoother momentum on horizontal swipe containers */
+.gari-swipe { scroll-behavior: smooth; }
+
+/* Universal smoothing */
+html, body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+button { -webkit-tap-highlight-color: transparent; }
