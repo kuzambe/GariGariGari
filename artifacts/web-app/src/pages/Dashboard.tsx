@@ -749,7 +749,9 @@ function LandingPage({
       });
 
       const data = await response.json() as { text?: string; error?: string };
-      const replyText = data.text || data.error || "CarGPT is unavailable right now. Try again in a moment.";
+      const replyText = response.status === 429
+        ? "You've used all your CarGPT questions for today. Come back tomorrow."
+        : (data.text || data.error || "CarGPT is unavailable right now. Try again in a moment.");
 
       setCarGptMessages((prev) =>
         prev.map((m, i) => (i === prev.length - 1 && m.role === "loading" ? { role: "model", text: replyText } : m))

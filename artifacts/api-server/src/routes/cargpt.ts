@@ -2,6 +2,30 @@ import { Router, type IRouter } from "express";
 
 const router: IRouter = Router();
 
+/* ── Server-side daily rate limiter ──────────────────── */
+const RATE_LIMIT = 20;
+const rateLimitStore = new Map<string, { date: string; count: number }>();
+
+function getClientKey(req: Parameters<Parameters<IRouter["post"]>[1]>[0]): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0]) ?? req.ip ?? "unknown";
+  return ip.trim();
+}
+
+function checkRateLimit(key: string): { allowed: boolean; remaining: number } {
+  const today = new Date().toISOString().split("T")[0];
+  const entry = rateLimitStore.get(key);
+  if (!entry || entry.date !== today) {
+    rateLimitStore.set(key, { date: today, count: 1 });
+    return { allowed: true, remaining: RATE_LIMIT - 1 };
+  }
+  if (entry.count >= RATE_LIMIT) {
+    return { allowed: false, remaining: 0 };
+  }
+  entry.count += 1;
+  return { allowed: true, remaining: RATE_LIMIT - entry.count };
+}
+
 interface HistoryMessage {
   role: "user" | "model";
   text: string;
@@ -31,6 +55,14 @@ router.post("/cargpt", async (req, res) => {
     res.status(400).json({ error: "userMessage is required" });
     return;
   }
+
+  const clientKey = getClientKey(req);
+  const { allowed, remaining } = checkRateLimit(clientKey);
+  if (!allowed) {
+    res.status(429).json({ error: "You've used all your CarGPT questions for today. Come back tomorrow." });
+    return;
+  }
+  res.setHeader("X-CarGPT-Remaining", String(remaining));
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
