@@ -798,6 +798,7 @@ function LandingPage({
     return getCarGptHistory(vehicle.id);
   });
   const [carGptLoading, setCarGptLoading] = useState(false);
+  const [carGptOpen, setCarGptOpen] = useState(false);
   const [carGptRemaining, setCarGptRemaining] = useState(() => getRemainingCarGptQuestions());
   const carGptBottomRef = useRef<HTMLDivElement>(null);
 
@@ -1185,108 +1186,185 @@ function LandingPage({
       {/* Quick log shortcuts */}
       <ShortcutGrid onGoToPage={onGoToPage} />
 
-      {/* Car-GPT */}
+      {/* Car-GPT — collapsed tile (opens chat sheet) */}
       <div style={{ padding: "24px 20px 0" }}>
-        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, margin: "0 0 8px" }}>
-          Car-GPT
-        </p>
+        <button
+          onClick={() => setCarGptOpen(true)}
+          style={{
+            width: "100%",
+            background: C.sage,
+            border: `1.5px solid ${C.border}`,
+            borderRadius: 14,
+            padding: "14px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            cursor: "pointer",
+            textAlign: "left",
+          }}
+        >
+          <div style={{
+            width: 36, height: 36, borderRadius: "50%",
+            background: C.greenLight, display: "flex",
+            alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}>
+            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.green, lineHeight: 1 }}>AI</span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text, margin: 0 }}>
+              Car-GPT
+            </p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {carGptMessages.length > 0
+                ? `${carGptMessages.length} message${carGptMessages.length === 1 ? "" : "s"} · tap to continue`
+                : `Ask anything about ${title}`}
+            </p>
+          </div>
+          <span style={{ color: C.border, fontSize: 18, lineHeight: 1 }}>›</span>
+        </button>
+      </div>
 
-        {/* Conversation bubbles */}
-        {carGptMessages.length > 0 && (
+      {/* Car-GPT chat sheet */}
+      {carGptOpen && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+          onClick={() => setCarGptOpen(false)}
+        >
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
           <div
             style={{
-              maxHeight: 320,
-              overflowY: "auto",
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-              marginBottom: 10,
-              paddingRight: 2,
+              position: "relative", background: "#FFFFFF", borderRadius: "22px 22px 0 0",
+              padding: "12px 20px 24px", maxWidth: 430, width: "100%", margin: "0 auto",
+              boxShadow: "0 -4px 32px rgba(0,0,0,0.12)", maxHeight: "85vh",
+              display: "flex", flexDirection: "column",
+              animation: "gariSlideUp 0.3s ease",
             }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {carGptMessages.map((msg, i) => {
-              const isUser = msg.role === "user";
-              const isLoading = msg.role === "loading";
-              return (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    justifyContent: isUser ? "flex-end" : "flex-start",
-                  }}
-                >
-                  <div
-                    style={{
-                      maxWidth: "80%",
-                      borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                      background: isUser ? "#1F6B2E" : C.sage,
-                      color: isUser ? "#FFFFFF" : "#0D1C0E",
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: 13,
-                      lineHeight: 1.5,
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-                    }}
-                  >
-                    {isLoading ? (
-                      <CarGptTyping />
-                    ) : (
-                      <div style={{ padding: "10px 14px", whiteSpace: "pre-wrap" }}>{msg.text}</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            <div ref={carGptBottomRef} />
-          </div>
-        )}
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 16px" }} />
 
-        {/* Input row */}
-        <div style={{ position: "relative" }}>
-          <input
-            placeholder={carGptRemaining === 0 ? "Daily limit reached. Come back tomorrow." : `Any questions regarding ${title}...`}
-            value={carGptInput}
-            onChange={(e) => setCarGptInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleCarGptSubmit(); }}
-            disabled={carGptLoading || carGptRemaining === 0}
-            style={{
-              width: "100%",
-              background: C.sage,
-              border: `1.5px solid ${C.border}`,
-              borderRadius: 12,
-              padding: "12px 44px 12px 16px",
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 14,
-              color: C.text,
-              outline: "none",
-              boxSizing: "border-box",
-              opacity: carGptLoading || carGptRemaining === 0 ? 0.5 : 1,
-            }}
-          />
-          <button
-            onClick={handleCarGptSubmit}
-            disabled={carGptLoading || !carGptInput.trim() || carGptRemaining === 0}
-            style={{
-              position: "absolute",
-              right: 10,
-              top: "50%",
-              transform: "translateY(-50%)",
-              background: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "#1F6B2E" : "transparent",
-              border: "none",
-              borderRadius: 8,
-              width: 28,
-              height: 28,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "pointer" : "default",
-              transition: "background 0.2s",
-              padding: 0,
-            }}
-          >
-            <span style={{ fontSize: 16, color: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "#FFFFFF" : C.muted, lineHeight: 1 }}>↑</span>
-          </button>
+            {/* Header row with title + close */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, color: C.text, margin: 0 }}>
+                Car-GPT
+              </p>
+              <button
+                onClick={() => setCarGptOpen(false)}
+                aria-label="Close chat"
+                style={{
+                  background: "none", border: "none", padding: 4, cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted,
+                }}
+              >
+                Close
+              </button>
+            </div>
+
+            {/* Conversation */}
+            <div
+              style={{
+                flex: 1,
+                minHeight: 200,
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                marginBottom: 10,
+                paddingRight: 2,
+              }}
+            >
+              {carGptMessages.length === 0 ? (
+                <p style={{ textAlign: "center", color: C.muted, fontFamily: "'DM Sans', sans-serif", fontSize: 13, margin: "auto 0" }}>
+                  Ask anything about {title}.
+                </p>
+              ) : (
+                carGptMessages.map((msg, i) => {
+                  const isUser = msg.role === "user";
+                  const isLoading = msg.role === "loading";
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        justifyContent: isUser ? "flex-end" : "flex-start",
+                      }}
+                    >
+                      <div
+                        style={{
+                          maxWidth: "80%",
+                          borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                          background: isUser ? "#1F6B2E" : C.sage,
+                          color: isUser ? "#FFFFFF" : "#0D1C0E",
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: 13,
+                          lineHeight: 1.5,
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                        }}
+                      >
+                        {isLoading ? (
+                          <CarGptTyping />
+                        ) : (
+                          <div style={{ padding: "10px 14px", whiteSpace: "pre-wrap" }}>{msg.text}</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={carGptBottomRef} />
+            </div>
+
+            {/* Input row */}
+            <div style={{ position: "relative" }}>
+              <input
+                placeholder={carGptRemaining === 0 ? "Daily limit reached. Come back tomorrow." : `Any questions regarding ${title}...`}
+                value={carGptInput}
+                onChange={(e) => setCarGptInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleCarGptSubmit(); }}
+                disabled={carGptLoading || carGptRemaining === 0}
+                autoFocus
+                style={{
+                  width: "100%",
+                  background: C.sage,
+                  border: `1.5px solid ${C.border}`,
+                  borderRadius: 12,
+                  padding: "12px 44px 12px 16px",
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 14,
+                  color: C.text,
+                  outline: "none",
+                  boxSizing: "border-box",
+                  opacity: carGptLoading || carGptRemaining === 0 ? 0.5 : 1,
+                }}
+              />
+              <button
+                onClick={handleCarGptSubmit}
+                disabled={carGptLoading || !carGptInput.trim() || carGptRemaining === 0}
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "#1F6B2E" : "transparent",
+                  border: "none",
+                  borderRadius: 8,
+                  width: 28,
+                  height: 28,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "pointer" : "default",
+                  transition: "background 0.2s",
+                  padding: 0,
+                }}
+              >
+                <span style={{ fontSize: 16, color: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "#FFFFFF" : C.muted, lineHeight: 1 }}>↑</span>
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Roadside + Mechanic */}
       <div style={{ padding: "16px 20px 0", display: "flex", gap: 12 }}>
@@ -1317,20 +1395,6 @@ function LandingPage({
       </div>
 
       <div style={{ flex: 1 }} />
-
-      {/* Swipe hint */}
-      <p
-        style={{
-          textAlign: "center",
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: 11,
-          color: C.border,
-          margin: "0 0 6px",
-          letterSpacing: "0.02em",
-        }}
-      >
-        Swipe to explore →
-      </p>
 
       {/* Shared keyframe for both bottom sheets */}
       <style>{`@keyframes gariSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
