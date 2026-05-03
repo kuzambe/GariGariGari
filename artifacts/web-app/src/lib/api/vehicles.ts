@@ -40,6 +40,17 @@ export interface CreateVehicleData {
   paint_code?: string;
 }
 
+export async function getAllVehiclesByUserId(userId: string): Promise<Vehicle[]> {
+  const { data, error } = await supabase
+    .from("vehicles")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function getVehicleByUserId(userId: string): Promise<Vehicle | null> {
   const { data, error } = await supabase
     .from("vehicles")

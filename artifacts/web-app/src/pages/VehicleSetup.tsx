@@ -81,7 +81,12 @@ function ProgressDots({ step }: { step: number }) {
   );
 }
 
-export default function VehicleSetup() {
+interface VehicleSetupProps {
+  onSuccess?: (newVehicle: import("@/lib/api/vehicles").Vehicle) => void;
+  onCancel?: () => void;
+}
+
+export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps = {}) {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const { refetch } = useVehicle();
@@ -148,7 +153,7 @@ export default function VehicleSetup() {
         fuel_type: "",
         body_style: "",
       };
-      await createVehicle({
+      const created = await createVehicle({
         user_id: user.id,
         nickname,
         vin: vin.trim().toUpperCase() || undefined,
@@ -164,7 +169,11 @@ export default function VehicleSetup() {
         mileage_unit: "km",
       });
       await refetch();
-      navigate("/dashboard");
+      if (onSuccess) {
+        onSuccess(created);
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err: unknown) {
       console.error("createVehicle error:", err);
       const msg =
@@ -189,6 +198,27 @@ export default function VehicleSetup() {
         padding: "32px 24px",
       }}
     >
+      {/* Back button when used inline */}
+      {onCancel && (
+        <button
+          onClick={onCancel}
+          style={{
+            background: "none",
+            border: "none",
+            padding: "0 0 16px",
+            cursor: "pointer",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 15,
+            color: "#888888",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          ← Back
+        </button>
+      )}
+
       {/* Top brand */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
         <GarageIcon width={24} height={20} stroke="#1A1A1A" />
