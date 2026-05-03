@@ -400,11 +400,7 @@ function SettingsSheet({ userEmail, onSignOut, onClose }: { userEmail?: string; 
           Settings
         </p>
         <div style={{ background: C.sage, borderRadius: 14, marginBottom: 20, overflow: "hidden" }}>
-          {[
-            { label: "Notifications", icon: "🔔" },
-            { label: "Units & Display", icon: "📏" },
-            { label: "Privacy", icon: "🔒" },
-          ].map(({ label, icon }, i, arr) => (
+          {["Notifications", "Units & Display", "Privacy"].map((label, i, arr) => (
             <div key={label} style={{
               display: "flex",
               alignItems: "center",
@@ -412,7 +408,6 @@ function SettingsSheet({ userEmail, onSignOut, onClose }: { userEmail?: string; 
               borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none",
               cursor: "pointer",
             }}>
-              <span style={{ fontSize: 16, marginRight: 12 }}>{icon}</span>
               <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>{label}</span>
               <span style={{ color: C.border, fontSize: 16 }}>›</span>
             </div>
