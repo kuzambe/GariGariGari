@@ -5,6 +5,8 @@ import { useVehicle } from "@/context/VehicleContext";
 import { getDocumentsByVehicleId, Document, uploadDocument } from "@/lib/api/documents";
 import { getExpensesByVehicleId, Expense, addExpense } from "@/lib/api/expenses";
 import { Vehicle } from "@/lib/api/vehicles";
+import { Mechanic, getMechanicByVehicleId, createMechanic, updateMechanic } from "@/lib/api/mechanics";
+import { RoadsideAssistance, getRoadsideByUserId, createRoadside, updateRoadside } from "@/lib/api/roadsideAssistance";
 import { GarageIcon } from "@/components/ui/GarageIcon";
 
 /* ── DESIGN TOKENS ─────────────────────────────────── */
@@ -638,11 +640,13 @@ interface CarGptMessage {
 
 function LandingPage({
   vehicle,
+  userId,
   onSignOut,
   onGoToPage,
   onOpenSettings,
 }: {
   vehicle: Vehicle;
+  userId: string;
   expenses: Expense[];
   documents: Document[];
   onSignOut: () => void;
@@ -660,6 +664,139 @@ function LandingPage({
   const [carGptLoading, setCarGptLoading] = useState(false);
   const [carGptRemaining, setCarGptRemaining] = useState(() => getRemainingCarGptQuestions());
   const carGptBottomRef = useRef<HTMLDivElement>(null);
+
+  // ── Mechanic state ──────────────────────────────────────────────────────────
+  const [mechanic, setMechanic] = useState<Mechanic | null>(null);
+  const [mechSheetOpen, setMechSheetOpen] = useState(false);
+  const [mechMode, setMechMode] = useState<"add" | "view" | "edit">("add");
+  const [mechName, setMechName] = useState("");
+  const [mechShop, setMechShop] = useState("");
+  const [mechPhone, setMechPhone] = useState("");
+  const [mechAddress, setMechAddress] = useState("");
+  const [mechHours, setMechHours] = useState("");
+  const [mechNotes, setMechNotes] = useState("");
+  const [mechSaving, setMechSaving] = useState(false);
+
+  // ── Roadside state ──────────────────────────────────────────────────────────
+  const [roadside, setRoadside] = useState<RoadsideAssistance | null>(null);
+  const [roadSheetOpen, setRoadSheetOpen] = useState(false);
+  const [roadMode, setRoadMode] = useState<"add" | "view" | "edit">("add");
+  const [roadProvider, setRoadProvider] = useState("");
+  const [roadMember, setRoadMember] = useState("");
+  const [roadPhone, setRoadPhone] = useState("");
+  const [roadCoverage, setRoadCoverage] = useState("");
+  const [roadSaving, setRoadSaving] = useState(false);
+  const [memberCopied, setMemberCopied] = useState(false);
+
+  // ── Shared contact toast ────────────────────────────────────────────────────
+  const [contactToast, setContactToast] = useState<string | null>(null);
+
+  // Load mechanic + roadside on mount / vehicle change
+  useEffect(() => {
+    getMechanicByVehicleId(vehicle.id).then(setMechanic).catch(() => {});
+    getRoadsideByUserId(userId).then(setRoadside).catch(() => {});
+  }, [vehicle.id, userId]);
+
+  function showContactToast(msg: string) {
+    setContactToast(msg);
+    setTimeout(() => setContactToast(null), 2500);
+  }
+
+  function toTelHref(phone: string): string {
+    const stripped = phone.replace(/[^\d+]/g, "");
+    if (stripped.startsWith("+")) return "tel:+" + stripped.slice(1).replace(/\+/g, "");
+    return "tel:" + stripped.replace(/\+/g, "");
+  }
+
+  function openMechSheet() {
+    if (!mechanic) {
+      setMechName(""); setMechShop(""); setMechPhone("");
+      setMechAddress(""); setMechHours(""); setMechNotes("");
+      setMechMode("add");
+    } else {
+      setMechMode("view");
+    }
+    setMechSheetOpen(true);
+  }
+
+  function startMechEdit() {
+    setMechName(mechanic?.name ?? "");
+    setMechShop(mechanic?.shop_name ?? "");
+    setMechPhone(mechanic?.phone ?? "");
+    setMechAddress(mechanic?.address ?? "");
+    setMechHours(mechanic?.hours ?? "");
+    setMechNotes(mechanic?.notes ?? "");
+    setMechMode("edit");
+  }
+
+  async function handleSaveMech() {
+    if (!mechName.trim()) return;
+    setMechSaving(true);
+    try {
+      const payload = {
+        user_id: userId,
+        vehicle_id: vehicle.id,
+        name: mechName.trim(),
+        shop_name: mechShop.trim() || undefined,
+        phone: mechPhone.trim() || undefined,
+        address: mechAddress.trim() || undefined,
+        hours: mechHours.trim() || undefined,
+        notes: mechNotes.trim() || undefined,
+      };
+      const saved = mechanic
+        ? await updateMechanic(mechanic.id, payload)
+        : await createMechanic(payload);
+      setMechanic(saved);
+      setMechSheetOpen(false);
+      showContactToast("Mechanic saved");
+    } catch {
+      showContactToast("Failed to save mechanic. Please try again.");
+    } finally {
+      setMechSaving(false);
+    }
+  }
+
+  function openRoadSheet() {
+    if (!roadside) {
+      setRoadProvider(""); setRoadMember(""); setRoadPhone(""); setRoadCoverage("");
+      setRoadMode("add");
+    } else {
+      setRoadMode("view");
+    }
+    setRoadSheetOpen(true);
+  }
+
+  function startRoadEdit() {
+    setRoadProvider(roadside?.provider_name ?? "");
+    setRoadMember(roadside?.member_number ?? "");
+    setRoadPhone(roadside?.phone ?? "");
+    setRoadCoverage(roadside?.coverage_notes ?? "");
+    setRoadMode("edit");
+  }
+
+  async function handleSaveRoad() {
+    if (!roadProvider.trim()) return;
+    setRoadSaving(true);
+    try {
+      const payload = {
+        user_id: userId,
+        provider_name: roadProvider.trim(),
+        member_number: roadMember.trim() || undefined,
+        phone: roadPhone.trim() || undefined,
+        coverage_notes: roadCoverage.trim() || undefined,
+      };
+      const saved = roadside
+        ? await updateRoadside(roadside.id, payload)
+        : await createRoadside(payload);
+      setRoadside(saved);
+      setRoadSheetOpen(false);
+      showContactToast("Roadside Assistance saved");
+    } catch {
+      showContactToast("Failed to save. Please try again.");
+    } finally {
+      setRoadSaving(false);
+    }
+  }
 
   // Save effect runs BEFORE the hydration effect so that on a vehicle.id change,
   // the guard below prevents the previous vehicle's messages from being written
@@ -976,15 +1113,29 @@ function LandingPage({
 
       {/* Roadside + Mechanic */}
       <div style={{ padding: "16px 20px 0", display: "flex", gap: 12 }}>
-        <button style={{ flex: 1, background: C.sage, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: "16px 14px", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", textAlign: "left" }}>
-          <span style={{ fontSize: 20, color: C.green, fontWeight: 300, lineHeight: 1 }}>+</span>
-          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text, margin: 0 }}>Roadside Assistance</p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>Add plan and coverage</p>
+        <button
+          onClick={openRoadSheet}
+          style={{ flex: 1, background: C.sage, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: "16px 14px", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", textAlign: "left" }}
+        >
+          <span style={{ fontSize: 20, color: C.green, fontWeight: 300, lineHeight: 1 }}>{roadside ? "›" : "+"}</span>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text, margin: 0 }}>
+            {roadside ? roadside.provider_name : "Roadside Assistance"}
+          </p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
+            {roadside ? (roadside.phone ?? "Tap to view") : "Add plan and coverage"}
+          </p>
         </button>
-        <button style={{ flex: 1, background: C.sage, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: "16px 14px", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", textAlign: "left" }}>
-          <span style={{ fontSize: 20, color: C.green, fontWeight: 300, lineHeight: 1 }}>+</span>
-          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text, margin: 0 }}>Mechanic</p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>Add regular mechanic info</p>
+        <button
+          onClick={openMechSheet}
+          style={{ flex: 1, background: C.sage, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: "16px 14px", display: "flex", flexDirection: "column", gap: 6, cursor: "pointer", textAlign: "left" }}
+        >
+          <span style={{ fontSize: 20, color: C.green, fontWeight: 300, lineHeight: 1 }}>{mechanic ? "›" : "+"}</span>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text, margin: 0 }}>
+            {mechanic ? (mechanic.shop_name || mechanic.name) : "Mechanic"}
+          </p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
+            {mechanic ? (mechanic.phone ?? "Tap to view") : "Add regular mechanic info"}
+          </p>
         </button>
       </div>
 
@@ -1003,6 +1154,162 @@ function LandingPage({
       >
         Swipe to explore →
       </p>
+
+      {/* ── Mechanic Bottom Sheet ─────────────────────── */}
+      {mechSheetOpen && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+          onClick={() => setMechSheetOpen(false)}
+        >
+          <style>{`@keyframes gariSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
+          <div
+            style={{ position: "relative", background: "#FFFFFF", borderRadius: "22px 22px 0 0", padding: "12px 24px 48px", maxWidth: 430, width: "100%", margin: "0 auto", boxShadow: "0 -4px 32px rgba(0,0,0,0.12)", maxHeight: "90vh", overflowY: "auto", animation: "gariSlideUp 0.3s ease" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#D4DDD5", margin: "0 auto 24px" }} />
+
+            {mechMode === "view" && mechanic ? (
+              <>
+                <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 24, color: "#0D1C0E", margin: "0 0 4px" }}>{mechanic.name}</h2>
+                {mechanic.shop_name && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, color: "#6B7C6D", margin: "0 0 8px" }}>{mechanic.shop_name}</p>}
+                {mechanic.phone && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", margin: "0 0 6px" }}>{mechanic.phone}</p>}
+                {mechanic.address && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", margin: "0 0 6px" }}>{mechanic.address}</p>}
+                {mechanic.hours && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7C6D", margin: "0 0 6px" }}>{mechanic.hours}</p>}
+                {mechanic.notes && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7C6D", margin: "0 0 16px" }}>{mechanic.notes}</p>}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
+                  {mechanic.phone && (
+                    <a href={toTelHref(mechanic.phone)} style={{ display: "block", textAlign: "center", background: "#1F6B2E", color: "#fff", borderRadius: 14, padding: "15px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "0.04em", textDecoration: "none", boxSizing: "border-box" }}>
+                      Call {mechanic.phone}
+                    </a>
+                  )}
+                  <button onClick={startMechEdit} style={{ width: "100%", background: "none", border: "1.5px solid #1F6B2E", borderRadius: 14, padding: "12px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: "#1F6B2E", cursor: "pointer", letterSpacing: "0.04em" }}>
+                    Edit
+                  </button>
+                  <button onClick={() => setMechSheetOpen(false)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", padding: "8px 0" }}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: "#0D1C0E", margin: "0 0 20px" }}>
+                  {mechMode === "edit" ? "Edit Mechanic" : "Add Your Mechanic"}
+                </h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+                  {([ { label: "Mechanic Name *", val: mechName, set: setMechName, ph: "e.g. Mike Johnson" },
+                    { label: "Shop Name", val: mechShop, set: setMechShop, ph: "e.g. Mike's Auto" },
+                    { label: "Phone Number", val: mechPhone, set: setMechPhone, ph: "e.g. (555) 123-4567", type: "tel" },
+                    { label: "Address", val: mechAddress, set: setMechAddress, ph: "Shop address" },
+                    { label: "Hours", val: mechHours, set: setMechHours, ph: "e.g. Mon–Fri 8am–6pm" },
+                    { label: "Notes", val: mechNotes, set: setMechNotes, ph: "Any notes…" },
+                  ] as { label: string; val: string; set: (v: string) => void; ph: string; type?: string }[]).map(({ label, val, set, ph, type }) => (
+                    <div key={label}>
+                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#6B7C6D", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>{label}</p>
+                      <input type={type ?? "text"} value={val} placeholder={ph} onChange={(e) => set(e.target.value)} style={{ width: "100%", background: "#F4F7F2", border: "1.5px solid #D4DDD5", borderRadius: 12, padding: "13px 16px", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#0D1C0E", outline: "none", boxSizing: "border-box" }} />
+                    </div>
+                  ))}
+                </div>
+                <button onClick={handleSaveMech} disabled={mechSaving || !mechName.trim()} style={{ width: "100%", background: "#1F6B2E", color: "#fff", border: "none", borderRadius: 14, padding: "15px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "0.04em", cursor: mechSaving || !mechName.trim() ? "default" : "pointer", opacity: mechSaving || !mechName.trim() ? 0.7 : 1, transition: "opacity 0.15s", marginBottom: 12 }}>
+                  {mechSaving ? "Saving…" : "Save"}
+                </button>
+                <button onClick={() => mechMode === "edit" ? setMechMode("view") : setMechSheetOpen(false)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", width: "100%", padding: "8px 0" }}>
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Roadside Assistance Bottom Sheet ─────────── */}
+      {roadSheetOpen && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+          onClick={() => setRoadSheetOpen(false)}
+        >
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
+          <div
+            style={{ position: "relative", background: "#FFFFFF", borderRadius: "22px 22px 0 0", padding: "12px 24px 48px", maxWidth: 430, width: "100%", margin: "0 auto", boxShadow: "0 -4px 32px rgba(0,0,0,0.12)", maxHeight: "90vh", overflowY: "auto", animation: "gariSlideUp 0.3s ease" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#D4DDD5", margin: "0 auto 24px" }} />
+
+            {roadMode === "view" && roadside ? (
+              <>
+                <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 24, color: "#0D1C0E", margin: "0 0 12px" }}>{roadside.provider_name}</h2>
+                {roadside.member_number && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", margin: 0 }}>Member # {roadside.member_number}</p>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(roadside!.member_number!).then(() => { setMemberCopied(true); setTimeout(() => setMemberCopied(false), 1800); }).catch(() => {}); }}
+                      style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center" }}
+                      title="Copy member number"
+                    >
+                      {memberCopied
+                        ? <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#1F6B2E" }}>Copied!</span>
+                        : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4" y="1" width="9" height="9" rx="1.5" stroke="#6B7C6D" strokeWidth="1.5"/><path d="M1 5v7a1 1 0 001 1h7" stroke="#6B7C6D" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      }
+                    </button>
+                  </div>
+                )}
+                {roadside.phone && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", margin: "0 0 8px" }}>{roadside.phone}</p>}
+                {roadside.coverage_notes && (
+                  <div style={{ marginBottom: 8 }}>
+                    {roadside.coverage_notes.split(/[\n,]/).map((n) => n.trim()).filter(Boolean).map((n, i) => (
+                      <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7C6D", margin: "0 0 4px" }}>• {n}</p>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
+                  {roadside.phone && (
+                    <a href={toTelHref(roadside.phone)} style={{ display: "block", textAlign: "center", background: "#C0392B", color: "#fff", borderRadius: 14, padding: "15px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "0.04em", textDecoration: "none", boxSizing: "border-box" }}>
+                      Call {roadside.phone}
+                    </a>
+                  )}
+                  <button onClick={startRoadEdit} style={{ width: "100%", background: "none", border: "1.5px solid #1F6B2E", borderRadius: 14, padding: "12px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: "#1F6B2E", cursor: "pointer", letterSpacing: "0.04em" }}>
+                    Edit
+                  </button>
+                  <button onClick={() => setRoadSheetOpen(false)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", padding: "8px 0" }}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: "#0D1C0E", margin: "0 0 20px" }}>
+                  {roadMode === "edit" ? "Edit Roadside Assistance" : "Add Roadside Assistance"}
+                </h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+                  {([ { label: "Provider Name *", val: roadProvider, set: setRoadProvider, ph: "e.g. CAA, AMA, AAA" },
+                    { label: "Member Number", val: roadMember, set: setRoadMember, ph: "Your membership number" },
+                    { label: "Phone Number", val: roadPhone, set: setRoadPhone, ph: "Emergency phone number", type: "tel" },
+                    { label: "Coverage Notes", val: roadCoverage, set: setRoadCoverage, ph: "e.g. Towing up to 200km, battery boost, flat tire" },
+                  ] as { label: string; val: string; set: (v: string) => void; ph: string; type?: string }[]).map(({ label, val, set, ph, type }) => (
+                    <div key={label}>
+                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#6B7C6D", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>{label}</p>
+                      <input type={type ?? "text"} value={val} placeholder={ph} onChange={(e) => set(e.target.value)} style={{ width: "100%", background: "#F4F7F2", border: "1.5px solid #D4DDD5", borderRadius: 12, padding: "13px 16px", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#0D1C0E", outline: "none", boxSizing: "border-box" }} />
+                    </div>
+                  ))}
+                </div>
+                <button onClick={handleSaveRoad} disabled={roadSaving || !roadProvider.trim()} style={{ width: "100%", background: "#1F6B2E", color: "#fff", border: "none", borderRadius: 14, padding: "15px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "0.04em", cursor: roadSaving || !roadProvider.trim() ? "default" : "pointer", opacity: roadSaving || !roadProvider.trim() ? 0.7 : 1, transition: "opacity 0.15s", marginBottom: 12 }}>
+                  {roadSaving ? "Saving…" : "Save"}
+                </button>
+                <button onClick={() => roadMode === "edit" ? setRoadMode("view") : setRoadSheetOpen(false)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", width: "100%", padding: "8px 0" }}>
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Contact save toast */}
+      {contactToast && (
+        <div style={{ position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", background: "#1F6B2E", color: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, padding: "12px 24px", borderRadius: 12, zIndex: 300, boxShadow: "0 4px 20px rgba(0,0,0,0.2)", whiteSpace: "nowrap" }}>
+          {contactToast}
+        </div>
+      )}
 
     </div>
   );
@@ -2078,7 +2385,7 @@ export default function Dashboard() {
           msOverflowStyle: "none",
         } as React.CSSProperties}
       >
-        <LandingPage vehicle={vehicle} expenses={expenses} documents={documents} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} />
+        <LandingPage vehicle={vehicle} expenses={expenses} documents={documents} userId={user?.id ?? ""} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} />
         <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} onOpenSettings={() => setShowSettings(true)} />
         <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} onOpenSettings={() => setShowSettings(true)} />
         <PartsPage vehicle={vehicle} onOpenSettings={() => setShowSettings(true)} />
