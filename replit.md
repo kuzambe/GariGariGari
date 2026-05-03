@@ -33,7 +33,9 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 ### `artifacts/api-server` — Express API Server
 - **Preview path**: `/api`
-- No backend logic needed for this frontend-only Supabase app
+- **Routes**:
+  - `GET /api/healthz` — health check
+  - `POST /api/cargpt` — CarGPT AI chat endpoint (uses Gemini 2.5 Flash via `GEMINI_API_KEY`). Accepts `{ vehicleContext, userMessage, history }`, builds a vehicle-aware system prompt, calls Gemini, returns `{ text }`
 
 ## Environment Variables / Secrets
 

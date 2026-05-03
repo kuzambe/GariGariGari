@@ -550,7 +550,66 @@ function VinCopy({ vin }: { vin: string }) {
   );
 }
 
+/* ── CARGPT DAILY LIMIT HELPERS ─────────────────────── */
+const CARGPT_LIMIT = 20;
+const CARGPT_LS_KEY = "cargpt_usage";
+
+function getCarGptUsage(): { date: string; count: number } {
+  try {
+    const raw = localStorage.getItem(CARGPT_LS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { date: "", count: 0 };
+}
+
+function incrementCarGptUsage(): number {
+  const today = new Date().toISOString().split("T")[0];
+  const usage = getCarGptUsage();
+  const count = usage.date === today ? usage.count + 1 : 1;
+  localStorage.setItem(CARGPT_LS_KEY, JSON.stringify({ date: today, count }));
+  return count;
+}
+
+function getRemainingCarGptQuestions(): number {
+  const today = new Date().toISOString().split("T")[0];
+  const usage = getCarGptUsage();
+  if (usage.date !== today) return CARGPT_LIMIT;
+  return Math.max(0, CARGPT_LIMIT - usage.count);
+}
+
+/* ── THREE-DOT LOADING INDICATOR ────────────────────── */
+function CarGptTyping() {
+  return (
+    <div style={{ display: "flex", gap: 5, alignItems: "center", padding: "10px 14px" }}>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: "#1F6B2E",
+            animation: "cargptPulse 1.2s ease-in-out infinite",
+            animationDelay: `${i * 0.2}s`,
+          }}
+        />
+      ))}
+      <style>{`
+        @keyframes cargptPulse {
+          0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
+          40% { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 /* ── PAGE 1: LANDING ───────────────────────────────── */
+interface CarGptMessage {
+  role: "user" | "model" | "loading";
+  text: string;
+}
+
 function LandingPage({
   vehicle,
   onSignOut,
@@ -564,6 +623,88 @@ function LandingPage({
   onGoToPage: (p: number) => void;
   onOpenSettings: () => void;
 }) {
+  const [carGptInput, setCarGptInput] = useState("");
+  const [carGptMessages, setCarGptMessages] = useState<CarGptMessage[]>([]);
+  const [carGptLoading, setCarGptLoading] = useState(false);
+  const carGptBottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    carGptBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [carGptMessages]);
+
+  async function handleCarGptSubmit() {
+    const message = carGptInput.trim();
+    if (!message || carGptLoading) return;
+
+    if (getRemainingCarGptQuestions() <= 0) {
+      setCarGptMessages((prev) => [
+        ...prev,
+        { role: "user", text: message },
+        { role: "model", text: "You've used all your CarGPT questions for today. Come back tomorrow." },
+      ]);
+      setCarGptInput("");
+      return;
+    }
+
+    incrementCarGptUsage();
+
+    const history: { role: "user" | "model"; text: string }[] = carGptMessages
+      .filter((m) => m.role !== "loading")
+      .slice(-6)
+      .map((m) => ({ role: m.role as "user" | "model", text: m.text }));
+
+    setCarGptMessages((prev) => [...prev, { role: "user", text: message }, { role: "loading", text: "" }]);
+    setCarGptInput("");
+    setCarGptLoading(true);
+
+    try {
+      const [expenses, documents] = await Promise.all([
+        vehicle.id ? getExpensesByVehicleId(vehicle.id) : Promise.resolve([]),
+        vehicle.id ? getDocumentsByVehicleId(vehicle.id) : Promise.resolve([]),
+      ]);
+
+      const base = import.meta.env.BASE_URL as string;
+      const apiBase = base.replace(/\/$/, "");
+      const response = await fetch(`${apiBase}/api/cargpt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vehicleContext: {
+            year: vehicle.year,
+            make: vehicle.make,
+            model: vehicle.model,
+            trim: vehicle.trim,
+            engine: vehicle.engine,
+            fuel_type: vehicle.fuel_type,
+            mileage: vehicle.mileage,
+            mileage_unit: vehicle.mileage_unit,
+            expenses: expenses.slice(0, 20),
+            documents: documents.slice(0, 10),
+          },
+          userMessage: message,
+          history,
+        }),
+      });
+
+      const data = await response.json() as { text?: string; error?: string };
+      const replyText = data.text || data.error || "CarGPT is unavailable right now. Try again in a moment.";
+
+      setCarGptMessages((prev) =>
+        prev.map((m, i) => (i === prev.length - 1 && m.role === "loading" ? { role: "model", text: replyText } : m))
+      );
+    } catch {
+      setCarGptMessages((prev) =>
+        prev.map((m, i) =>
+          i === prev.length - 1 && m.role === "loading"
+            ? { role: "model", text: "CarGPT is unavailable right now. Try again in a moment." }
+            : m
+        )
+      );
+    } finally {
+      setCarGptLoading(false);
+    }
+  }
+
   const make = vehicle.make ? vehicle.make.charAt(0).toUpperCase() + vehicle.make.slice(1).toLowerCase() : "";
   const yearMakeModel = [vehicle.year, make, vehicle.model].filter(Boolean).join(" ");
   const title = vehicle.nickname?.trim() || "Your car";
@@ -659,9 +800,64 @@ function LandingPage({
         <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, margin: "0 0 8px" }}>
           Car-GPT
         </p>
+
+        {/* Conversation bubbles */}
+        {carGptMessages.length > 0 && (
+          <div
+            style={{
+              maxHeight: 320,
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              marginBottom: 10,
+              paddingRight: 2,
+            }}
+          >
+            {carGptMessages.map((msg, i) => {
+              const isUser = msg.role === "user";
+              const isLoading = msg.role === "loading";
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: isUser ? "flex-end" : "flex-start",
+                  }}
+                >
+                  <div
+                    style={{
+                      maxWidth: "80%",
+                      borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                      background: isUser ? "#1F6B2E" : C.sage,
+                      color: isUser ? "#FFFFFF" : "#0D1C0E",
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    {isLoading ? (
+                      <CarGptTyping />
+                    ) : (
+                      <div style={{ padding: "10px 14px", whiteSpace: "pre-wrap" }}>{msg.text}</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={carGptBottomRef} />
+          </div>
+        )}
+
+        {/* Input row */}
         <div style={{ position: "relative" }}>
           <input
             placeholder={`Any questions regarding ${title}...`}
+            value={carGptInput}
+            onChange={(e) => setCarGptInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleCarGptSubmit(); }}
+            disabled={carGptLoading}
             style={{
               width: "100%",
               background: C.sage,
@@ -673,11 +869,32 @@ function LandingPage({
               color: C.text,
               outline: "none",
               boxSizing: "border-box",
+              opacity: carGptLoading ? 0.6 : 1,
             }}
           />
-          <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 18, color: C.muted, pointerEvents: "none" }}>
-            ↑
-          </span>
+          <button
+            onClick={handleCarGptSubmit}
+            disabled={carGptLoading || !carGptInput.trim()}
+            style={{
+              position: "absolute",
+              right: 10,
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: carGptInput.trim() && !carGptLoading ? "#1F6B2E" : "transparent",
+              border: "none",
+              borderRadius: 8,
+              width: 28,
+              height: 28,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: carGptInput.trim() && !carGptLoading ? "pointer" : "default",
+              transition: "background 0.2s",
+              padding: 0,
+            }}
+          >
+            <span style={{ fontSize: 16, color: carGptInput.trim() && !carGptLoading ? "#FFFFFF" : C.muted, lineHeight: 1 }}>↑</span>
+          </button>
         </div>
       </div>
 
