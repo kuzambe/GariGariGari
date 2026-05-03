@@ -156,18 +156,16 @@ function HealthGauge({ pct = 90 }: { pct?: number }) {
 }
 
 /* ── SHORTCUT GRID ─────────────────────────────────── */
-const SHORTCUT_LABELS = ["Service", "Fuel", "Insurance", "Repairs", "Wash", "Other"];
-
 function ShortcutGrid() {
   return (
     <div style={{ padding: "0 20px" }}>
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px", textAlign: "center" }}>
-        Quick Log
+        Quick Access
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-        {SHORTCUT_LABELS.map((label) => (
+        {[0, 1, 2, 3, 4, 5].map((i) => (
           <button
-            key={label}
+            key={i}
             style={{
               aspectRatio: "1",
               borderRadius: "50%",
@@ -176,10 +174,8 @@ function ShortcutGrid() {
               boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
               cursor: "pointer",
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 3,
               transition: "transform 0.12s, box-shadow 0.12s",
               padding: 0,
             }}
@@ -194,8 +190,7 @@ function ShortcutGrid() {
               el.style.boxShadow = "0 2px 12px rgba(0,0,0,0.07)";
             }}
           >
-            <span style={{ fontSize: 22, color: C.green, lineHeight: 1, fontWeight: 300 }}>+</span>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: C.muted, lineHeight: 1 }}>{label}</span>
+            <span style={{ fontSize: 26, color: C.green, lineHeight: 1, fontWeight: 300 }}>+</span>
           </button>
         ))}
       </div>
@@ -289,16 +284,9 @@ function LandingPage({
         flexDirection: "column",
       }}
     >
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "32px 24px 0",
-        }}
-      >
-        <div style={{ flex: 1, minWidth: 0 }}>
+      {/* Header: nickname + logo icon inline at same size */}
+      <div style={{ padding: "32px 24px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
           <h1
             style={{
               fontFamily: "'Rajdhani', sans-serif",
@@ -307,41 +295,51 @@ function LandingPage({
               color: C.text,
               lineHeight: 1,
               margin: 0,
+              whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              flexShrink: 1,
+              minWidth: 0,
             }}
           >
             {title}
           </h1>
-          {subtitle && (
-            <p
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 13,
-                color: C.muted,
-                margin: "5px 0 0",
-                padding: 0,
-              }}
-            >
-              {subtitle}
-            </p>
-          )}
+          <img
+            src={`${BASE}logo-icon.png`}
+            alt="Gari"
+            style={{ height: 32, width: "auto", objectFit: "contain", flexShrink: 0 }}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`;
+            }}
+          />
         </div>
-        {/* Logo icon — uploaded brand mark */}
-        <img
-          src={`${BASE}logo-icon.png`}
-          alt="Gari"
-          style={{ height: 30, objectFit: "contain", marginLeft: 12, flexShrink: 0 }}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = `${BASE}logo.png`;
-          }}
-        />
+        {subtitle && (
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "5px 0 0", padding: 0 }}>
+            {subtitle}
+          </p>
+        )}
       </div>
 
-      {/* Wooden toy car */}
-      <div style={{ display: "flex", justifyContent: "center", padding: "28px 0 16px" }}>
-        <WoodenCar />
+      {/* Car image placeholder */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          margin: "24px 24px 16px",
+          height: 140,
+          borderRadius: 16,
+          border: `1.5px dashed ${C.border}`,
+          background: C.sage,
+          cursor: "pointer",
+          gap: 6,
+        }}
+      >
+        <span style={{ fontSize: 32, color: C.border, lineHeight: 1, fontWeight: 200 }}>+</span>
+        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted }}>
+          Add image / rendering
+        </span>
       </div>
 
       {/* Health gauge */}
