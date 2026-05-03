@@ -1,0 +1,34 @@
+Build the complete documents feature for Gari with two capture options — snap a photo and scan a document. The Supabase documents table and vehicle-docs storage bucket are already set up.
+DOCUMENTS PAGE LAYOUT:
+Vertical list of document categories. Each row 64px tall, 16px horizontal padding. Categories: Insurance, Ownership, Registration, Tint Exemption, Driver's License, Vehicle Handbook. Left side shows document type name in Rajdhani Bold 16px #0D1C0E. Right side shows upload date in DM Sans 13px #6B7C6D if document exists, or slim Add button border 1.5px solid #1F6B2E text #1F6B2E rounded 8px if empty. Rows separated by 1px lines #D4DDD5. Top right — small plus icon in #1F6B2E for custom document type.
+ADDING A DOCUMENT — BOTTOM SHEET:
+Tapping a row or the plus icon slides up a bottom sheet from the bottom. Handle bar at top, white background, rounded top corners 20px. Inside — document type as title Rajdhani Bold 20px. Three options as tappable rows:
+Option 1 — Snap a Photo
+Camera icon. Title "Snap a Photo" Rajdhani Bold 16px #0D1C0E. Subtitle "Quick photo, stored instantly" DM Sans 13px #6B7C6D. Opens the device camera directly. The captured photo is uploaded as is to Supabase Storage.
+Option 2 — Scan Document
+Scan icon. Title "Scan Document" Rajdhani Bold 16px #0D1C0E. Subtitle "Auto-detects edges, corrects perspective, looks like a real scan" DM Sans 13px #6B7C6D. Opens a custom scanning view.
+Option 3 — Choose from Library
+Photo library icon. Title "Choose from Library" Rajdhani Bold 16px #0D1C0E. Subtitle "Select an existing photo or file" DM Sans 13px #6B7C6D. Opens the file picker.
+Cancel text link at the bottom.
+SCAN DOCUMENT FLOW:
+When the user taps Scan Document open a full screen camera view with these elements:
+Dark semi-transparent overlay with a white rectangular cutout in the center showing the document area. Rounded corners 8px on the cutout. At the top in DM Sans 13px white — "Align document within the frame". At the top left — X button to exit. At the bottom — a white capture button 64px diameter.
+Use the jscanify library for document edge detection and perspective correction. Install it via npm. As the user positions the document show a green border on the cutout when a document edge is detected. When they tap capture — take the image, run jscanify to detect document edges and apply perspective correction, enhance contrast slightly for readability, and produce a clean flat document image that looks like it came from a real scanner.
+After capture — show a preview of the scanned result full screen. At the top — "Scan complete" in Rajdhani Bold 20px white. Two buttons at the bottom — Retake in white outlined style and Use This Scan in #1F6B2E background white text. If they tap Use This Scan proceed to upload. If they tap Retake open the scanner again.
+UPLOAD FLOW FOR ALL THREE OPTIONS:
+After capture or selection from library show a brief uploading indicator on the document row. Upload the file to Supabase Storage at path userId/vehicleId/documentType. Generate a signed URL valid for one year using createSignedUrl. Save to documents table with user_id, vehicle_id, type, file_url, created_at. Update the row to show the upload date. Show success toast "Document saved" in #1F6B2E for 2 seconds.
+VIEWING A DOCUMENT:
+Tapping a filled row opens the document full screen. Image fills the screen with black background. Top left X to close. Top right delete icon. Pinch to zoom supported. If the document is a PDF show it in a PDF viewer.
+DELETING A DOCUMENT:
+Delete icon opens confirmation — "Delete this document? This cannot be undone." Cancel and Delete buttons. Delete removes from Supabase Storage and documents table. Row returns to empty state.
+ERROR HANDLING:
+File larger than 10MB — "File too large. Please use a file under 10MB" before uploading.
+Camera permission denied — message explaining access needed with button to open settings.
+Upload failed — toast "Upload failed. Please try again" in #C0392B.
+Scanner fails to detect edges — fallback to regular photo capture automatically with a message "Couldn't detect edges clearly. Photo saved as is."
+All errors caught and handled gracefully. No raw error messages ever shown.
+LOADING STATE:
+On page load query documents table for current user and vehicle. Show pulse skeleton for each row while loading. Populate rows once data returns.
+VEHICLE HANDBOOK ROW:
+When tapped show bottom sheet saying "Upload your vehicle handbook or we'll source it automatically when available." Same three options as other documents.
+Do not change anything else in the app. Only build the documents feature. Show me the result when done.

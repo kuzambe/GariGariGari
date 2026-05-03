@@ -1,0 +1,33 @@
+Paste this into Replit Agent:
+
+I need to build the parts marketplace page in Gari. Here is exactly what to build:
+EBAY INTEGRATION:
+Set up the eBay Browse API to fetch real parts listings filtered to the user's exact vehicle. The user's make, model, year, and trim are already stored in the vehicles table in Supabase and available through VehicleContext.
+To authenticate with eBay Browse API use OAuth 2.0 client credentials flow. Make a POST request to https://api.ebay.com/identity/v1/oauth2/token with the client credentials to get an access token. Then use that token to make search requests to https://api.ebay.com/buy/browse/v1/item_summary/search
+The search query should be automatically built from the vehicle data. For example if the user has a 2009 Honda Civic EX the query becomes "2009 Honda Civic EX parts" and the category ID should be 6028 which is eBay Motors Parts and Accessories.
+Store the eBay Client ID and Client Secret in environment variables called EBAY_CLIENT_ID and EBAY_CLIENT_SECRET. Do not hardcode them anywhere.
+Each search should return listings with these fields: title, price, currency, condition, seller username, seller feedback score, item URL, and thumbnail image URL. Display a maximum of 20 results per search.
+PARTS PAGE LAYOUT:
+At the top of the page — the vehicle context line in DM Sans 13px #6B7C6D: "Showing parts for [year] [make] [model] [trim]"
+Below that — a search bar. Full width, background #F4F7F2, border 1.5px solid #D4DDD5, rounded 12px, placeholder "Search parts..." in #6B7C6D. When the user types and submits it overrides the default search query with their custom search but still appends the make model and year automatically so results stay relevant to their car.
+Below the search bar — horizontal scrollable filter chips. Each chip filters the search by category keyword. Chips: All Parts, Engine, Brakes, Suspension, Electrical, Body, Interior, Wheels, Paint. Active chip has background #1F6B2E white text. Inactive has background #E8F0E9 text #6B7C6D. Tapping a chip updates the search query and refreshes results automatically.
+Below the filter chips — external source buttons in a horizontal scrollable row. These open external sites in the browser with the search pre-filled. Each button is slim, outlined, rounded, text in #6B7C6D. Label each with the source name. The buttons and their pre-filled URLs are:
+Facebook — opens https://www.facebook.com/marketplace/search/?query=[make]+[model]+[year]+parts in the browser
+Kijiji — opens https://www.kijiji.ca/b-cars-vehicles/[make]+[model]+[year]+parts/k0c27l0 in the browser
+Canadian Tire — opens https://www.canadiantire.ca/en/search.html#q=[make]+[year]+[model]+parts in the browser
+Amazon — opens https://www.amazon.ca/s?k=[make]+[model]+[year]+parts in the browser
+Replace [make] [model] [year] with the actual vehicle data dynamically in all URLs. Encode spaces as + in all URLs.
+Below the external source buttons — the eBay listings. Show a loading skeleton while fetching. The skeleton should be three placeholder rows that pulse with a subtle opacity animation in #F4F7F2.
+Each eBay listing displays as a full width row with:
+Left side — thumbnail image 64x64px rounded 10px. If no image show a grey placeholder rectangle.
+Center — part title in Rajdhani Bold 15px #0D1C0E, maximum two lines then truncate with ellipsis. Below the title — seller name in DM Sans 11px #6B7C6D and condition in DM Sans 11px — New in #2D9E4A, Used in #6B7C6D.
+Right side — price in Rajdhani Bold 16px #1F6B2E. Below the price — a View button. The View button is slim, border 1.5px solid #1F6B2E, text #1F6B2E, rounded 8px, padding 4px 12px, DM Sans 12px. Tapping View opens the eBay listing URL in the browser.
+Rows are separated by 1px lines #D4DDD5. Each row has 16px vertical padding. No card borders, no shadows on individual rows. Clean list style.
+If the eBay API returns no results — show a centered empty state in DM Sans 14px #6B7C6D: "No parts found for your search. Try adjusting your filters or search term."
+If the eBay API call fails — show a centered message in DM Sans 14px #6B7C6D: "Could not load parts right now. Check the external sources above or try again." with a Retry button in #1F6B2E.
+IMPORTANT NOTES:
+The eBay API call should be made from a backend function or edge function — never expose the Client ID or Client Secret to the frontend. Use a server side function to handle the OAuth token generation and API call, then return the results to the frontend.
+Cache the OAuth token and reuse it until it expires — do not generate a new token on every search request.
+Debounce the search input by 500ms so the API is not called on every keystroke.
+All API errors should be caught and handled gracefully — never show a raw error message to the user.
+Do not change anything else in the app. Only build the parts page. Show me the result when done.

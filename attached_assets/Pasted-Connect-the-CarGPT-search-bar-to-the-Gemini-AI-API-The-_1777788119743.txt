@@ -1,0 +1,12 @@
+Connect the CarGPT search bar to the Gemini AI API. The GEMINI_API_KEY is already stored in the environment variables.
+When the user types a question and submits it do the following:
+First collect all available context about the user's vehicle from VehicleContext and Supabase — make, model, year, trim, engine, fuel type, mileage, mileage unit, recent expenses, and documents on file.
+Then make a POST request from the backend to the Gemini API at https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=GEMINI_API_KEY
+Send this as the request body:
+The system instruction should be a dynamic string built from the vehicle context that reads: "You are CarGPT, an expert automotive assistant built into the Gari app. You know everything about this specific vehicle. Vehicle details: [year] [make] [model] [trim]. Engine: [engine]. Fuel type: [fuel_type]. Current mileage: [mileage] [mileage_unit]. Recent expenses: [list expenses]. Documents on file: [list document types]. Answer all questions specifically about this car. Be concise, plain language, helpful. Never be generic. Always reference their actual vehicle."
+The user message should be whatever the user typed in the CarGPT search bar.
+Display the response in a conversation bubble below the search bar. User message on the right in #1F6B2E background white text. CarGPT response on the left in #F4F7F2 background #0D1C0E text. While waiting for the response show three animated dots in #1F6B2E.
+The conversation should be scrollable and keep history within the session. Include the last 6 messages in each subsequent request so CarGPT remembers context.
+Limit to 20 questions per day per user stored in localStorage with today's date. When limit is reached show "You've used all your CarGPT questions for today. Come back tomorrow."
+Handle all errors gracefully — if the API fails show "CarGPT is unavailable right now. Try again in a moment." in the response bubble.
+Do not change anything else in the app. Only connect CarGPT to Gemini.

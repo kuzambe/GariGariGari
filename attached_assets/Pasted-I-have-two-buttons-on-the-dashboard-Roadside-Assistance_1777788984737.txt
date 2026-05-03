@@ -1,0 +1,35 @@
+I have two buttons on the dashboard — Roadside Assistance and Mechanic. Build the complete feature for both. Here is exactly what to do:
+DATABASE FIRST — add two new tables to Supabase. Do not modify existing tables.
+Table 1 — mechanics:
+id uuid primary key default gen_random_uuid()
+user_id uuid
+vehicle_id uuid
+name text
+shop_name text
+phone text
+address text
+hours text
+notes text
+created_at timestamptz default now()
+Table 2 — roadside_assistance:
+id uuid primary key default gen_random_uuid()
+user_id uuid
+provider_name text
+member_number text
+phone text
+coverage_notes text
+created_at timestamptz default now()
+Add RLS policies to both tables — authenticated users can only select insert update delete their own rows where auth.uid() = user_id.
+MECHANIC BUTTON:
+When tapped — if no mechanic is saved yet open a bottom sheet that slides up smoothly. Title "Add Your Mechanic" in Rajdhani Bold 20px. Input fields: Mechanic Name, Shop Name, Phone Number, Address, Hours, Notes. All same input styling as the rest of the app. A Save button in #1F6B2E full width at the bottom. On save — store to mechanics table in Supabase linked to the current user_id and vehicle_id.
+When tapped — if a mechanic IS already saved open a mechanic card bottom sheet. Show: mechanic name in Rajdhani Bold 24px, shop name in DM Sans 16px #6B7C6D, address in DM Sans 14px #6B7C6D, hours in DM Sans 13px #6B7C6D, notes if any in DM Sans 13px #6B7C6D. Two large buttons at the bottom: Call button full width background #1F6B2E white text Rajdhani Bold 18px. Below that a smaller Edit button outlined #1F6B2E text.
+The Call button must use the tel: protocol to initiate a phone call directly. Use window.location.href = tel:+[phone number] when tapped. This opens the phone dialer on mobile with the number pre-filled and the user just taps call. Strip all non-numeric characters from the phone number before building the tel: link except the leading plus if present.
+ROADSIDE ASSISTANCE BUTTON:
+When tapped — if no provider saved open a bottom sheet. Title "Add Roadside Assistance" Rajdhani Bold 20px. Input fields: Provider Name such as CAA or AMA, Member Number, Phone Number, Coverage Notes such as towing up to 200km, battery boost, flat tire. Save button in #1F6B2E.
+When tapped — if provider IS saved open a provider card bottom sheet. Show: provider name in Rajdhani Bold 24px, member number in DM Sans 14px #6B7C6D with a small copy icon beside it so they can copy their member number easily, coverage notes in DM Sans 13px #6B7C6D formatted as a readable list, and a large Call button full width background #C0392B white text Rajdhani Bold 18px — red because this is an emergency contact. The Call button uses the same tel: protocol as the mechanic button.
+Below the Call button — a smaller Edit button outlined in #6B7C6D.
+BOTH BUTTONS ON DASHBOARD:
+After saving a mechanic or roadside provider the dashboard button should update to show the saved name instead of the generic label. So the Mechanic button shows "Mike's Auto" and the Roadside button shows "CAA" once saved. This makes it clear at a glance that the information is connected.
+GENERAL:
+All bottom sheets slide up with smooth transition 0.3s ease. Handle bar at top of each sheet. Tapping outside the sheet or a Cancel link dismisses it. All inputs same styling as rest of app. All errors handled gracefully with toast messages. Never show raw errors to user.
+Do not change anything else. Only build these two features.
