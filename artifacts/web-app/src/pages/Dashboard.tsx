@@ -544,7 +544,7 @@ function LandingPage({
           <img
             src={`${BASE}settings-icon.png`}
             alt="Gari"
-            style={{ height: 28, width: "auto", objectFit: "contain", flex: "0 0 auto" }}
+            style={{ height: 32, width: "auto", objectFit: "contain", flex: "0 0 auto" }}
           />
         </div>
 
