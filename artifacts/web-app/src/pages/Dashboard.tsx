@@ -1413,31 +1413,16 @@ export default function Dashboard() {
         opacity: isSwiping ? 0 : 1,
         transition: "opacity 0.2s ease",
       }}>
-        {/* Profile avatar */}
+        {/* Gari icon — opens settings */}
         <button
           onClick={() => setShowSettings(true)}
           style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
         >
-          <div style={{
-            width: 32,
-            height: 32,
-            borderRadius: "50%",
-            background: C.greenLight,
-            border: `1.5px solid ${C.border}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}>
-            <span style={{
-              fontFamily: "'Rajdhani', sans-serif",
-              fontWeight: 700,
-              fontSize: 14,
-              color: C.green,
-              lineHeight: 1,
-            }}>
-              {user?.email ? user.email[0].toUpperCase() : "?"}
-            </span>
-          </div>
+          <img
+            src={`${BASE}gari-icon-new-nobg.png`}
+            alt="Gari"
+            style={{ height: 34, width: "auto", display: "block" }}
+          />
         </button>
       </div>
 
