@@ -163,10 +163,10 @@ function HealthGauge({ pct = 90 }: { pct?: number }) {
 
 /* ── SHORTCUT GRID ─────────────────────────────────── */
 const QUICK_MENU = [
-  { label: "Documents", icon: "📄", page: 1 },
-  { label: "Parts",     icon: "🔩", page: 3 },
-  { label: "Market",    icon: "🏪", page: null },
-  { label: "Diagnostics", icon: "🔬", page: 4 },
+  { label: "Documents", page: 1 },
+  { label: "Parts",     page: 3 },
+  { label: "Market",    page: null },
+  { label: "Diagnostics", page: 4 },
 ];
 
 function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
@@ -233,10 +233,10 @@ function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
           >
             <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 20px" }} />
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 8px" }}>
-              Go to
+              Add to quick access
             </p>
             <div style={{ background: C.sage, borderRadius: 14, overflow: "hidden" }}>
-              {QUICK_MENU.map(({ label, icon, page }, idx) => (
+              {QUICK_MENU.map(({ label, page }, idx) => (
                 <button
                   key={label}
                   onClick={() => { if (page !== null) onGoToPage(page); setOpen(false); }}
@@ -244,7 +244,6 @@ function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
                     width: "100%",
                     display: "flex",
                     alignItems: "center",
-                    gap: 14,
                     padding: "15px 18px",
                     background: "none",
                     border: "none",
@@ -253,7 +252,6 @@ function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
                     textAlign: "left",
                   }}
                 >
-                  <span style={{ fontSize: 20 }}>{icon}</span>
                   <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.text, flex: 1 }}>{label}</span>
                   <span style={{ color: C.border, fontSize: 18 }}>›</span>
                 </button>
