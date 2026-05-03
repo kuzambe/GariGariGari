@@ -606,11 +606,11 @@ function LandingPage({
           >
             {title}
           </h1>
-          <div style={{ width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <div style={{ width: 72, height: 72, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <img
               src={`${BASE}gari-icon-new-nobg.png`}
               alt="Gari"
-              style={{ width: 42, height: 42, objectFit: "contain" }}
+              style={{ width: 72, height: 72, objectFit: "contain" }}
             />
           </div>
         </div>
