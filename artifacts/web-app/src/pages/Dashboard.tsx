@@ -165,15 +165,61 @@ function HealthGauge({ pct = 90 }: { pct?: number }) {
 }
 
 /* ── SHORTCUT GRID ─────────────────────────────────── */
-const QUICK_MENU = [
-  { label: "Documents", page: 1 },
-  { label: "Parts",     page: 3 },
-  { label: "Market",    page: null },
-  { label: "Diagnostics", page: 4 },
+type QuickOption = { label: string; route: string; page: number };
+type QuickSlot = QuickOption | null;
+
+const QUICK_OPTIONS: QuickOption[] = [
+  { label: "Home",        route: "/",            page: 0 },
+  { label: "Documents",   route: "/documents",   page: 1 },
+  { label: "Finances",    route: "/finances",    page: 2 },
+  { label: "Parts",       route: "/parts",       page: 3 },
+  { label: "Diagnostics", route: "/diagnostics", page: 4 },
 ];
 
+const QUICK_STORAGE_KEY = "gari.quickAccess.v1";
+
+function loadQuickAccess(): QuickSlot[] {
+  const empty: QuickSlot[] = [null, null, null, null, null, null];
+  try {
+    const raw = localStorage.getItem(QUICK_STORAGE_KEY);
+    if (!raw) return empty;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return empty;
+    return empty.map((_, i) => {
+      const s = parsed[i];
+      if (s && typeof s.label === "string" && typeof s.route === "string" && typeof s.page === "number") {
+        return { label: s.label, route: s.route, page: s.page };
+      }
+      return null;
+    });
+  } catch {
+    return empty;
+  }
+}
+
 function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
-  const [open, setOpen] = useState(false);
+  const [slots, setSlots] = useState<QuickSlot[]>(() => loadQuickAccess());
+  const [pickerIdx, setPickerIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    try { localStorage.setItem(QUICK_STORAGE_KEY, JSON.stringify(slots)); } catch { /* ignore quota / disabled storage */ }
+  }, [slots]);
+
+  function handleSlotTap(i: number) {
+    const slot = slots[i];
+    if (slot) onGoToPage(slot.page);
+    else setPickerIdx(i);
+  }
+
+  function handlePick(opt: QuickOption) {
+    if (pickerIdx === null) return;
+    setSlots((prev) => {
+      const next = [...prev];
+      next[pickerIdx] = opt;
+      return next;
+    });
+    setPickerIdx(null);
+  }
 
   return (
     <div style={{ padding: "0 20px" }}>
@@ -181,10 +227,11 @@ function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
         Quick Access
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-        {[0, 1, 2, 3, 4, 5].map((i) => (
+        {slots.map((slot, i) => (
           <button
             key={i}
-            onClick={() => setOpen(true)}
+            onClick={() => handleSlotTap(i)}
+            aria-label={slot ? `Go to ${slot.label}` : "Add quick access shortcut"}
             style={{
               aspectRatio: "1",
               borderRadius: "50%",
@@ -209,16 +256,31 @@ function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
               el.style.boxShadow = "0 2px 12px rgba(0,0,0,0.07)";
             }}
           >
-            <span style={{ fontSize: 26, color: C.green, lineHeight: 1, fontWeight: 300 }}>+</span>
+            {slot ? (
+              <span style={{
+                fontFamily: "'Rajdhani', sans-serif",
+                fontWeight: 700,
+                fontSize: 13,
+                color: C.text,
+                textAlign: "center",
+                lineHeight: 1.1,
+                padding: "0 6px",
+                letterSpacing: "0.02em",
+              }}>
+                {slot.label}
+              </span>
+            ) : (
+              <span style={{ fontSize: 26, color: C.green, lineHeight: 1, fontWeight: 300 }}>+</span>
+            )}
           </button>
         ))}
       </div>
 
-      {/* Quick-access popup */}
-      {open && (
+      {/* Quick-access picker */}
+      {pickerIdx !== null && (
         <div
           style={{ position: "fixed", inset: 0, zIndex: 150, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
-          onClick={() => setOpen(false)}
+          onClick={() => setPickerIdx(null)}
         >
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)" }} />
           <div
@@ -239,10 +301,10 @@ function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
               Add to quick access
             </p>
             <div style={{ background: C.sage, borderRadius: 14, overflow: "hidden" }}>
-              {QUICK_MENU.map(({ label, page }, idx) => (
+              {QUICK_OPTIONS.map((opt, idx) => (
                 <button
-                  key={label}
-                  onClick={() => { if (page !== null) onGoToPage(page); setOpen(false); }}
+                  key={opt.label}
+                  onClick={() => handlePick(opt)}
                   style={{
                     width: "100%",
                     display: "flex",
@@ -250,12 +312,12 @@ function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
                     padding: "15px 18px",
                     background: "none",
                     border: "none",
-                    borderBottom: idx < QUICK_MENU.length - 1 ? `1px solid ${C.border}` : "none",
+                    borderBottom: idx < QUICK_OPTIONS.length - 1 ? `1px solid ${C.border}` : "none",
                     cursor: "pointer",
                     textAlign: "left",
                   }}
                 >
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.text, flex: 1 }}>{label}</span>
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.text, flex: 1 }}>{opt.label}</span>
                   <span style={{ color: C.border, fontSize: 18 }}>›</span>
                 </button>
               ))}
