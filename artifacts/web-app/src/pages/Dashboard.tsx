@@ -523,21 +523,30 @@ function LandingPage({
     >
       {/* Header: nickname + logo icon inline */}
       <div style={{ padding: "32px 24px 0" }}>
-        <h1
-          style={{
-            fontFamily: "'Rajdhani', sans-serif",
-            fontWeight: 700,
-            fontSize: 32,
-            color: C.text,
-            lineHeight: 1,
-            margin: 0,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {title}
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
+          <h1
+            style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontWeight: 700,
+              fontSize: 32,
+              color: C.text,
+              lineHeight: 1,
+              margin: 0,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              flex: "0 1 auto",
+              minWidth: 0,
+            }}
+          >
+            {title}
+          </h1>
+          <img
+            src={`${BASE}settings-icon.png`}
+            alt="Gari"
+            style={{ height: 28, width: "auto", objectFit: "contain", flex: "0 0 auto" }}
+          />
+        </div>
 
         {/* Year Make Model */}
         {subtitle && (
@@ -1313,18 +1322,6 @@ export default function Dashboard() {
         gap: 6,
         pointerEvents: "auto",
       }}>
-        {/* Settings icon → opens settings */}
-        <button
-          onClick={() => setShowSettings(true)}
-          style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center" }}
-        >
-          <img
-            src={`${BASE}settings-icon.png`}
-            alt="Settings"
-            style={{ height: 28, width: "auto", objectFit: "contain" }}
-          />
-        </button>
-
         {/* Profile avatar */}
         <button
           onClick={() => setShowSettings(true)}
