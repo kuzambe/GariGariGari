@@ -1421,7 +1421,7 @@ export default function Dashboard() {
           <img
             src={`${BASE}gari-icon-new-nobg.png`}
             alt="Gari"
-            style={{ height: 34, width: "auto", display: "block" }}
+            style={{ height: 26, width: "auto", display: "block" }}
           />
         </button>
       </div>
