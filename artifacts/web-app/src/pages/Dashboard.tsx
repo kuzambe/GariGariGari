@@ -2018,7 +2018,7 @@ function DocumentsPage({
                   padding: "4px 12px",
                   fontWeight: 500,
                 }}>
-                  Add
+                  {cat.type === "vehicle-handbook" ? "View" : "Add"}
                 </span>
               )}
             </div>
