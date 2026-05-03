@@ -871,7 +871,7 @@ function LandingPage({
             style={{
               width: "100%",
               background: C.sage,
-              border: `1.5px solid ${carGptRemaining === 0 ? C.border : C.border}`,
+              border: `1.5px solid ${C.border}`,
               borderRadius: 12,
               padding: "12px 44px 12px 16px",
               fontFamily: "'DM Sans', sans-serif",
@@ -884,13 +884,13 @@ function LandingPage({
           />
           <button
             onClick={handleCarGptSubmit}
-            disabled={carGptLoading || !carGptInput.trim()}
+            disabled={carGptLoading || !carGptInput.trim() || carGptRemaining === 0}
             style={{
               position: "absolute",
               right: 10,
               top: "50%",
               transform: "translateY(-50%)",
-              background: carGptInput.trim() && !carGptLoading ? "#1F6B2E" : "transparent",
+              background: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "#1F6B2E" : "transparent",
               border: "none",
               borderRadius: 8,
               width: 28,
@@ -898,12 +898,12 @@ function LandingPage({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              cursor: carGptInput.trim() && !carGptLoading ? "pointer" : "default",
+              cursor: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "pointer" : "default",
               transition: "background 0.2s",
               padding: 0,
             }}
           >
-            <span style={{ fontSize: 16, color: carGptInput.trim() && !carGptLoading ? "#FFFFFF" : C.muted, lineHeight: 1 }}>↑</span>
+            <span style={{ fontSize: 16, color: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "#FFFFFF" : C.muted, lineHeight: 1 }}>↑</span>
           </button>
         </div>
         {/* Remaining questions counter */}
