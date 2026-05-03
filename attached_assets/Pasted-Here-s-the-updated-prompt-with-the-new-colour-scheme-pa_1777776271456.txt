@@ -1,0 +1,75 @@
+Here's the updated prompt with the new colour scheme — paste this into Replit Agent:
+
+The current dashboard is completely wrong. It looks like a generic low quality app with a grid of tiles and stacked cards. This is exactly what we said we did not want. Delete everything on the dashboard and rebuild it entirely from scratch following these instructions precisely.
+COLOUR SYSTEM — apply everywhere with zero exceptions:
+Primary background: #FFFFFF pure white
+Secondary background: #F4F7F2 very light sage green tint
+Text primary: #0D1C0E near black with a green undertone
+Text secondary: #6B7C6D muted sage
+Accent green: #1F6B2E deep forest green — used for primary buttons, active states, key highlights
+Light green: #E8F0E9 very pale green — used for surfaces, pills, card backgrounds
+Border color: #D4DDD5 soft grey green
+Success indicator: #2D9E4A bright green
+Warning indicator: #E5A020 amber — used only for warnings and alerts, not as a primary accent
+Error indicator: #C0392B
+White: #FFFFFF used generously as contrast against green elements
+The overall feel is clean, premium, and natural. Like a high end automotive brand crossed with a luxury wellness app. Think Aesop meets Tesla interior. White space is generous. Green is confident but not overwhelming. Black anchors the typography.
+THE CORE NAVIGATION CONCEPT — NO GRIDS, NO STACKS:
+The app uses horizontal swipe navigation between pages. There is no grid of feature tiles on the main screen. Instead the user swipes left and right between distinct full pages. Each page is dedicated to one thing and has extreme detail and depth. The landing page is the only page with a simple overview. Everything else is accessed by swiping.
+The pages in order from left to right:
+Page 1 — Landing dashboard. Simple, calm, shows only the most essential information and most recent action.
+Page 2 — Documents. Full detailed documents page.
+Page 3 — Finances. Full detailed finances page.
+Page 4 — Parts. Full detailed parts page.
+Page 5 — Diagnostics. Full detailed diagnostics page.
+Navigation between pages — horizontal swipe gesture on mobile. Small dot indicators at the bottom showing which page the user is on. Active dot is #1F6B2E deep green, inactive dots are #D4DDD5. No tab bar, no bottom dock, no sidebar, no hamburger menu anywhere.
+PAGE 1 — LANDING DASHBOARD:
+This page is calm and minimal. The user's eyes should rest here, not jump around.
+At the very top — the user's car nickname in Rajdhani Bold 36px color #0D1C0E. Beside the nickname — the Gari garage door logo. Use the logo image already uploaded to the Replit project. Do not use an emoji or a different icon. The logo file is in the project assets — find it and use it. This line is the entire header. Nothing else at the top.
+Below the header — a single horizontal row of key stats in small pill format. Only show three stats: mileage with unit, year, and health status. Pills have background #E8F0E9, text #0D1C0E, border 1px solid #D4DDD5. Health status pill specifically has background #1F6B2E and white text when good. Small and unobtrusive.
+Below the stats — the car visual. Do not use the current illustrated car. Replace it with a pure white minimalist sculptural toy car shape rendered in SVG. Think smooth, rounded, almost abstract — like a designer toy or architectural model. Pure white fill #FFFFFF, very subtle outline #D4DDD5 stroke width 1, soft drop shadow 0 8px 32px rgba(0,0,0,0.08) beneath it. The car should feel premium and sculptural. Make it large and centered taking up significant screen real estate. No clipart style. Clean and modern.
+Below the car — only two things:
+Most recent action — a single line showing the last thing logged. DM Sans 13px #6B7C6D.
+One urgent alert if any exists — a single slim strip with left border 3px solid #E5A020 background #FEF9EC. If nothing urgent exists show nothing.
+At the very bottom — swipe hint. DM Sans 11px #D4DDD5 centered: "Swipe to explore →"
+PAGE 2 — DOCUMENTS:
+Full dedicated page with extreme detail.
+Header — "Documents" in Rajdhani Bold 28px #0D1C0E. Below it document count in DM Sans 13px #6B7C6D.
+Document categories as vertical list — not a grid. Each row full width. Left side: document type name Rajdhani Bold 16px #0D1C0E. Right side: upload date DM Sans 13px #6B7C6D or a slim green outlined "Add" button if empty. Each row 64px tall. Separated by 1px lines #D4DDD5. Padding 16px horizontal.
+Categories: Insurance, Ownership, Registration, Tint Exemption, Driver's License, Vehicle Handbook.
+Tapping a filled row opens document full screen. Tapping empty row opens camera or file picker.
+Top right: small plus icon in #1F6B2E to add document.
+PAGE 3 — FINANCES:
+Full dedicated page.
+Header — "Finances" in Rajdhani Bold 28px #0D1C0E.
+Total spent this month in Rajdhani Bold 40px #0D1C0E.
+Below total — a slim horizontal segmented bar showing spending by category. Segments in varying shades of green from light to dark. Categories: Fuel, Maintenance, Repairs, Parts, Insurance, Other.
+Recent expenses as vertical list. Date left, description center, amount right in Rajdhani Bold #1F6B2E. Rows alternating #FFFFFF and #F4F7F2.
+Bottom — full width button "Add Expense" background #1F6B2E white text Rajdhani Bold 18px rounded 14px.
+PAGE 4 — PARTS:
+Full dedicated page.
+Header — "Parts" in Rajdhani Bold 28px #0D1C0E. Subtext "Sourced for your [make] [model]" DM Sans 13px #6B7C6D.
+Search bar — background #F4F7F2 border 1.5px solid #D4DDD5 rounded 12px.
+Filter chips — horizontal scroll. Active chip background #1F6B2E white text. Inactive chip background #E8F0E9 text #6B7C6D.
+Parts listings — vertical list. Source badge left, part name center Rajdhani Bold 15px, price #1F6B2E Rajdhani Bold 16px, View button slim green outline right.
+Coming soon notice at top in DM Sans 11px #D4DDD5.
+PAGE 5 — DIAGNOSTICS:
+Full dedicated page.
+Header — "Diagnostics" in Rajdhani Bold 28px #0D1C0E.
+Coming soon OBD notice in DM Sans 13px #6B7C6D.
+Issue Log section — two subsections Ongoing and Resolved. Each issue row has colored dot left, description center, date right. Ongoing dot #C0392B, resolved dot #2D9E4A.
+Add Issue button — background #1F6B2E white text.
+Maintenance Reminders section — Oil Change, Tire Rotation, Brake Inspection, Battery Check. Status: overdue #C0392B, due soon #E5A020, good #2D9E4A.
+TYPOGRAPHY:
+Headings and car name and page titles: Rajdhani Bold 700 from Google Fonts
+Body text labels descriptions inputs: DM Sans 400 and 500 from Google Fonts
+Minimum font size: 11px
+LOGO:
+Find the logo image file already in the Replit project and use it wherever the brand mark appears. Do not recreate it. Do not use an emoji substitute.
+WHAT TO COMPLETELY REMOVE:
+Current car illustration — replace with white sculptural toy car SVG.
+2x2 grid of feature tiles — remove entirely.
+All emoji icons used as feature icons — remove entirely.
+Stacked card layout — remove entirely.
+Any blue, purple, or generic SaaS patterns anywhere.
+Build the landing dashboard first and show me the result before touching the other pages.

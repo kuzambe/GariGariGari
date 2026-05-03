@@ -1,48 +1,900 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/context/AuthContext";
 import { useVehicle } from "@/context/VehicleContext";
-import { GarageIcon } from "@/components/ui/GarageIcon";
-import { StatPill } from "@/components/ui/StatPill";
-import { FeatureTile } from "@/components/ui/FeatureTile";
-import { AlertStrip } from "@/components/ui/AlertStrip";
-import { Header } from "@/components/layout/Header";
-import { CarHero } from "@/components/car/CarHero";
-import { DocumentGrid } from "@/components/documents/DocumentGrid";
-import { UploadDocumentModal } from "@/components/documents/UploadDocumentModal";
-import { ExpenseList } from "@/components/finance/ExpenseList";
-import { AddExpenseModal } from "@/components/finance/AddExpenseModal";
-import { getDocumentsByVehicleId, Document } from "@/lib/api/documents";
-import { getExpensesByVehicleId, Expense } from "@/lib/api/expenses";
-import { useEffect } from "react";
+import { getDocumentsByVehicleId, Document, uploadDocument } from "@/lib/api/documents";
+import { getExpensesByVehicleId, Expense, addExpense } from "@/lib/api/expenses";
+import { Vehicle } from "@/lib/api/vehicles";
 
+/* ── DESIGN TOKENS ─────────────────────────────────── */
+const C = {
+  bg: "#FFFFFF",
+  sage: "#F4F7F2",
+  text: "#0D1C0E",
+  muted: "#6B7C6D",
+  green: "#1F6B2E",
+  greenLight: "#E8F0E9",
+  border: "#D4DDD5",
+  success: "#2D9E4A",
+  warning: "#E5A020",
+  error: "#C0392B",
+};
+
+/* ── SCULPTURAL TOY CAR SVG ────────────────────────── */
+function SculptedCar() {
+  return (
+    <svg width="300" height="140" viewBox="0 0 300 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="carShadow" x="-10%" y="-10%" width="130%" height="180%">
+          <feDropShadow dx="0" dy="8" stdDeviation="14" floodColor="#000000" floodOpacity="0.08" />
+        </filter>
+      </defs>
+      {/* Body silhouette */}
+      <path
+        d="M 14 98
+           C 6 98 4 88 4 82
+           C 4 70 14 62 22 56
+           C 28 42 40 22 66 16
+           C 84 10 112 8 148 8
+           C 182 8 212 12 234 24
+           C 254 34 268 52 278 68
+           C 286 78 294 88 292 96
+           C 291 100 287 102 280 102
+           L 252 102
+           Q 249 82 232 82 Q 214 82 212 102
+           L 100 102
+           Q 97 82 80 82 Q 62 82 60 102
+           L 14 100 Z"
+        fill="#FFFFFF"
+        stroke="#D4DDD5"
+        strokeWidth="1.5"
+        filter="url(#carShadow)"
+      />
+      {/* Window glass tint */}
+      <path
+        d="M 74 16 C 96 10 124 8 156 8 C 188 8 216 12 236 24 C 222 32 192 38 156 40 C 118 38 90 32 74 16 Z"
+        fill="#EFF4F0"
+        opacity="0.55"
+      />
+      {/* Rear wheel */}
+      <circle cx="80" cy="112" r="22" fill="#F4F7F2" stroke="#D4DDD5" strokeWidth="1.5" />
+      <circle cx="80" cy="112" r="9" fill="#E8F0E9" stroke="#D4DDD5" strokeWidth="1" />
+      <circle cx="80" cy="112" r="3" fill="#C8D5C9" />
+      {/* Front wheel */}
+      <circle cx="232" cy="112" r="22" fill="#F4F7F2" stroke="#D4DDD5" strokeWidth="1.5" />
+      <circle cx="232" cy="112" r="9" fill="#E8F0E9" stroke="#D4DDD5" strokeWidth="1" />
+      <circle cx="232" cy="112" r="3" fill="#C8D5C9" />
+    </svg>
+  );
+}
+
+/* ── STAT PILL ─────────────────────────────────────── */
+function StatPill({ value, label, highlight }: { value: string; label: string; highlight?: boolean }) {
+  return (
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 1,
+      background: highlight ? C.green : C.greenLight,
+      border: `1px solid ${highlight ? C.green : C.border}`,
+      borderRadius: 999,
+      padding: "6px 14px",
+      flexShrink: 0,
+    }}>
+      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: highlight ? "#fff" : C.text, lineHeight: 1.2 }}>
+        {value}
+      </span>
+      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: highlight ? "rgba(255,255,255,0.75)" : C.muted, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/* ── GREEN BUTTON ──────────────────────────────────── */
+function GreenButton({ label, onClick, fullWidth, small }: { label: string; onClick?: () => void; fullWidth?: boolean; small?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: C.green,
+        color: "#fff",
+        border: "none",
+        borderRadius: 14,
+        padding: small ? "8px 16px" : "15px 24px",
+        fontFamily: "'Rajdhani', sans-serif",
+        fontWeight: 700,
+        fontSize: small ? 14 : 18,
+        letterSpacing: "0.04em",
+        cursor: "pointer",
+        width: fullWidth ? "100%" : "auto",
+        transition: "opacity 0.15s",
+        minHeight: 44,
+      }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.88"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+    >
+      {label}
+    </button>
+  );
+}
+
+/* ── LOADING SCREEN ────────────────────────────────── */
 function LoadingScreen() {
   return (
-    <div style={{ minHeight: "100vh", background: "#FAFAF8", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div className="gari-pulse">
-        <svg width="40" height="34" viewBox="0 0 28 24" fill="none">
-          <rect x="1.5" y="1.5" width="25" height="21" rx="2.5" stroke="#EF9F27" strokeWidth="2" />
-          <path d="M5 8.5C9.2 8.3 18.8 8.7 23 8.5" stroke="#EF9F27" strokeWidth="2" strokeLinecap="round" />
-          <path d="M5 13C9.1 12.85 18.9 13.15 23 13" stroke="#EF9F27" strokeWidth="2" strokeLinecap="round" />
-          <path d="M5 17.5C9.3 17.4 18.7 17.6 23 17.5" stroke="#EF9F27" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+    <div style={{ height: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ animation: "gari-pulse 1.8s ease-in-out infinite" }}>
+        <img
+          src={`${import.meta.env.BASE_URL}logo.png`}
+          alt="Gari"
+          style={{ height: 40, opacity: 0.5 }}
+        />
       </div>
     </div>
   );
 }
 
-type Section = "home" | "documents" | "finances";
+/* ── DOC CATEGORIES ────────────────────────────────── */
+const DOC_CATEGORIES = [
+  { label: "Insurance", type: "insurance" },
+  { label: "Ownership", type: "ownership" },
+  { label: "Registration", type: "registration" },
+  { label: "Tint Exemption", type: "tint-exemption" },
+  { label: "Driver's License", type: "drivers-license" },
+  { label: "Vehicle Handbook", type: "vehicle-handbook" },
+];
 
+/* ── EXPENSE CATEGORIES ────────────────────────────── */
+const EXPENSE_TYPES = ["Fuel", "Maintenance", "Repairs", "Parts", "Insurance", "Other"];
+const SEGMENT_COLORS = ["#1F6B2E", "#2D7A3D", "#3A9650", "#5AB26B", "#85C993", "#B3DDB9"];
+
+/* ── PAGE 1: LANDING ───────────────────────────────── */
+function LandingPage({
+  vehicle,
+  expenses,
+  documents,
+  onSignOut,
+}: {
+  vehicle: Vehicle;
+  expenses: Expense[];
+  documents: Document[];
+  onSignOut: () => void;
+}) {
+  const logo = `${import.meta.env.BASE_URL}logo.png`;
+
+  // Most recent action (latest expense or document by created_at)
+  const allActions = [
+    ...expenses.map((e) => ({ date: e.created_at, text: `Logged ${e.type} expense — $${e.amount.toFixed(2)}` })),
+    ...documents.map((d) => ({ date: d.created_at, text: `Added ${d.type} document` })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const latestAction = allActions[0];
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        flexShrink: 0,
+        height: "100%",
+        overflowY: "auto",
+        scrollSnapAlign: "start",
+        background: C.bg,
+        display: "flex",
+        flexDirection: "column",
+        padding: "28px 20px 0",
+      }}
+    >
+      {/* Header: car nickname + logo */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 36, color: C.text, lineHeight: 1 }}>
+          {vehicle.nickname}
+        </span>
+        <img src={logo} alt="Gari" style={{ height: 26, objectFit: "contain" }} />
+      </div>
+
+      {/* Stats row */}
+      <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 28, paddingBottom: 4 }}>
+        <StatPill
+          value={vehicle.mileage ? `${vehicle.mileage.toLocaleString()} ${vehicle.mileage_unit}` : "—"}
+          label="odometer"
+        />
+        <StatPill value={vehicle.year ? String(vehicle.year) : "—"} label="year" />
+        <StatPill value="Good" label="health" highlight />
+        {vehicle.make && <StatPill value={vehicle.make} label="make" />}
+      </div>
+
+      {/* Car visual */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
+        <SculptedCar />
+      </div>
+
+      {/* Most recent action */}
+      {latestAction ? (
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 16px", textAlign: "center" }}>
+          {latestAction.text} · {new Date(latestAction.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+        </p>
+      ) : (
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 16px", textAlign: "center" }}>
+          No activity logged yet. Swipe to add documents or expenses.
+        </p>
+      )}
+
+      {/* Alert strip — only if there's something urgent */}
+      <div style={{ flex: 1 }} />
+
+      {/* Swipe hint */}
+      <p style={{ textAlign: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.border, margin: "0 0 8px" }}>
+        Swipe to explore →
+      </p>
+
+      {/* Sign out */}
+      <button
+        onClick={onSignOut}
+        style={{
+          background: "none",
+          border: "none",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 13,
+          color: C.muted,
+          cursor: "pointer",
+          textAlign: "center",
+          width: "100%",
+          minHeight: 44,
+          paddingBottom: 4,
+        }}
+      >
+        Sign out
+      </button>
+    </div>
+  );
+}
+
+/* ── PAGE 2: DOCUMENTS ─────────────────────────────── */
+function DocumentsPage({
+  vehicle,
+  documents,
+  userId,
+  onRefresh,
+}: {
+  vehicle: Vehicle;
+  documents: Document[];
+  userId: string;
+  onRefresh: () => void;
+}) {
+  const [uploadType, setUploadType] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const getDoc = (type: string) => documents.find((d) => d.type === type);
+
+  async function handleFile(file: File, type: string) {
+    setUploading(true);
+    try {
+      await uploadDocument(file, userId, vehicle.id, type);
+      onRefresh();
+    } catch {
+      // silent
+    } finally {
+      setUploading(false);
+      setUploadType(null);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        flexShrink: 0,
+        height: "100%",
+        overflowY: "auto",
+        scrollSnapAlign: "start",
+        background: C.bg,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Header */}
+      <div style={{ padding: "28px 20px 16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
+            Documents
+          </h1>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "4px 0 0" }}>
+            {documents.length} {documents.length === 1 ? "document" : "documents"} stored
+          </p>
+        </div>
+        <button
+          onClick={() => { setUploadType("other"); fileRef.current?.click(); }}
+          style={{
+            background: "none",
+            border: `1.5px solid ${C.green}`,
+            borderRadius: 999,
+            padding: "6px 14px",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 13,
+            color: C.green,
+            cursor: "pointer",
+            fontWeight: 500,
+          }}
+        >
+          + Add
+        </button>
+      </div>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*,.pdf"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file && uploadType) handleFile(file, uploadType);
+          e.target.value = "";
+        }}
+      />
+
+      {/* Category rows */}
+      <div style={{ flex: 1 }}>
+        {DOC_CATEGORIES.map((cat, i) => {
+          const doc = getDoc(cat.type);
+          return (
+            <div
+              key={cat.type}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "0 20px",
+                height: 64,
+                borderBottom: `1px solid ${C.border}`,
+                borderTop: i === 0 ? `1px solid ${C.border}` : "none",
+                cursor: "pointer",
+                background: C.bg,
+                transition: "background 0.15s",
+              }}
+              onClick={() => {
+                if (doc) {
+                  setViewUrl(doc.file_url);
+                } else {
+                  setUploadType(cat.type);
+                  fileRef.current?.click();
+                }
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = C.sage; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = C.bg; }}
+            >
+              <span style={{ flex: 1, fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text }}>
+                {cat.label}
+              </span>
+              {doc ? (
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted }}>
+                  {new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+              ) : (
+                <span style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 12,
+                  color: C.green,
+                  border: `1px solid ${C.green}`,
+                  borderRadius: 999,
+                  padding: "3px 10px",
+                  fontWeight: 500,
+                }}>
+                  Add
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {uploading && (
+        <div style={{ textAlign: "center", padding: 20, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted }}>
+          Uploading…
+        </div>
+      )}
+
+      {/* Document viewer overlay */}
+      {viewUrl && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 20 }}
+          onClick={() => setViewUrl(null)}
+        >
+          <img src={viewUrl} alt="Document" style={{ maxWidth: "90%", maxHeight: "80vh", borderRadius: 12, objectFit: "contain" }} onError={() => { window.open(viewUrl, "_blank"); setViewUrl(null); }} />
+          <button style={{ color: "#fff", background: "none", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, padding: "8px 20px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: "pointer" }}>
+            Tap to close
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── PAGE 3: FINANCES ──────────────────────────────── */
+function FinancesPage({
+  vehicle,
+  expenses,
+  userId,
+  onRefresh,
+}: {
+  vehicle: Vehicle;
+  expenses: Expense[];
+  userId: string;
+  onRefresh: () => void;
+}) {
+  const [showModal, setShowModal] = useState(false);
+  const [expType, setExpType] = useState("Fuel");
+  const [amount, setAmount] = useState("");
+  const [desc, setDesc] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const now = new Date();
+  const monthExpenses = expenses.filter((e) => {
+    const d = new Date(e.created_at);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const monthTotal = monthExpenses.reduce((s, e) => s + e.amount, 0);
+
+  // Segmented bar
+  const byType: Record<string, number> = {};
+  EXPENSE_TYPES.forEach((t) => { byType[t] = 0; });
+  monthExpenses.forEach((e) => {
+    const key = EXPENSE_TYPES.find((t) => t.toLowerCase() === e.type.toLowerCase()) ?? "Other";
+    byType[key] = (byType[key] || 0) + e.amount;
+  });
+
+  async function handleAdd() {
+    if (!amount || isNaN(parseFloat(amount))) return;
+    setSaving(true);
+    try {
+      await addExpense({ user_id: userId, vehicle_id: vehicle.id, type: expType.toLowerCase(), amount: parseFloat(amount), description: desc });
+      onRefresh();
+      setShowModal(false);
+      setAmount("");
+      setDesc("");
+    } catch {
+      // silent
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        flexShrink: 0,
+        height: "100%",
+        overflowY: "auto",
+        scrollSnapAlign: "start",
+        background: C.bg,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div style={{ padding: "28px 20px 0", flex: 1, display: "flex", flexDirection: "column" }}>
+        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: "0 0 20px" }}>
+          Finances
+        </h1>
+
+        {/* Monthly total */}
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 4px" }}>
+            Total this month
+          </p>
+          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 40, color: C.text, lineHeight: 1 }}>
+            ${monthTotal.toFixed(2)}
+          </span>
+        </div>
+
+        {/* Spending bar */}
+        {monthTotal > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", borderRadius: 6, overflow: "hidden", height: 8 }}>
+              {EXPENSE_TYPES.map((t, i) => {
+                const pct = monthTotal > 0 ? (byType[t] / monthTotal) * 100 : 0;
+                if (pct === 0) return null;
+                return (
+                  <div key={t} style={{ width: `${pct}%`, background: SEGMENT_COLORS[i], transition: "width 0.3s" }} />
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 8 }}>
+              {EXPENSE_TYPES.map((t, i) => byType[t] > 0 && (
+                <div key={t} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 2, background: SEGMENT_COLORS[i] }} />
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted }}>{t}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Expense list */}
+        <div style={{ flex: 1 }}>
+          {expenses.length === 0 ? (
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", marginTop: 40 }}>
+              No expenses yet.
+            </p>
+          ) : (
+            expenses.map((exp, i) => (
+              <div
+                key={exp.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "14px 0",
+                  borderBottom: `1px solid ${C.border}`,
+                  background: i % 2 === 0 ? C.bg : C.sage,
+                  paddingLeft: 4,
+                  paddingRight: 4,
+                }}
+              >
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, width: 60, flexShrink: 0 }}>
+                  {new Date(exp.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </span>
+                <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>
+                  {exp.description || exp.type.charAt(0).toUpperCase() + exp.type.slice(1)}
+                </span>
+                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.green }}>
+                  ${exp.amount.toFixed(2)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Add Expense button */}
+        <div style={{ padding: "16px 0 24px" }}>
+          <GreenButton label="Add Expense" fullWidth onClick={() => setShowModal(true)} />
+        </div>
+      </div>
+
+      {/* Add expense modal */}
+      {showModal && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            style={{ background: C.bg, borderRadius: "20px 20px 0 0", padding: 24, width: "100%", maxWidth: 430 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 22, color: C.text, marginBottom: 16 }}>
+              Add Expense
+            </h2>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+              {EXPENSE_TYPES.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setExpType(t)}
+                  style={{
+                    background: expType === t ? C.green : C.greenLight,
+                    color: expType === t ? "#fff" : C.text,
+                    border: "none",
+                    borderRadius: 999,
+                    padding: "6px 14px",
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+              {[
+                { val: amount, set: setAmount, ph: "Amount", type: "number" },
+                { val: desc, set: setDesc, ph: "Description (optional)", type: "text" },
+              ].map(({ val, set, ph, type }) => (
+                <input
+                  key={ph}
+                  type={type}
+                  placeholder={ph}
+                  value={val}
+                  onChange={(e) => set(e.target.value)}
+                  style={{
+                    width: "100%",
+                    background: C.sage,
+                    border: `1.5px solid ${C.border}`,
+                    borderRadius: 12,
+                    padding: "13px 16px",
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 15,
+                    color: C.text,
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              ))}
+            </div>
+            <GreenButton label={saving ? "Saving…" : "Add Expense"} fullWidth onClick={handleAdd} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── PAGE 4: PARTS ─────────────────────────────────── */
+function PartsPage({ vehicle }: { vehicle: Vehicle }) {
+  const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("All");
+  const filters = ["All", "Engine", "Brakes", "Suspension", "Electrical", "Body"];
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        flexShrink: 0,
+        height: "100%",
+        overflowY: "auto",
+        scrollSnapAlign: "start",
+        background: C.bg,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div style={{ padding: "28px 20px 0" }}>
+        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: "0 0 4px" }}>
+          Parts
+        </h1>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 20px" }}>
+          {vehicle.make && vehicle.model ? `Sourced for your ${vehicle.make} ${vehicle.model}` : "Source parts for your vehicle"}
+        </p>
+
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.border, marginBottom: 16 }}>
+          Parts sourcing coming soon
+        </p>
+
+        {/* Search */}
+        <input
+          placeholder="Search parts…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            width: "100%",
+            background: C.sage,
+            border: `1.5px solid ${C.border}`,
+            borderRadius: 12,
+            padding: "12px 16px",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 15,
+            color: C.text,
+            outline: "none",
+            boxSizing: "border-box",
+            marginBottom: 16,
+          }}
+        />
+
+        {/* Filter chips */}
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 24 }}>
+          {filters.map((f) => (
+            <button
+              key={f}
+              onClick={() => setActiveFilter(f)}
+              style={{
+                background: activeFilter === f ? C.green : C.greenLight,
+                color: activeFilter === f ? "#fff" : C.muted,
+                border: "none",
+                borderRadius: 999,
+                padding: "6px 14px",
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13,
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+
+        {/* Empty state */}
+        <div style={{ background: C.sage, borderRadius: 16, padding: "40px 24px", textAlign: "center" }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 22, color: C.text, margin: "0 0 8px" }}>
+            Coming Soon
+          </p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, margin: 0 }}>
+            We're building a parts marketplace tailored to your {vehicle.make ?? "vehicle"}. You'll be able to browse, compare, and order directly from here.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PAGE 5: DIAGNOSTICS ───────────────────────────── */
+type IssueStatus = "overdue" | "due-soon" | "good";
+
+const MAINTENANCE_ITEMS: { label: string; status: IssueStatus }[] = [
+  { label: "Oil Change", status: "good" },
+  { label: "Tire Rotation", status: "due-soon" },
+  { label: "Brake Inspection", status: "good" },
+  { label: "Battery Check", status: "good" },
+];
+
+const STATUS_COLOR: Record<IssueStatus, string> = {
+  overdue: C.error,
+  "due-soon": "#E5A020",
+  good: "#2D9E4A",
+};
+const STATUS_LABEL: Record<IssueStatus, string> = {
+  overdue: "Overdue",
+  "due-soon": "Due soon",
+  good: "Good",
+};
+
+function DiagnosticsPage({ vehicle }: { vehicle: Vehicle }) {
+  const [issues, setIssues] = useState<{ id: number; text: string; date: string; resolved: boolean }[]>([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [issueText, setIssueText] = useState("");
+
+  function addIssue() {
+    if (!issueText.trim()) return;
+    setIssues((prev) => [{ id: Date.now(), text: issueText.trim(), date: new Date().toLocaleDateString(), resolved: false }, ...prev]);
+    setIssueText("");
+    setShowAdd(false);
+  }
+
+  const ongoing = issues.filter((i) => !i.resolved);
+  const resolved = issues.filter((i) => i.resolved);
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        flexShrink: 0,
+        height: "100%",
+        overflowY: "auto",
+        scrollSnapAlign: "start",
+        background: C.bg,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div style={{ padding: "28px 20px 0", flex: 1, display: "flex", flexDirection: "column" }}>
+        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: "0 0 4px" }}>
+          Diagnostics
+        </h1>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 24px" }}>
+          OBD-II live diagnostics coming soon. Log issues manually for now.
+        </p>
+
+        {/* Maintenance reminders */}
+        <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, color: C.text, margin: "0 0 12px" }}>
+          Maintenance
+        </h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: 0, marginBottom: 28, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+          {MAINTENANCE_ITEMS.map((item, i) => (
+            <div
+              key={item.label}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "14px 16px",
+                background: i % 2 === 0 ? C.bg : C.sage,
+                borderBottom: i < MAINTENANCE_ITEMS.length - 1 ? `1px solid ${C.border}` : "none",
+              }}
+            >
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: STATUS_COLOR[item.status], marginRight: 12, flexShrink: 0 }} />
+              <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>{item.label}</span>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: STATUS_COLOR[item.status], fontWeight: 500 }}>
+                {STATUS_LABEL[item.status]}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Issue log */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, color: C.text, margin: 0 }}>
+            Issue Log
+          </h2>
+          <button
+            onClick={() => setShowAdd(true)}
+            style={{ background: C.green, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: "pointer" }}
+          >
+            + Add
+          </button>
+        </div>
+
+        {/* Ongoing */}
+        {ongoing.length > 0 && (
+          <>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Ongoing</p>
+            {ongoing.map((issue) => (
+              <div key={issue.id} style={{ display: "flex", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.border}` }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.error, marginRight: 12, flexShrink: 0 }} />
+                <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>{issue.text}</span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, marginRight: 8 }}>{issue.date}</span>
+                <button
+                  onClick={() => setIssues((prev) => prev.map((i) => i.id === issue.id ? { ...i, resolved: true } : i))}
+                  style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 8px", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, cursor: "pointer" }}
+                >
+                  Resolve
+                </button>
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* Resolved */}
+        {resolved.length > 0 && (
+          <>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "16px 0 8px" }}>Resolved</p>
+            {resolved.map((issue) => (
+              <div key={issue.id} style={{ display: "flex", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.border}`, opacity: 0.6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2D9E4A", marginRight: 12, flexShrink: 0 }} />
+                <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>{issue.text}</span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>{issue.date}</span>
+              </div>
+            ))}
+          </>
+        )}
+
+        {ongoing.length === 0 && resolved.length === 0 && (
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", marginTop: 20 }}>
+            No issues logged. Tap + Add if something needs attention.
+          </p>
+        )}
+      </div>
+
+      {/* Add issue modal */}
+      {showAdd && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+          onClick={() => setShowAdd(false)}
+        >
+          <div
+            style={{ background: C.bg, borderRadius: "20px 20px 0 0", padding: 24, width: "100%", maxWidth: 430 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 22, color: C.text, marginBottom: 16 }}>
+              Log Issue
+            </h2>
+            <input
+              placeholder="Describe the issue…"
+              value={issueText}
+              onChange={(e) => setIssueText(e.target.value)}
+              style={{
+                width: "100%",
+                background: C.sage,
+                border: `1.5px solid ${C.border}`,
+                borderRadius: 12,
+                padding: "13px 16px",
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 15,
+                color: C.text,
+                outline: "none",
+                boxSizing: "border-box",
+                marginBottom: 16,
+              }}
+            />
+            <GreenButton label="Add Issue" fullWidth onClick={addIssue} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── MAIN DASHBOARD ────────────────────────────────── */
 export default function Dashboard() {
   const [, navigate] = useLocation();
   const { user, signOut } = useAuth();
   const { vehicle, loading } = useVehicle();
-
-  const [section, setSection] = useState<Section>("home");
+  const [currentPage, setCurrentPage] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [showUpload, setShowUpload] = useState(false);
-  const [showAddExpense, setShowAddExpense] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !vehicle) navigate("/setup");
+  }, [loading, vehicle]);
 
   useEffect(() => {
     if (vehicle) {
@@ -51,167 +903,96 @@ export default function Dashboard() {
     }
   }, [vehicle]);
 
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const page = Math.round(scrollRef.current.scrollLeft / scrollRef.current.clientWidth);
+    setCurrentPage(page);
+  };
+
+  const goToPage = (p: number) => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollTo({ left: p * scrollRef.current.clientWidth, behavior: "smooth" });
+  };
+
   async function handleSignOut() {
     await signOut();
     navigate("/auth");
   }
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#FAFAF8", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <GarageIcon width={40} height={34} stroke="#EF9F27" className="gari-pulse" />
-      </div>
-    );
+  function refreshDocs() {
+    if (vehicle) getDocumentsByVehicleId(vehicle.id).then(setDocuments).catch(() => {});
+  }
+  function refreshExpenses() {
+    if (vehicle) getExpensesByVehicleId(vehicle.id).then(setExpenses).catch(() => {});
   }
 
-  useEffect(() => {
-    if (!loading && !vehicle) {
-      navigate("/setup");
-    }
-  }, [loading, vehicle]);
+  if (loading || !vehicle) return <LoadingScreen />;
 
-  if (!vehicle) {
-    return <LoadingScreen />;
-  }
+  const PAGE_LABELS = ["Home", "Documents", "Finances", "Parts", "Diagnostics"];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FAFAF8", paddingBottom: 40 }}>
-      {/* Header */}
-      <Header vehicle={vehicle} />
+    <div style={{ height: "100vh", background: C.bg, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Swipe container */}
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        style={{
+          flex: 1,
+          display: "flex",
+          overflowX: "scroll",
+          overflowY: "hidden",
+          scrollSnapType: "x mandatory",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        } as React.CSSProperties}
+      >
+        <LandingPage vehicle={vehicle} expenses={expenses} documents={documents} onSignOut={handleSignOut} />
+        <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} />
+        <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} />
+        <PartsPage vehicle={vehicle} />
+        <DiagnosticsPage vehicle={vehicle} />
+      </div>
 
-      {/* Stats row */}
+      {/* Page dot indicators */}
       <div
         style={{
           display: "flex",
-          gap: 10,
-          overflowX: "auto",
-          padding: "16px 20px",
-          scrollbarWidth: "none",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          padding: "10px 0 20px",
+          background: C.bg,
+          borderTop: `1px solid ${C.border}`,
         }}
       >
-        <StatPill
-          value={vehicle.mileage ? `${vehicle.mileage.toLocaleString()} ${vehicle.mileage_unit}` : "—"}
-          label="odometer"
-        />
-        <StatPill value={vehicle.year ? String(vehicle.year) : "—"} label="year" />
-        <StatPill value="Good" label="health" valueColor="#639922" />
-        {vehicle.make && <StatPill value={vehicle.make} label="make" />}
-        {vehicle.model && <StatPill value={vehicle.model} label="model" />}
-      </div>
-
-      {/* Home section */}
-      {section === "home" && (
-        <>
-          {/* Car hero */}
-          <CarHero />
-
-          {/* Feature tiles */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 12,
-              padding: "0 20px",
-              marginBottom: 16,
-            }}
-          >
-            <FeatureTile icon="📁" label="Documents" onClick={() => setSection("documents")} />
-            <FeatureTile icon="💰" label="Finances" onClick={() => setSection("finances")} />
-            <FeatureTile icon="🔩" label="Parts" comingSoon />
-            <FeatureTile icon="🔧" label="Diagnostics" comingSoon />
-          </div>
-
-          {/* Alert strip */}
-          <AlertStrip message="Keep your mileage up to date to get accurate insights." />
-        </>
-      )}
-
-      {/* Documents section */}
-      {section === "documents" && (
-        <div style={{ marginTop: 16 }}>
+        {PAGE_LABELS.map((label, i) => (
           <button
-            onClick={() => setSection("home")}
+            key={i}
+            onClick={() => goToPage(i)}
+            title={label}
             style={{
               background: "none",
               border: "none",
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 13,
-              color: "#888888",
+              padding: "4px 2px",
               cursor: "pointer",
-              padding: "0 20px 12px",
               display: "flex",
               alignItems: "center",
-              gap: 4,
+              justifyContent: "center",
             }}
           >
-            ← Back
+            <div
+              style={{
+                width: i === currentPage ? 22 : 6,
+                height: 6,
+                borderRadius: 3,
+                background: i === currentPage ? C.green : C.border,
+                transition: "all 0.25s ease",
+              }}
+            />
           </button>
-          <DocumentGrid
-            documents={documents}
-            onUpload={() => setShowUpload(true)}
-          />
-        </div>
-      )}
-
-      {/* Finances section */}
-      {section === "finances" && (
-        <div style={{ marginTop: 16 }}>
-          <button
-            onClick={() => setSection("home")}
-            style={{
-              background: "none",
-              border: "none",
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 13,
-              color: "#888888",
-              cursor: "pointer",
-              padding: "0 20px 12px",
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            ← Back
-          </button>
-          <ExpenseList expenses={expenses} onAdd={() => setShowAddExpense(true)} />
-        </div>
-      )}
-
-      {/* Sign out */}
-      <div style={{ textAlign: "center", marginTop: 32 }}>
-        <button
-          onClick={handleSignOut}
-          style={{
-            background: "none",
-            border: "none",
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 13,
-            color: "#888888",
-            cursor: "pointer",
-            minHeight: 44,
-          }}
-        >
-          Sign out
-        </button>
+        ))}
       </div>
-
-      {/* Modals */}
-      {showUpload && user && vehicle && (
-        <UploadDocumentModal
-          userId={user.id}
-          vehicleId={vehicle.id}
-          onClose={() => setShowUpload(false)}
-          onUploaded={() => getDocumentsByVehicleId(vehicle.id).then(setDocuments)}
-        />
-      )}
-      {showAddExpense && user && vehicle && (
-        <AddExpenseModal
-          userId={user.id}
-          vehicleId={vehicle.id}
-          onClose={() => setShowAddExpense(false)}
-          onAdded={() => getExpensesByVehicleId(vehicle.id).then(setExpenses)}
-        />
-      )}
     </div>
   );
 }
