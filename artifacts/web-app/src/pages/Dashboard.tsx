@@ -1634,6 +1634,99 @@ function DocToast({ message, color }: { message: string; color: string }) {
 }
 
 /* ── CATEGORY PICKER SHEET ─────────────────────────── */
+function CategoryDocumentsListSheet({
+  label,
+  docs,
+  onClose,
+  onView,
+  onDelete,
+  onAdd,
+}: {
+  label: string;
+  docs: Document[];
+  onClose: () => void;
+  onView: (doc: Document) => void;
+  onDelete: (doc: Document) => void;
+  onAdd: () => void;
+}) {
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 250, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+      onClick={onClose}
+    >
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)" }} />
+      <div
+        style={{ position: "relative", background: C.bg, borderRadius: "20px 20px 0 0", padding: "12px 24px 32px", maxWidth: 430, width: "100%", margin: "0 auto", boxShadow: "0 -4px 32px rgba(0,0,0,0.12)", maxHeight: "80vh", display: "flex", flexDirection: "column" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 16px" }} />
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, margin: 0 }}>
+            {label}
+          </p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
+            {docs.length} {docs.length === 1 ? "file" : "files"}
+          </p>
+        </div>
+
+        <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}`, flex: 1, overflowY: "auto" }}>
+          {docs.map((doc, i) => (
+            <div
+              key={doc.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "14px 16px",
+                background: C.bg,
+                borderBottom: i < docs.length - 1 ? `1px solid ${C.border}` : "none",
+                gap: 12,
+              }}
+            >
+              <button
+                onClick={() => onView(doc)}
+                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", minHeight: 44 }}
+                aria-label={`View document from ${new Date(doc.created_at).toLocaleDateString()}`}
+              >
+                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text }}>
+                  {label} {docs.length - i}
+                </span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>
+                  Added {new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+              </button>
+              <button
+                onClick={() => onDelete(doc)}
+                aria-label="Delete document"
+                style={{ width: 36, height: 36, borderRadius: 10, background: "none", border: `1px solid ${C.border}`, color: C.error, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                  <path d="M10 11v6"/><path d="M14 11v6"/>
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={onAdd}
+          style={{ marginTop: 16, width: "100%", background: C.green, color: "#fff", border: "none", borderRadius: 12, padding: "13px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, cursor: "pointer", minHeight: 44, letterSpacing: "0.04em" }}
+        >
+          Add another file
+        </button>
+        <button
+          onClick={onClose}
+          style={{ display: "block", width: "100%", marginTop: 8, background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.muted, cursor: "pointer", textAlign: "center", minHeight: 44 }}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function CategoryPickerSheet({ onSelect, onClose }: { onSelect: (type: string, label: string) => void; onClose: () => void }) {
   return (
     <div
@@ -1705,14 +1798,19 @@ function DocumentsPage({
   const [sheetReplacing, setSheetReplacing] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [uploadingType, setUploadingType] = useState<string | null>(null);
+  const [listType, setListType] = useState<string | null>(null);
+  const [listLabel, setListLabel] = useState<string>("");
   const [viewDoc, setViewDoc] = useState<Document | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<Document | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ message: string; color: string } | null>(null);
   const [scale, setScale] = useState(1);
   const lastTouchDist = useRef<number | null>(null);
 
-  const getDoc = useCallback((type: string) => documents.find((d) => d.type === type), [documents]);
+  const getDocs = useCallback(
+    (type: string) => documents.filter((d) => d.type === type),
+    [documents]
+  );
 
   function openSheet(type: string, label: string, replacing = false) {
     setSheetType(type);
@@ -1720,12 +1818,9 @@ function DocumentsPage({
     setSheetReplacing(replacing);
   }
 
-  function handleReplace() {
-    if (!viewDoc) return;
-    const cat = DOC_CATEGORIES.find((c) => c.type === viewDoc.type);
-    const label = cat?.label ?? viewDoc.type;
-    setViewDoc(null);
-    openSheet(viewDoc.type, label, true);
+  function openList(type: string, label: string) {
+    setListType(type);
+    setListLabel(label);
   }
 
   function showToast(message: string, color: string) {
@@ -1734,10 +1829,18 @@ function DocumentsPage({
   }
 
   async function handleFileSelected(file: File, type: string, replacing: boolean) {
+    const replacingDoc = replacing ? viewDoc : null;
     setSheetType(null);
     setUploadingType(type);
     try {
       await uploadDocument(file, userId, vehicle.id, type);
+      if (replacingDoc) {
+        try {
+          await deleteDocumentWithFile(replacingDoc);
+        } catch {
+          /* leave older copy in place if cleanup fails */
+        }
+      }
       onRefresh();
       showToast(replacing ? "Document updated" : "Document saved", C.success);
     } catch (err) {
@@ -1753,12 +1856,13 @@ function DocumentsPage({
   }
 
   async function handleDelete() {
-    if (!viewDoc) return;
+    const target = confirmDeleteDoc;
+    if (!target) return;
     setDeleting(true);
     try {
-      await deleteDocumentWithFile(viewDoc.id, userId, vehicle.id, viewDoc.type);
-      setViewDoc(null);
-      setShowDeleteConfirm(false);
+      await deleteDocumentWithFile(target);
+      setConfirmDeleteDoc(null);
+      if (viewDoc?.id === target.id) setViewDoc(null);
       onRefresh();
       showToast("Document deleted", C.muted);
     } catch (err) {
@@ -1766,6 +1870,13 @@ function DocumentsPage({
     } finally {
       setDeleting(false);
     }
+  }
+
+  function handleReplace() {
+    if (!viewDoc) return;
+    const cat = DOC_CATEGORIES.find((c) => c.type === viewDoc.type);
+    const label = cat?.label ?? viewDoc.type;
+    openSheet(viewDoc.type, label, true);
   }
 
   const isPdf = (doc: Document) => {
@@ -1835,7 +1946,9 @@ function DocumentsPage({
       {/* Category rows */}
       <div style={{ flex: 1 }}>
         {DOC_CATEGORIES.map((cat, i) => {
-          const doc = getDoc(cat.type);
+          const docs = getDocs(cat.type);
+          const latest = docs[0];
+          const count = docs.length;
           const isUploading = uploadingType === cat.type;
 
           if (docsLoading) return <DocRowSkeleton key={cat.type} i={i} />;
@@ -1856,9 +1969,8 @@ function DocumentsPage({
               }}
               onClick={() => {
                 if (isUploading) return;
-                if (doc) {
-                  setScale(1);
-                  setViewDoc(doc);
+                if (count > 0) {
+                  openList(cat.type, cat.label);
                 } else {
                   openSheet(cat.type, cat.label);
                 }
@@ -1876,10 +1988,26 @@ function DocumentsPage({
                   <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>Uploading…</span>
                   <style>{`@keyframes docSpin { to { transform: rotate(360deg); } }`}</style>
                 </div>
-              ) : doc ? (
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted }}>
-                  {new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                </span>
+              ) : latest ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {count > 1 && (
+                    <span style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: C.green,
+                      background: C.greenLight,
+                      borderRadius: 999,
+                      padding: "3px 9px",
+                      letterSpacing: "0.02em",
+                    }}>
+                      {count} files
+                    </span>
+                  )}
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted }}>
+                    {new Date(latest.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                </div>
               ) : (
                 <span style={{
                   fontFamily: "'DM Sans', sans-serif",
@@ -1916,8 +2044,25 @@ function DocumentsPage({
         />
       )}
 
+      {/* Category documents list sheet */}
+      {listType && (
+        <CategoryDocumentsListSheet
+          label={listLabel}
+          docs={getDocs(listType)}
+          onClose={() => setListType(null)}
+          onView={(doc) => { setScale(1); setListType(null); setViewDoc(doc); }}
+          onDelete={(doc) => setConfirmDeleteDoc(doc)}
+          onAdd={() => {
+            const type = listType;
+            const label = listLabel;
+            setListType(null);
+            openSheet(type, label);
+          }}
+        />
+      )}
+
       {/* Full-screen document viewer */}
-      {viewDoc && !showDeleteConfirm && (
+      {viewDoc && !confirmDeleteDoc && (
         <div
           style={{ position: "fixed", inset: 0, background: "#000", zIndex: 200, display: "flex", flexDirection: "column", touchAction: "pinch-zoom" }}
           onTouchStart={handleTouchStart}
@@ -1972,7 +2117,7 @@ function DocumentsPage({
               </svg>
             </button>
             <button
-              onClick={() => setShowDeleteConfirm(true)}
+              onClick={() => viewDoc && setConfirmDeleteDoc(viewDoc)}
               style={{ width: 44, height: 44, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               aria-label="Delete document"
             >
@@ -1988,10 +2133,10 @@ function DocumentsPage({
       )}
 
       {/* Delete confirmation dialog */}
-      {showDeleteConfirm && viewDoc && (
+      {confirmDeleteDoc && (
         <div
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
-          onClick={() => setShowDeleteConfirm(false)}
+          onClick={() => setConfirmDeleteDoc(null)}
         >
           <div
             style={{ background: C.bg, borderRadius: 20, padding: 28, maxWidth: 360, width: "100%", boxShadow: "0 8px 40px rgba(0,0,0,0.25)" }}
@@ -2005,7 +2150,7 @@ function DocumentsPage({
             </p>
             <div style={{ display: "flex", gap: 12 }}>
               <button
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => setConfirmDeleteDoc(null)}
                 style={{ flex: 1, background: "none", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "13px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, cursor: "pointer", minHeight: 44 }}
               >
                 Cancel
