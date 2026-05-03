@@ -555,12 +555,14 @@ function LandingPage({
   vehicle,
   onSignOut,
   onGoToPage,
+  onOpenSettings,
 }: {
   vehicle: Vehicle;
   expenses: Expense[];
   documents: Document[];
   onSignOut: () => void;
   onGoToPage: (p: number) => void;
+  onOpenSettings: () => void;
 }) {
   const yearMakeModel = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ");
   const title = vehicle.nickname?.trim() || "Your car";
@@ -581,7 +583,7 @@ function LandingPage({
     >
       {/* Header: nickname + logo icon inline */}
       <div style={{ padding: "64px 24px 0" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
           <h1
             style={{
               fontFamily: "'Rajdhani', sans-serif",
@@ -593,12 +595,15 @@ function LandingPage({
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              flex: "0 1 auto",
+              flex: "1 1 auto",
               minWidth: 0,
             }}
           >
             {title}
           </h1>
+          <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", flexShrink: 0 }}>
+            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
+          </button>
         </div>
 
         {/* Year Make Model Trim */}
@@ -688,11 +693,13 @@ function DocumentsPage({
   documents,
   userId,
   onRefresh,
+  onOpenSettings,
 }: {
   vehicle: Vehicle;
   documents: Document[];
   userId: string;
   onRefresh: () => void;
+  onOpenSettings: () => void;
 }) {
   const [uploadType, setUploadType] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -729,9 +736,14 @@ function DocumentsPage({
     >
       {/* Header */}
       <div style={{ padding: "28px 20px 16px" }}>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
-          Documents
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
+            Documents
+          </h1>
+          <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
+          </button>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: 0 }}>
             {documents.length} {documents.length === 1 ? "document" : "documents"} stored
@@ -850,11 +862,13 @@ function FinancesPage({
   expenses,
   userId,
   onRefresh,
+  onOpenSettings,
 }: {
   vehicle: Vehicle;
   expenses: Expense[];
   userId: string;
   onRefresh: () => void;
+  onOpenSettings: () => void;
 }) {
   const [showModal, setShowModal] = useState(false);
   const [expType, setExpType] = useState("Fuel");
@@ -907,9 +921,14 @@ function FinancesPage({
       }}
     >
       <div style={{ padding: "28px 20px 0", flex: 1, display: "flex", flexDirection: "column" }}>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: "0 0 20px" }}>
-          Finances
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
+            Finances
+          </h1>
+          <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
+          </button>
+        </div>
 
         {/* Monthly total */}
         <div style={{ marginBottom: 20 }}>
@@ -1082,7 +1101,7 @@ function FinancesPage({
 }
 
 /* ── PAGE 4: PARTS ─────────────────────────────────── */
-function PartsPage({ vehicle }: { vehicle: Vehicle }) {
+function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettings: () => void }) {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const filters = ["All", "Engine", "Brakes", "Suspension", "Electrical", "Body"];
@@ -1101,9 +1120,14 @@ function PartsPage({ vehicle }: { vehicle: Vehicle }) {
       }}
     >
       <div style={{ padding: "28px 20px 0" }}>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: "0 0 4px" }}>
-          Parts
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
+            Parts
+          </h1>
+          <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
+          </button>
+        </div>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 20px" }}>
           {vehicle.make && vehicle.model ? `Sourced for your ${vehicle.make} ${vehicle.model}` : "Source parts for your vehicle"}
         </p>
@@ -1190,7 +1214,7 @@ const STATUS_LABEL: Record<IssueStatus, string> = {
   good: "Good",
 };
 
-function DiagnosticsPage({ vehicle }: { vehicle: Vehicle }) {
+function DiagnosticsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettings: () => void }) {
   const [issues, setIssues] = useState<{ id: number; text: string; date: string; resolved: boolean }[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [issueText, setIssueText] = useState("");
@@ -1219,9 +1243,14 @@ function DiagnosticsPage({ vehicle }: { vehicle: Vehicle }) {
       }}
     >
       <div style={{ padding: "28px 20px 0", flex: 1, display: "flex", flexDirection: "column" }}>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: "0 0 4px" }}>
-          Diagnostics
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: C.text, margin: 0 }}>
+            Diagnostics
+          </h1>
+          <button onClick={onOpenSettings} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+            <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" style={{ height: 26, width: "auto", display: "block" }} />
+          </button>
+        </div>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 24px" }}>
           OBD-II live diagnostics coming soon. Log issues manually for now.
         </p>
@@ -1400,31 +1429,6 @@ export default function Dashboard() {
 
   return (
     <div style={{ height: "100vh", background: C.bg, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
-      {/* Floating top-right controls */}
-      <div style={{
-        position: "absolute",
-        top: 69,
-        right: 20,
-        zIndex: 50,
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        pointerEvents: isSwiping ? "none" : "auto",
-        opacity: isSwiping ? 0 : 1,
-        transition: "opacity 0.2s ease",
-      }}>
-        {/* Gari icon — opens settings */}
-        <button
-          onClick={() => setShowSettings(true)}
-          style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
-        >
-          <img
-            src={`${BASE}gari-icon-new-nobg.png`}
-            alt="Gari"
-            style={{ height: 26, width: "auto", display: "block" }}
-          />
-        </button>
-      </div>
 
       {/* Swipe container */}
       <div
@@ -1441,11 +1445,11 @@ export default function Dashboard() {
           msOverflowStyle: "none",
         } as React.CSSProperties}
       >
-        <LandingPage vehicle={vehicle} expenses={expenses} documents={documents} onSignOut={handleSignOut} onGoToPage={goToPage} />
-        <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} />
-        <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} />
-        <PartsPage vehicle={vehicle} />
-        <DiagnosticsPage vehicle={vehicle} />
+        <LandingPage vehicle={vehicle} expenses={expenses} documents={documents} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} />
+        <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} onOpenSettings={() => setShowSettings(true)} />
+        <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} onOpenSettings={() => setShowSettings(true)} />
+        <PartsPage vehicle={vehicle} onOpenSettings={() => setShowSettings(true)} />
+        <DiagnosticsPage vehicle={vehicle} onOpenSettings={() => setShowSettings(true)} />
       </div>
 
       {/* Settings sheet */}
