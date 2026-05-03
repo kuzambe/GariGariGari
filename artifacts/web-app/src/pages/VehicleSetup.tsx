@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/context/AuthContext";
+import { useVehicle } from "@/context/VehicleContext";
 import { createVehicle } from "@/lib/api/vehicles";
 import { GarageIcon } from "@/components/ui/GarageIcon";
 import { AmberButton } from "@/components/ui/AmberButton";
@@ -83,6 +84,7 @@ function ProgressDots({ step }: { step: number }) {
 export default function VehicleSetup() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
+  const { refetch } = useVehicle();
 
   const [step, setStep] = useState(1);
   const [nickname, setNickname] = useState("");
@@ -152,7 +154,7 @@ export default function VehicleSetup() {
         vin: vin.trim().toUpperCase() || undefined,
         make: carData.make || undefined,
         model: carData.model || undefined,
-        year: carData.year ? parseInt(carData.year) : undefined,
+        year: carData.year ? parseInt(String(carData.year)) : undefined,
         trim: carData.trim || undefined,
         engine: carData.engine || undefined,
         fuel_type: carData.fuel_type || undefined,
@@ -161,9 +163,17 @@ export default function VehicleSetup() {
         license_plate: plate || undefined,
         mileage_unit: "km",
       });
+      await refetch();
       navigate("/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save vehicle");
+    } catch (err: unknown) {
+      console.error("createVehicle error:", err);
+      const msg =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message: string }).message)
+          : typeof err === "string"
+          ? err
+          : "Failed to save vehicle. Please try again.";
+      setError(msg);
     } finally {
       setSaving(false);
     }
