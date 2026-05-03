@@ -1,0 +1,21 @@
+I already have an Add Expense button and a scan receipt option in the finances page. Now I need to implement the actual receipt scanning functionality. Here is exactly what needs to happen:
+When the user taps Scan Receipt the following flow happens:
+The camera opens immediately full screen. It should feel native and smooth — no jarring transitions, no loading screens, just the camera appearing naturally. The camera view is full screen with a subtle white rectangular overlay in the center showing the user where to position the receipt. Below the overlay in DM Sans 13px white text — "Position your receipt within the frame." In the top left corner — an X button to close and go back at any time. The X button is white, 44px touch target, no background. Tapping it closes the camera immediately and returns to the finances page with no data changed.
+When the user takes a photo:
+Use the device camera API to capture the image. Then pass the image to Google ML Kit Text Recognition to extract text from the photo. ML Kit runs entirely on the device — the photo is never uploaded anywhere. This is important for user privacy.
+From the extracted text parse and identify these fields:
+Merchant name — usually the largest text at the top of the receipt
+Date — look for date patterns like MM/DD/YYYY or Month DD YYYY or DD/MM/YYYY
+Total amount — look for the word Total or Grand Total followed by a dollar amount. Always take the largest or final total if multiple totals exist.
+After parsing show a confirmation screen that slides up from the bottom. This screen has:
+A header in Rajdhani Bold 20px #0D1C0E that says "Confirm Receipt"
+The extracted fields shown as editable inputs — Merchant, Date, Amount. Pre-filled with what was extracted. If a field could not be extracted leave it blank so the user can fill it in manually.
+A dropdown or segmented selector for expense type — Fuel, Maintenance, Repair, Parts, Insurance, Other.
+A Notes field — optional, DM Sans placeholder "Add a note..."
+Two buttons at the bottom — Cancel which dismisses the confirmation screen and goes back to the camera, and Save in #1F6B2E background white text which saves the expense to the expenses table in Supabase with user_id, vehicle_id, type, amount, description, and created_at.
+After saving — dismiss the confirmation screen, show a brief success toast notification at the top of the screen in #1F6B2E background white text "Expense saved" that disappears after 2 seconds, and return to the finances page with the new expense appearing at the top of the recent expenses list.
+Error handling:
+If ML Kit cannot read any text from the photo — show a gentle message on the confirmation screen "Couldn't read this receipt clearly. Please fill in the details manually." All fields remain editable so the user can still save the expense manually.
+If the camera permission is denied — show a message in DM Sans 14px #6B7C6D explaining that camera access is needed for receipt scanning with a button to open phone settings.
+The entire flow should feel smooth and native. All transitions use CSS transitions 0.3s ease. Nothing snaps. The camera to confirmation screen transition is a slide up from bottom. Closing is a slide down. Everything is gesture-friendly with 44px minimum touch targets throughout.
+Do not change anything else in the app. Only implement this receipt scanning flow.
