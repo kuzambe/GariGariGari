@@ -629,6 +629,14 @@ function LandingPage({
   const [carGptRemaining, setCarGptRemaining] = useState(() => getRemainingCarGptQuestions());
   const carGptBottomRef = useRef<HTMLDivElement>(null);
 
+  // Keep counter fresh: reset when tab regains focus and poll every minute for day rollover
+  useEffect(() => {
+    function refresh() { setCarGptRemaining(getRemainingCarGptQuestions()); }
+    document.addEventListener("visibilitychange", refresh);
+    const timer = setInterval(refresh, 60_000);
+    return () => { document.removeEventListener("visibilitychange", refresh); clearInterval(timer); };
+  }, []);
+
   useEffect(() => {
     carGptBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [carGptMessages]);
