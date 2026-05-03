@@ -23,7 +23,6 @@ const C = {
   border: "#D4DDD5",
   success: "#2D9E4A",
   warning: "#E5A020",
-  amber: "#EF9F27",
   error: "#C0392B",
 };
 
@@ -3043,20 +3042,6 @@ export default function Dashboard() {
   return (
     <div className="gari-mount-soft" style={{ height: "100vh", background: C.bg, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
 
-      {/* Top scroll progress bar */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "transparent", zIndex: 50, pointerEvents: "none" }}>
-        <div
-          style={{
-            height: "100%",
-            width: `${((currentPage + 1) / 5) * 100}%`,
-            background: `linear-gradient(90deg, ${C.green} 0%, #2E8B3E 60%, ${C.amber} 100%)`,
-            borderRadius: "0 2px 2px 0",
-            transition: "width 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
-            boxShadow: `0 0 8px ${C.green}60`,
-          }}
-        />
-      </div>
-
       {/* Swipe container */}
       <div
         ref={scrollRef}
@@ -3094,7 +3079,6 @@ export default function Dashboard() {
           position: "relative",
           padding: "14px 0 22px",
           background: C.bg,
-          borderTop: `1px solid ${C.border}`,
         }}
       >
         {/* Active page label */}
