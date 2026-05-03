@@ -9,6 +9,7 @@ import { Mechanic, getMechanicByVehicleId, createMechanic, updateMechanic, delet
 import { RoadsideAssistance, getRoadsideByUserId, createRoadside, updateRoadside, deleteRoadside } from "@/lib/api/roadsideAssistance";
 import { GarageIcon } from "@/components/ui/GarageIcon";
 import { LicensePlate, ShuffleText } from "@/components/car/LicensePlate";
+import { Odometer } from "@/components/car/Odometer";
 import { AddDocumentSheet } from "@/components/documents/AddDocumentSheet";
 
 /* ── DESIGN TOKENS ─────────────────────────────────── */
@@ -672,12 +673,18 @@ function VinCopy({ vin }: { vin: string }) {
     >
       <span style={{
         fontFamily: "'DM Sans', sans-serif",
-        fontSize: 11,
-        color: copied ? C.green : C.muted,
+        fontWeight: 700,
+        fontSize: 13,
+        color: copied ? C.green : C.text,
         letterSpacing: "0.06em",
         transition: "color 0.2s",
       }}>
-        {copied ? "Copied!" : `VIN ${vin}`}
+        {copied ? "Copied!" : (
+          <>
+            <span style={{ color: C.muted, fontWeight: 500, marginRight: 6 }}>VIN</span>
+            {vin}
+          </>
+        )}
       </span>
       {!copied && (
         <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
@@ -1133,21 +1140,9 @@ function LandingPage({
         )}
 
 
-        {/* Mileage */}
+        {/* Mileage — odometer */}
         {vehicle.mileage != null && (
-          <p style={{
-            fontFamily: "'Rajdhani', sans-serif",
-            fontWeight: 700,
-            fontSize: 26,
-            color: C.text,
-            margin: "10px 0 0",
-            lineHeight: 1,
-          }}>
-            <ShuffleText text={vehicle.mileage.toLocaleString()} charset="digits" />
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 400, fontSize: 14, color: C.muted, marginLeft: 5 }}>
-              {vehicle.mileage_unit}
-            </span>
-          </p>
+          <Odometer value={vehicle.mileage} unit={vehicle.mileage_unit} />
         )}
 
         {/* VIN — tap to copy */}
