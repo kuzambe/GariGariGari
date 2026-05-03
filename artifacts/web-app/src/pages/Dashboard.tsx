@@ -319,11 +319,13 @@ function TopBar({ userEmail, onProfile }: { userEmail?: string; onProfile: () =>
       </button>
 
       {/* Gari icon */}
-      <img
-        src={`${BASE}gari-icon-new-nobg.png`}
-        alt="Gari"
-        style={{ height: 26, width: "auto", objectFit: "contain" }}
-      />
+      <div style={{ width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <img
+          src={`${BASE}gari-icon-new-nobg.png`}
+          alt="Gari"
+          style={{ width: 26, height: 26, objectFit: "contain" }}
+        />
+      </div>
     </div>
   );
 }
@@ -475,12 +477,13 @@ function GreenButton({ label, onClick, fullWidth, small }: { label: string; onCl
 function LoadingScreen() {
   return (
     <div style={{ height: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <img
-        src={`${BASE}gari-icon-new-nobg.png`}
-        alt="Gari"
-        className="gari-spin"
-        style={{ height: 48, width: "auto", objectFit: "contain" }}
-      />
+      <div className="gari-spin" style={{ width: 52, height: 52, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img
+          src={`${BASE}gari-icon-new-nobg.png`}
+          alt="Gari"
+          style={{ width: 52, height: 52, objectFit: "contain" }}
+        />
+      </div>
     </div>
   );
 }
@@ -603,11 +606,13 @@ function LandingPage({
           >
             {title}
           </h1>
-          <img
-            src={`${BASE}gari-icon-new-nobg.png`}
-            alt="Gari"
-            style={{ height: 30, width: "auto", objectFit: "contain", flex: "0 0 auto" }}
-          />
+          <div style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <img
+              src={`${BASE}gari-icon-new-nobg.png`}
+              alt="Gari"
+              style={{ width: 30, height: 30, objectFit: "contain" }}
+            />
+          </div>
         </div>
 
         {/* Year Make Model Trim */}
@@ -617,51 +622,6 @@ function LandingPage({
           </p>
         )}
 
-        {/* Trim selector — shown when trim is missing */}
-        {!vehicle.trim && (
-          <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>Trim</span>
-            <select
-              defaultValue=""
-              size={1}
-              style={{
-                background: C.bg,
-                border: `1px solid ${C.border}`,
-                borderRadius: 8,
-                padding: "3px 8px",
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 12,
-                color: C.muted,
-                cursor: "pointer",
-                outline: "none",
-                appearance: "auto",
-                WebkitAppearance: "auto",
-                display: "block",
-                height: "auto",
-                overflow: "hidden",
-              } as React.CSSProperties}
-            >
-              <option value="" disabled>Select trim</option>
-              <option>Base</option>
-              <option>LS</option>
-              <option>LT</option>
-              <option>LTZ</option>
-              <option>Premier</option>
-              <option>RS</option>
-              <option>SS</option>
-              <option>Sport</option>
-              <option>Limited</option>
-              <option>EX</option>
-              <option>SE</option>
-              <option>SL</option>
-              <option>SV</option>
-              <option>Platinum</option>
-              <option>Touring</option>
-              <option>XLE</option>
-              <option>XSE</option>
-            </select>
-          </div>
-        )}
 
         {/* Mileage */}
         {vehicle.mileage != null && (

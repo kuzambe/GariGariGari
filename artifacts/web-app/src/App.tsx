@@ -19,12 +19,13 @@ function LoadingScreen() {
         justifyContent: "center",
       }}
     >
-      <img
-        src={`${import.meta.env.BASE_URL}gari-icon-new-nobg.png`}
-        alt="Gari"
-        className="gari-spin"
-        style={{ height: 48, width: "auto", objectFit: "contain" }}
-      />
+      <div className="gari-spin" style={{ width: 52, height: 52, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img
+          src={`${import.meta.env.BASE_URL}gari-icon-new-nobg.png`}
+          alt="Gari"
+          style={{ width: 52, height: 52, objectFit: "contain" }}
+        />
+      </div>
     </div>
   );
 }
