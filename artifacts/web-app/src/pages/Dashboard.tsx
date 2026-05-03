@@ -580,7 +580,7 @@ function LandingPage({
       }}
     >
       {/* Header: nickname + logo icon inline */}
-      <div style={{ padding: "32px 24px 0" }}>
+      <div style={{ padding: "64px 24px 0" }}>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 8, overflow: "hidden" }}>
           <h1
             style={{
