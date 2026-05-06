@@ -215,7 +215,7 @@ export default function AuthPage() {
               className="gari-press"
               style={{
                 marginTop: 8,
-                background: TEXT,
+                background: ACCENT,
                 color: "#FFFFFF",
                 border: "none",
                 borderRadius: 12,
@@ -265,7 +265,7 @@ export default function AuthPage() {
               className="gari-press"
               style={{
                 marginTop: 8,
-                background: TEXT,
+                background: ACCENT,
                 color: "#FFFFFF",
                 border: "none",
                 borderRadius: 12,

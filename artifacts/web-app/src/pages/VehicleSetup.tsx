@@ -115,24 +115,17 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
     setVinError("");
     setVinLoading(true);
     try {
-      const res = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/${cleaned}?format=json`);
-      const json = await res.json();
-      const results: { Variable: string; Value: string }[] = json.Results;
-      const get = (name: string) => results.find((r) => r.Variable === name)?.Value || "";
-      const data: VinData = {
-        make: get("Make"),
-        model: get("Model"),
-        year: get("Model Year"),
-        trim: get("Trim"),
-        engine: get("Displacement (L)") ? `${get("Displacement (L)")}L` : "",
-        fuel_type: get("Fuel Type - Primary"),
-        body_style: get("Body Class"),
-      };
-      const hasData = data.make || data.model || data.year;
-      if (!hasData) { setManualMode(true); }
-      else { setVinData(data); }
+      const res = await fetch(`${import.meta.env.BASE_URL}api/vin/${cleaned}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string };
+        setVinError(body.error ?? "Could not look up VIN. Enter details manually.");
+        setManualMode(true);
+        return;
+      }
+      const data: VinData = await res.json();
+      setVinData(data);
     } catch {
-      setVinError("Could not look up VIN. Enter details manually.");
+      setVinError("Could not reach the VIN lookup service. Enter details manually.");
       setManualMode(true);
     } finally {
       setVinLoading(false);
