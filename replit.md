@@ -37,6 +37,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Routes**:
   - `GET /api/healthz` — health check
   - `POST /api/cargpt` — CarGPT AI chat endpoint (uses Gemini 2.5 Flash via `GEMINI_API_KEY`). Accepts `{ vehicleContext, userMessage, history }`, builds a vehicle-aware system prompt, calls Gemini, returns `{ text }`
+  - `GET /api/vin/:vin` — NHTSA VIN proxy (bypasses browser CORS); validates and returns decoded vehicle data
 
 ## Environment Variables / Secrets
 
