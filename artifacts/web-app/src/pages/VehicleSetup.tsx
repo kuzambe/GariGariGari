@@ -76,6 +76,83 @@ function ProgressDots({ step }: { step: number }) {
   );
 }
 
+/* ── Nickname input with inline arrow ───────────────────────── */
+
+function NicknameInput({
+  value,
+  onChange,
+  onSubmit,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSubmit: () => void;
+}) {
+  const [focused, setFocused] = useState(false);
+  const active = value.trim().length > 0;
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        border: `1.5px solid ${focused ? "#EF9F27" : "#E0DED8"}`,
+        borderRadius: 12,
+        boxShadow: focused ? "0 0 0 3px rgba(239,159,39,0.12)" : "none",
+        background: "#fff",
+        transition: "border-color 0.15s, box-shadow 0.15s",
+        overflow: "hidden",
+      }}
+    >
+      <input
+        type="text"
+        placeholder="Blue Thunder, Dad's SUV..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onKeyDown={(e) => { if (e.key === "Enter") onSubmit(); }}
+        style={{
+          flex: 1,
+          background: "transparent",
+          border: "none",
+          outline: "none",
+          padding: "14px 16px",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 15,
+          color: "#1A1A1A",
+          minWidth: 0,
+        }}
+      />
+      {/* Enter arrow button */}
+      <button
+        onMouseDown={(e) => e.preventDefault()} // keep input focused
+        onClick={onSubmit}
+        disabled={!active}
+        style={{
+          flexShrink: 0,
+          width: 44,
+          height: 44,
+          margin: "0 6px 0 0",
+          borderRadius: 10,
+          border: "none",
+          background: active ? "#EF9F27" : "#F0EFE9",
+          color: active ? "#fff" : "#CCC",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: active ? "pointer" : "default",
+          transition: "background 0.15s, color 0.15s",
+          fontSize: 18,
+        }}
+        aria-label="Continue"
+      >
+        →
+      </button>
+    </div>
+  );
+}
+
 /* ── VIN camera scanner ─────────────────────────────────────── */
 
 const VIN_RE = /[A-HJ-NPR-Z0-9]{17}/i;
@@ -453,10 +530,11 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#888", marginBottom: 24 }}>
               This is how Gari will refer to your vehicle.
             </p>
-            <GariInput
-              placeholder="Blue Thunder, Dad's SUV..."
+            {/* Input with inline enter arrow */}
+            <NicknameInput
               value={nickname}
               onChange={setNickname}
+              onSubmit={() => { if (nickname.trim()) setStep(2); }}
             />
           </div>
         )}
