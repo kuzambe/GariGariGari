@@ -10,13 +10,17 @@ import { addDays, formatDate } from "@/lib/documentParser";
 import type { ConfirmedDocument } from "@/components/documents/ParsedDocumentSheet";
 import { Mechanic, getMechanicByVehicleId, createMechanic, updateMechanic, deleteMechanic } from "@/lib/api/mechanics";
 import { RoadsideAssistance, getRoadsideByUserId, createRoadside, updateRoadside, deleteRoadside } from "@/lib/api/roadsideAssistance";
-import { GarageIcon } from "@/components/ui/GarageIcon";
 import { LicensePlate, ShuffleText } from "@/components/car/LicensePlate";
 import { Odometer } from "@/components/car/Odometer";
 import { getManualUrl } from "@/lib/handbookDatabase";
 import { AddDocumentSheet } from "@/components/documents/AddDocumentSheet";
 import { usePreferences } from "@/context/PreferencesContext";
 import VehicleSetup from "@/pages/VehicleSetup";
+import { ScanReceiptFlow } from "@/components/finance/ScanReceiptFlow";
+import { SettingsSheet } from "@/components/settings/SettingsSheet";
+import { CategoryPickerSheet, DOC_CATEGORIES } from "@/components/finance/CategoryPickerSheet";
+import { CategoryDocumentsListSheet } from "@/components/documents/CategoryDocumentsListSheet";
+import { getDiagnosticIssuesByVehicleId, createDiagnosticIssue, resolveDiagnosticIssue, type DiagnosticIssue } from "@/lib/api/diagnostics";
 
 /* ── DESIGN TOKENS ─────────────────────────────────── */
 /* Themeable values use CSS custom properties (switched by data-gari-dark attr).
@@ -479,282 +483,6 @@ function TopBar({ userEmail, onProfile }: { userEmail?: string; onProfile: () =>
   );
 }
 
-/* ── PILL TOGGLE ───────────────────────────────────── */
-function PillToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
-  return (
-    <button
-      onClick={onToggle}
-      className="gari-tap"
-      style={{
-        width: 44,
-        height: 26,
-        borderRadius: 13,
-        background: on ? C.green : "var(--gc-border)",
-        border: "none",
-        padding: 0,
-        cursor: "pointer",
-        position: "relative",
-        flexShrink: 0,
-        transition: "background 0.22s ease",
-      }}
-    >
-      <span style={{
-        position: "absolute",
-        top: 3,
-        left: on ? 21 : 3,
-        width: 20,
-        height: 20,
-        borderRadius: "50%",
-        background: "#FFFFFF",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-        transition: "left 0.22s cubic-bezier(0.22, 1, 0.36, 1)",
-        display: "block",
-      }} />
-    </button>
-  );
-}
-
-/* ── SETTINGS SHEET ────────────────────────────────── */
-function SettingsSheet({ userEmail, onSignOut, onClose, onAddVehicle }: {
-  userEmail?: string;
-  onSignOut: () => void;
-  onClose: () => void;
-  onAddVehicle: () => void;
-}) {
-  const { darkMode, setDarkMode, distanceUnit, setDistanceUnit } = usePreferences();
-  const [showUnits, setShowUnits] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  return (
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
-      onClick={onClose}
-    >
-      {/* Backdrop */}
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} />
-
-      {/* Sheet */}
-      <div
-        style={{
-          position: "relative",
-          background: C.bg,
-          borderRadius: "22px 22px 0 0",
-          padding: "12px 24px 44px",
-          maxWidth: 430,
-          width: "100%",
-          margin: "0 auto",
-          boxShadow: "0 -4px 32px rgba(0,0,0,0.18)",
-          animation: "gariSlideUp 0.3s cubic-bezier(0.22,1,0.36,1)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Handle */}
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 24px" }} />
-
-        {/* Account section */}
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
-          Account
-        </p>
-        <div style={{ background: C.sage, borderRadius: 14, padding: "14px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: "50%", background: C.greenLight,
-            border: `1.5px solid var(--gc-border)`, display: "flex", alignItems: "center",
-            justifyContent: "center", flexShrink: 0,
-          }}>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, color: C.green }}>
-              {userEmail ? userEmail[0].toUpperCase() : "?"}
-            </span>
-          </div>
-          <div>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14, color: C.text, margin: 0 }}>{userEmail ?? "—"}</p>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>Gari account</p>
-          </div>
-        </div>
-
-        {/* Settings section */}
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
-          Settings
-        </p>
-        <div style={{ background: C.sage, borderRadius: 14, marginBottom: 20, overflow: "hidden" }}>
-
-          {/* Units & Display — expandable */}
-          <div
-            onClick={() => setShowUnits((p) => !p)}
-            style={{ display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: `1px solid var(--gc-border)`, cursor: "pointer" }}
-          >
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>Units &amp; Display</span>
-            <span style={{
-              color: C.muted, fontSize: 13,
-              transform: showUnits ? "rotate(90deg)" : "rotate(0deg)",
-              transition: "transform 0.22s ease",
-              display: "inline-block",
-            }}>›</span>
-          </div>
-
-          {/* Expanded panel */}
-          {showUnits && (
-            <div style={{ padding: "4px 0 8px", borderBottom: `1px solid var(--gc-border)` }}>
-
-              {/* Distance unit */}
-              <div style={{ display: "flex", alignItems: "center", padding: "10px 16px" }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: C.text, margin: 0 }}>
-                    Distance unit
-                  </p>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>
-                    Currently showing in <strong>{distanceUnit}</strong>
-                  </p>
-                </div>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  {(["km", "mi"] as const).map((u) => (
-                    <button
-                      key={u}
-                      onClick={(e) => { e.stopPropagation(); setDistanceUnit(u); }}
-                      className="gari-press"
-                      style={{
-                        padding: "6px 14px",
-                        borderRadius: 20,
-                        border: "none",
-                        fontFamily: "'DM Sans', sans-serif",
-                        fontWeight: 600,
-                        fontSize: 13,
-                        cursor: "pointer",
-                        background: distanceUnit === u ? C.green : "var(--gc-border)",
-                        color: distanceUnit === u ? "#fff" : C.text,
-                        transition: "all 0.18s ease",
-                      }}
-                    >
-                      {u}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Dark mode */}
-              <div style={{ display: "flex", alignItems: "center", padding: "10px 16px" }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: C.text, margin: 0 }}>
-                    Dark mode
-                  </p>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>
-                    {darkMode ? "On — dark theme active" : "Off — light theme active"}
-                  </p>
-                </div>
-                <PillToggle on={darkMode} onToggle={() => { setDarkMode(!darkMode); }} />
-              </div>
-            </div>
-          )}
-
-          {/* Notifications row */}
-          <div
-            onClick={() => setShowNotifications(true)}
-            style={{ display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: `1px solid var(--gc-border)`, cursor: "pointer" }}
-          >
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>Notifications</span>
-            <span style={{ color: C.muted, fontSize: 13 }}>›</span>
-          </div>
-
-          {/* Privacy row */}
-          <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", cursor: "pointer" }}>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>Privacy</span>
-            <span style={{ color: C.muted, fontSize: 13 }}>›</span>
-          </div>
-        </div>
-
-        {/* Add Vehicle */}
-        <button
-          onClick={onAddVehicle}
-          className="gari-press"
-          style={{
-            width: "100%", background: "none", border: `1.5px solid var(--gc-border)`,
-            borderRadius: 14, padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
-            fontSize: 14, color: C.text, cursor: "pointer", textAlign: "left",
-            display: "flex", alignItems: "center", gap: 10, marginBottom: 10,
-          }}
-        >
-          <span style={{ flex: 1 }}>Add Vehicle</span>
-          <span style={{ color: C.muted, fontSize: 13 }}>+</span>
-        </button>
-
-        {/* Sign out */}
-        <button
-          onClick={onSignOut}
-          className="gari-press"
-          style={{
-            width: "100%", background: "none", border: `1.5px solid var(--gc-border)`,
-            borderRadius: 14, padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
-            fontSize: 14, color: "#C0392B", cursor: "pointer", textAlign: "left",
-            display: "flex", alignItems: "center", gap: 10,
-          }}
-        >
-          <span>Sign out</span>
-        </button>
-      </div>
-
-      {/* Notifications full-screen overlay */}
-      {showNotifications && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 210,
-            background: C.bg,
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            padding: "40px 32px",
-            animation: "gariFadeIn 0.25s ease",
-          }}
-        >
-          <div
-            style={{
-              animation: "gariLogoFloat 3s ease-in-out infinite",
-              textAlign: "center",
-              maxWidth: 300,
-              marginBottom: 48,
-            }}
-          >
-            <div style={{ fontSize: 48, marginBottom: 20 }}>🔔</div>
-            <p style={{
-              fontFamily: "'Rajdhani', sans-serif",
-              fontWeight: 700,
-              fontSize: 22,
-              color: C.text,
-              margin: "0 0 12px",
-              lineHeight: 1.25,
-            }}>
-              Chill out buddy
-            </p>
-            <p style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 15,
-              color: C.muted,
-              margin: 0,
-              lineHeight: 1.6,
-            }}>
-              Why are you so eager for notifications? We've just started to make this. Appreciate the love though!
-            </p>
-          </div>
-          <button
-            onClick={() => setShowNotifications(false)}
-            style={{
-              background: "none",
-              border: `1.5px solid var(--gc-border)`,
-              borderRadius: 14,
-              padding: "14px 40px",
-              fontFamily: "'Rajdhani', sans-serif",
-              fontWeight: 700,
-              fontSize: 16,
-              color: C.text,
-              cursor: "pointer",
-              letterSpacing: "0.05em",
-            }}
-          >
-            GO BACK
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ── GREEN BUTTON ──────────────────────────────────── */
 function GreenButton({ label, onClick, fullWidth, small }: { label: string; onClick?: () => void; fullWidth?: boolean; small?: boolean }) {
   return (
@@ -798,16 +526,6 @@ function LoadingScreen() {
     </div>
   );
 }
-
-/* ── DOC CATEGORIES ────────────────────────────────── */
-const DOC_CATEGORIES = [
-  { label: "Insurance", type: "insurance" },
-  { label: "Ownership", type: "ownership" },
-  { label: "Registration", type: "registration" },
-  { label: "Tint Exemption", type: "tint-exemption" },
-  { label: "Driver's License", type: "drivers-license" },
-  { label: "Vehicle Handbook", type: "vehicle-handbook" },
-];
 
 /* ── EXPENSE CATEGORIES ────────────────────────────── */
 const EXPENSE_TYPES = ["Fuel", "Maintenance", "Repairs", "Parts", "Insurance", "Other"];
@@ -1863,150 +1581,6 @@ function DocToast({ message, color }: { message: string; color: string }) {
   );
 }
 
-/* ── CATEGORY PICKER SHEET ─────────────────────────── */
-function CategoryDocumentsListSheet({
-  label,
-  docs,
-  onClose,
-  onView,
-  onDelete,
-  onAdd,
-}: {
-  label: string;
-  docs: Document[];
-  onClose: () => void;
-  onView: (doc: Document) => void;
-  onDelete: (doc: Document) => void;
-  onAdd: () => void;
-}) {
-  return (
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 250, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
-      onClick={onClose}
-    >
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)" }} />
-      <div
-        style={{ position: "relative", background: C.bg, borderRadius: "20px 20px 0 0", padding: "12px 24px 32px", maxWidth: 430, width: "100%", margin: "0 auto", boxShadow: "0 -4px 32px rgba(0,0,0,0.12)", maxHeight: "80vh", display: "flex", flexDirection: "column" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 16px" }} />
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
-          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, margin: 0 }}>
-            {label}
-          </p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
-            {docs.length} {docs.length === 1 ? "file" : "files"}
-          </p>
-        </div>
-
-        <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}`, flex: 1, overflowY: "auto" }}>
-          {docs.map((doc, i) => (
-            <div
-              key={doc.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                padding: "14px 16px",
-                background: C.bg,
-                borderBottom: i < docs.length - 1 ? `1px solid ${C.border}` : "none",
-                gap: 12,
-              }}
-            >
-              <button
-                onClick={() => onView(doc)}
-                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", minHeight: 44 }}
-                aria-label={`View document from ${new Date(doc.created_at).toLocaleDateString()}`}
-              >
-                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text }}>
-                  {label} {docs.length - i}
-                </span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>
-                  Added {new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                </span>
-              </button>
-              <button
-                onClick={() => onDelete(doc)}
-                aria-label="Delete document"
-                style={{ width: 36, height: 36, borderRadius: 10, background: "none", border: `1px solid ${C.border}`, color: C.error, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                  <path d="M10 11v6"/><path d="M14 11v6"/>
-                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                </svg>
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <button
-          onClick={onAdd}
-          style={{ marginTop: 16, width: "100%", background: C.green, color: "#fff", border: "none", borderRadius: 12, padding: "13px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, cursor: "pointer", minHeight: 44, letterSpacing: "0.04em" }}
-        >
-          Add another file
-        </button>
-        <button
-          onClick={onClose}
-          style={{ display: "block", width: "100%", marginTop: 8, background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.muted, cursor: "pointer", textAlign: "center", minHeight: 44 }}
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function CategoryPickerSheet({ onSelect, onClose }: { onSelect: (type: string, label: string) => void; onClose: () => void }) {
-  return (
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 250, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
-      onClick={onClose}
-    >
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)" }} />
-      <div
-        style={{ position: "relative", background: C.bg, borderRadius: "20px 20px 0 0", padding: "12px 24px 48px", maxWidth: 430, width: "100%", margin: "0 auto", boxShadow: "0 -4px 32px rgba(0,0,0,0.12)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 20px" }} />
-        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, margin: "0 0 16px" }}>
-          Select Category
-        </p>
-        <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
-          {DOC_CATEGORIES.map((cat, i) => (
-            <button
-              key={cat.type}
-              onClick={() => onSelect(cat.type, cat.label)}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "16px 18px",
-                background: C.bg,
-                border: "none",
-                borderBottom: i < DOC_CATEGORIES.length - 1 ? `1px solid ${C.border}` : "none",
-                cursor: "pointer",
-                textAlign: "left",
-                minHeight: 44,
-              }}
-            >
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text }}>{cat.label}</span>
-              <span style={{ color: C.border, fontSize: 18 }}>›</span>
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={onClose}
-          style={{ display: "block", width: "100%", marginTop: 20, background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.muted, cursor: "pointer", textAlign: "center", minHeight: 44 }}
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-}
-
 /* ── PAGE 2: DOCUMENTS ─────────────────────────────── */
 function DocumentsPage({
   vehicle,
@@ -2492,277 +2066,6 @@ function DocumentsPage({
   );
 }
 
-/* ── SCAN RECEIPT FLOW ──────────────────────────────── */
-type ScanStage = "camera" | "processing" | "confirm" | "denied";
-
-function ScanReceiptFlow({
-  userId,
-  vehicleId,
-  onClose,
-  onSaved,
-}: {
-  userId: string;
-  vehicleId: string;
-  onClose: () => void;
-  onSaved: () => void;
-}) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [stage, setStage] = useState<ScanStage>("camera");
-  const [ocrError, setOcrError] = useState(false);
-  const [merchant, setMerchant] = useState("");
-  const [date, setDate] = useState("");
-  const [amount, setAmount] = useState("");
-  const [expType, setExpType] = useState("Fuel");
-  const [notes, setNotes] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [confirmVisible, setConfirmVisible] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "environment" } })
-      .then((stream) => {
-        if (!active) { stream.getTracks().forEach((t) => t.stop()); return; }
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-        }
-      })
-      .catch(() => { if (active) setStage("denied"); });
-    return () => {
-      active = false;
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-    };
-  }, []);
-
-  useEffect(() => {
-    if (stage === "confirm") requestAnimationFrame(() => setConfirmVisible(true));
-  }, [stage]);
-
-  async function capture() {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d")!.drawImage(video, 0, 0);
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    setStage("processing");
-    setOcrError(false);
-    try {
-      const { createWorker } = await import("tesseract.js");
-      const worker = await createWorker("eng");
-      const { data: { text } } = await worker.recognize(canvas);
-      await worker.terminate();
-      if (text.trim()) {
-        parseOcr(text);
-      } else {
-        setOcrError(true);
-      }
-    } catch {
-      setOcrError(true);
-    }
-    setStage("confirm");
-  }
-
-  function parseOcr(text: string) {
-    const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-    setMerchant(lines[0] ?? "");
-    const dateMatch = text.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\w+ \d{1,2},? \d{4})\b/i);
-    setDate(dateMatch ? dateMatch[0] : "");
-    const totalMatches = [...text.matchAll(/(?:grand\s+)?total[^\d$]*[$]?\s*([\d,]+\.?\d{0,2})/gi)];
-    if (totalMatches.length) {
-      setAmount(totalMatches[totalMatches.length - 1][1].replace(",", ""));
-    } else {
-      const allAmounts = [...text.matchAll(/\$?([\d]+\.[\d]{2})/g)].map((m) => parseFloat(m[1]));
-      if (allAmounts.length) setAmount(String(Math.max(...allAmounts)));
-    }
-  }
-
-  async function handleSave() {
-    const parsed = parseFloat(amount);
-    if (!amount || isNaN(parsed)) return;
-    setSaving(true);
-    try {
-      await addExpense({
-        user_id: userId,
-        vehicle_id: vehicleId,
-        type: expType.toLowerCase(),
-        amount: parsed,
-        description: [merchant, notes].filter(Boolean).join(" — "),
-      });
-      onSaved();
-      onClose();
-    } catch {
-      // silent
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    background: C.sage,
-    border: `1.5px solid ${C.border}`,
-    borderRadius: 10,
-    padding: "12px 14px",
-    fontFamily: "'DM Sans', sans-serif",
-    fontSize: 15,
-    color: C.text,
-    outline: "none",
-    boxSizing: "border-box",
-    minHeight: 44,
-  };
-
-  if (stage === "denied") {
-    return (
-      <div style={{ position: "fixed", inset: 0, background: C.bg, zIndex: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, gap: 16 }}>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", lineHeight: 1.6 }}>
-          Camera access is needed to scan receipts. Please allow camera access in your device settings.
-        </p>
-        <button onClick={onClose} style={{ background: C.green, color: "#fff", border: "none", borderRadius: 12, padding: "14px 32px", fontFamily: "'DM Sans', sans-serif", fontSize: 15, cursor: "pointer", minHeight: 44 }}>
-          Go Back
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "#000" }}>
-      {/* Camera / processing view */}
-      {(stage === "camera" || stage === "processing") && (
-        <>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-          />
-          {/* Dim + frame overlay */}
-          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-            <div style={{
-              width: "72%",
-              aspectRatio: "0.6",
-              border: "2px solid rgba(255,255,255,0.9)",
-              borderRadius: 12,
-              boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)",
-            }} />
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#fff", marginTop: 14, textShadow: "0 1px 4px rgba(0,0,0,0.7)" }}>
-              Position your receipt within the frame.
-            </p>
-          </div>
-          {/* Close */}
-          <button
-            onClick={onClose}
-            style={{ position: "absolute", top: 52, left: 20, width: 44, height: 44, background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-          >
-            ✕
-          </button>
-          {/* Capture / spinner */}
-          {stage === "camera" ? (
-            <button
-              onClick={capture}
-              style={{ position: "absolute", bottom: 64, left: "50%", transform: "translateX(-50%)", width: 72, height: 72, borderRadius: "50%", background: "#fff", border: "4px solid rgba(255,255,255,0.4)", cursor: "pointer", boxShadow: "0 4px 24px rgba(0,0,0,0.5)" }}
-            />
-          ) : (
-            <div style={{ position: "absolute", bottom: 64, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-              <div className="scan-spin" style={{ width: 36, height: 36, border: "3px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%" }} />
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#fff" }}>Reading receipt…</p>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Hidden capture canvas */}
-      <canvas ref={canvasRef} style={{ display: "none" }} />
-
-      {/* Confirmation sheet */}
-      {stage === "confirm" && (
-        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end" }}>
-          <div style={{
-            width: "100%",
-            background: C.bg,
-            borderRadius: "22px 22px 0 0",
-            padding: "24px 24px 48px",
-            maxHeight: "90vh",
-            overflowY: "auto",
-            transform: confirmVisible ? "translateY(0)" : "translateY(100%)",
-            transition: "transform 0.3s ease",
-          }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 20px" }} />
-            <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, margin: "0 0 12px" }}>
-              Confirm Receipt
-            </h2>
-            {ocrError && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 16px", lineHeight: 1.5, background: C.sage, borderRadius: 8, padding: "10px 12px" }}>
-                Couldn't read this receipt clearly. Please fill in the details manually.
-              </p>
-            )}
-
-            {/* Editable fields */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
-              {([
-                { label: "Merchant", val: merchant, set: setMerchant, ph: "Merchant name", type: "text" },
-                { label: "Date", val: date, set: setDate, ph: "e.g. 01/15/2025", type: "text" },
-                { label: "Amount ($)", val: amount, set: setAmount, ph: "0.00", type: "number" },
-              ] as { label: string; val: string; set: (v: string) => void; ph: string; type: string }[]).map(({ label, val, set, ph, type }) => (
-                <div key={label}>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>{label}</p>
-                  <input type={type} value={val} placeholder={ph} onChange={(e) => set(e.target.value)} style={inputStyle} />
-                </div>
-              ))}
-            </div>
-
-            {/* Expense type */}
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Type</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-              {EXPENSE_TYPES.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setExpType(t)}
-                  style={{ background: expType === t ? C.green : C.greenLight, color: expType === t ? "#fff" : C.text, border: "none", borderRadius: 999, padding: "7px 16px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: "pointer", minHeight: 44 }}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-
-            {/* Notes */}
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>Notes</p>
-            <input
-              placeholder="Add a note..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              style={{ ...inputStyle, marginBottom: 24 }}
-            />
-
-            {/* Action buttons */}
-            <div style={{ display: "flex", gap: 12 }}>
-              <button
-                onClick={onClose}
-                style={{ flex: 1, background: "none", border: `1.5px solid ${C.border}`, borderRadius: 14, padding: "14px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 17, color: C.text, cursor: "pointer", minHeight: 44 }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                style={{ flex: 2, background: C.green, border: "none", borderRadius: 14, padding: "14px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 17, color: "#fff", cursor: "pointer", minHeight: 44, opacity: saving ? 0.7 : 1, transition: "opacity 0.15s" }}
-              >
-                {saving ? "Saving…" : "Save"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ── PAGE 3: FINANCES ──────────────────────────────── */
 function FinancesPage({
   vehicle,
@@ -3054,6 +2357,36 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
   const [activeFilter, setActiveFilter] = useState("All");
   const filters = ["All", "Engine", "Brakes", "Suspension", "Electrical", "Body"];
 
+  const make = vehicle.make ?? "";
+  const model = vehicle.model ?? "";
+  const year = vehicle.year ? String(vehicle.year) : "";
+
+  const baseQuery = [make, model, year].filter(Boolean).join(" ");
+  const searchQuery = search.trim() ? [make, model, year, search.trim()].filter(Boolean).join(" ") : [make, model, year, "parts"].filter(Boolean).join(" ");
+
+  const sources = [
+    {
+      name: "Facebook Marketplace",
+      icon: "📘",
+      url: `https://www.facebook.com/marketplace/search/?query=${encodeURIComponent(searchQuery)}`,
+    },
+    {
+      name: "Kijiji",
+      icon: "🔴",
+      url: `https://www.kijiji.ca/b-cars-vehicles/${[make, model, year].filter(Boolean).join("+")}/k0c27l0`,
+    },
+    {
+      name: "Amazon",
+      icon: "📦",
+      url: `https://www.amazon.ca/s?k=${encodeURIComponent(searchQuery)}`,
+    },
+    {
+      name: "Canadian Tire",
+      icon: "🔧",
+      url: `https://www.canadiantire.ca/en/search.html#q=${encodeURIComponent([make, year, model, search.trim() || "parts"].filter(Boolean).join("+"))}&lang=en_CA`,
+    },
+  ];
+
   return (
     <div
       style={{
@@ -3077,11 +2410,7 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
           </button>
         </div>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 20px" }}>
-          {vehicle.make && vehicle.model ? `Sourced for your ${vehicle.make} ${vehicle.model}` : "Source parts for your vehicle"}
-        </p>
-
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.border, marginBottom: 16 }}>
-          Parts sourcing coming soon
+          {baseQuery ? `Parts sourced for your ${baseQuery}` : "Source parts for your vehicle"}
         </p>
 
         {/* Search */}
@@ -3105,7 +2434,7 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
         />
 
         {/* Filter chips */}
-        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 24 }}>
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 24, scrollbarWidth: "none" }}>
           {filters.map((f) => (
             <button
               key={f}
@@ -3127,14 +2456,41 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
           ))}
         </div>
 
-        {/* Empty state */}
-        <div style={{ background: C.sage, borderRadius: 16, padding: "40px 24px", textAlign: "center" }}>
-          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 22, color: C.text, margin: "0 0 8px" }}>
-            Coming Soon
-          </p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, margin: 0 }}>
-            We're building a parts marketplace tailored to your {vehicle.make ?? "vehicle"}. You'll be able to browse, compare, and order directly from here.
-          </p>
+        {/* Source buttons */}
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px" }}>
+          Find Parts Online
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 32 }}>
+          {sources.map((source) => (
+            <a
+              key={source.name}
+              href={source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                background: C.sage,
+                border: `1.5px solid ${C.border}`,
+                borderRadius: 14,
+                padding: "16px 18px",
+                textDecoration: "none",
+                cursor: "pointer",
+              }}
+            >
+              <span style={{ fontSize: 22, flexShrink: 0 }}>{source.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, margin: 0 }}>
+                  {source.name}
+                </p>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {search.trim() ? `"${search.trim()}" · ${baseQuery}` : baseQuery || "Set up your vehicle to pre-fill searches"}
+                </p>
+              </div>
+              <span style={{ color: C.muted, fontSize: 20, flexShrink: 0, lineHeight: 1 }}>›</span>
+            </a>
+          ))}
         </div>
       </div>
     </div>
@@ -3162,20 +2518,59 @@ const STATUS_LABEL: Record<IssueStatus, string> = {
   good: "Good",
 };
 
-function DiagnosticsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettings: () => void }) {
-  const [issues, setIssues] = useState<{ id: number; text: string; date: string; resolved: boolean }[]>([]);
+function DiagnosticsPage({ vehicle, userId, onOpenSettings }: { vehicle: Vehicle; userId: string; onOpenSettings: () => void }) {
+  const [issues, setIssues] = useState<DiagnosticIssue[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [issueText, setIssueText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [resolving, setResolving] = useState<string | null>(null);
 
-  function addIssue() {
+  useEffect(() => {
+    setLoading(true);
+    getDiagnosticIssuesByVehicleId(vehicle.id)
+      .then(setIssues)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [vehicle.id]);
+
+  async function addIssue() {
     if (!issueText.trim()) return;
-    setIssues((prev) => [{ id: Date.now(), text: issueText.trim(), date: new Date().toLocaleDateString(), resolved: false }, ...prev]);
-    setIssueText("");
-    setShowAdd(false);
+    setSaving(true);
+    try {
+      const newIssue = await createDiagnosticIssue({
+        user_id: userId,
+        vehicle_id: vehicle.id,
+        type: "issue",
+        title: issueText.trim(),
+        severity: "medium",
+        status: "ongoing",
+        date_noticed: new Date().toISOString().slice(0, 10),
+      });
+      setIssues((prev) => [newIssue, ...prev]);
+      setIssueText("");
+      setShowAdd(false);
+    } catch {
+      // silent
+    } finally {
+      setSaving(false);
+    }
   }
 
-  const ongoing = issues.filter((i) => !i.resolved);
-  const resolved = issues.filter((i) => i.resolved);
+  async function handleResolve(id: string) {
+    setResolving(id);
+    try {
+      const updated = await resolveDiagnosticIssue(id);
+      setIssues((prev) => prev.map((i) => i.id === id ? updated : i));
+    } catch {
+      // silent
+    } finally {
+      setResolving(null);
+    }
+  }
+
+  const ongoing = issues.filter((i) => i.status !== "resolved");
+  const resolved = issues.filter((i) => i.status === "resolved");
 
   return (
     <div
@@ -3241,44 +2636,53 @@ function DiagnosticsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpen
           </button>
         </div>
 
-        {/* Ongoing */}
-        {ongoing.length > 0 && (
+        {loading ? (
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", marginTop: 20 }}>Loading…</p>
+        ) : (
           <>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Ongoing</p>
-            {ongoing.map((issue) => (
-              <div key={issue.id} style={{ display: "flex", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.border}` }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.error, marginRight: 12, flexShrink: 0 }} />
-                <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>{issue.text}</span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, marginRight: 8 }}>{issue.date}</span>
-                <button
-                  onClick={() => setIssues((prev) => prev.map((i) => i.id === issue.id ? { ...i, resolved: true } : i))}
-                  style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 8px", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, cursor: "pointer" }}
-                >
-                  Resolve
-                </button>
-              </div>
-            ))}
-          </>
-        )}
+            {ongoing.length > 0 && (
+              <>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Ongoing</p>
+                {ongoing.map((issue) => (
+                  <div key={issue.id} style={{ display: "flex", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.border}` }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.error, marginRight: 12, flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>{issue.title}</span>
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, marginRight: 8 }}>
+                      {issue.date_noticed ? new Date(issue.date_noticed).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+                    </span>
+                    <button
+                      onClick={() => handleResolve(issue.id)}
+                      disabled={resolving === issue.id}
+                      style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 8px", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, cursor: resolving === issue.id ? "default" : "pointer", opacity: resolving === issue.id ? 0.5 : 1 }}
+                    >
+                      {resolving === issue.id ? "…" : "Resolve"}
+                    </button>
+                  </div>
+                ))}
+              </>
+            )}
 
-        {/* Resolved */}
-        {resolved.length > 0 && (
-          <>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "16px 0 8px" }}>Resolved</p>
-            {resolved.map((issue) => (
-              <div key={issue.id} style={{ display: "flex", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.border}`, opacity: 0.6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2D9E4A", marginRight: 12, flexShrink: 0 }} />
-                <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>{issue.text}</span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>{issue.date}</span>
-              </div>
-            ))}
-          </>
-        )}
+            {resolved.length > 0 && (
+              <>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "16px 0 8px" }}>Resolved</p>
+                {resolved.map((issue) => (
+                  <div key={issue.id} style={{ display: "flex", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.border}`, opacity: 0.6 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2D9E4A", marginRight: 12, flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>{issue.title}</span>
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>
+                      {issue.date_resolved ? new Date(issue.date_resolved).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+                    </span>
+                  </div>
+                ))}
+              </>
+            )}
 
-        {ongoing.length === 0 && resolved.length === 0 && (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", marginTop: 20 }}>
-            No issues logged. Tap + Add if something needs attention.
-          </p>
+            {ongoing.length === 0 && resolved.length === 0 && (
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", marginTop: 20 }}>
+                No issues logged. Tap + Add if something needs attention.
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -3313,7 +2717,7 @@ function DiagnosticsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpen
                 marginBottom: 16,
               }}
             />
-            <GreenButton label="Add Issue" fullWidth onClick={addIssue} />
+            <GreenButton label={saving ? "Saving…" : "Add Issue"} fullWidth onClick={addIssue} />
           </div>
         </div>
       )}
@@ -3405,7 +2809,7 @@ export default function Dashboard() {
         <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} onOpenSettings={() => setShowSettings(true)} docsLoading={docsLoading} />
         <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} onOpenSettings={() => setShowSettings(true)} />
         <PartsPage vehicle={vehicle} onOpenSettings={() => setShowSettings(true)} />
-        <DiagnosticsPage vehicle={vehicle} onOpenSettings={() => setShowSettings(true)} />
+        <DiagnosticsPage vehicle={vehicle} userId={user?.id ?? ""} onOpenSettings={() => setShowSettings(true)} />
       </div>
 
       {/* Settings sheet */}
