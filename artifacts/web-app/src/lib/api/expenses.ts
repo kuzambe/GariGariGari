@@ -18,6 +18,8 @@ export interface CreateExpenseData {
   amount: number;
   description?: string;
   receipt_url?: string;
+  /** Optional ISO timestamp; defaults to now in DB when omitted. */
+  created_at?: string;
 }
 
 export async function getExpensesByVehicleId(vehicleId: string): Promise<Expense[]> {

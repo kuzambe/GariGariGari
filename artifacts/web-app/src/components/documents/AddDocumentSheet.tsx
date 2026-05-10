@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import { DocumentScanner } from "./DocumentScanner";
+import { ParsedDocumentSheet, ConfirmedDocument } from "./ParsedDocumentSheet";
+import { parseDocument, ParseResult } from "@/lib/documentParser";
 
 const C = {
   bg: "#FFFFFF",
@@ -14,11 +16,15 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 interface AddDocumentSheetProps {
   categoryLabel: string;
   onClose: () => void;
-  onFileSelected: (file: File) => void;
+  /** Called after the user has confirmed the document. */
+  onFileSelected: (file: File, parsed?: ConfirmedDocument) => void;
   onError: (message: string) => void;
+  /** When true, the sheet runs OCR + rule-based parser on captured images
+   *  and shows the confirmation sheet before calling onFileSelected. */
+  enableParser?: boolean;
 }
 
-type SheetMode = "menu" | "scanner" | "camera-capture";
+type SheetMode = "menu" | "scanner" | "camera-capture" | "ocr" | "parsed";
 
 function CameraIcon() {
   return (
@@ -51,11 +57,37 @@ function LibraryIcon() {
   );
 }
 
-export function AddDocumentSheet({ categoryLabel, onClose, onFileSelected, onError }: AddDocumentSheetProps) {
+export function AddDocumentSheet({ categoryLabel, onClose, onFileSelected, onError, enableParser }: AddDocumentSheetProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [mode, setMode] = useState<SheetMode>("menu");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [parseResult, setParseResult] = useState<ParseResult | null>(null);
+
+  async function runParser(file: File) {
+    setMode("ocr");
+    try {
+      const { createWorker } = await import("tesseract.js");
+      const worker = await createWorker("eng");
+      // tesseract.js accepts File / Blob directly
+      const { data: { text } } = await worker.recognize(file);
+      await worker.terminate();
+      const trimmed = (text || "").trim();
+      if (!trimmed) {
+        // Couldn't read any text — show a friendly message and bail out.
+        onClose();
+        onError("Couldn't read this document. Try taking the photo in better lighting or retake it.");
+        return;
+      }
+      setParseResult(parseDocument(trimmed));
+      setMode("parsed");
+    } catch {
+      // OCR failed — still let user save the document, no actions.
+      setParseResult({ type: "unknown", fields: {}, confidence: "unknown" });
+      setMode("parsed");
+    }
+  }
 
   function handleFile(file: File) {
     if (file.size > MAX_FILE_BYTES) {
@@ -63,7 +95,13 @@ export function AddDocumentSheet({ categoryLabel, onClose, onFileSelected, onErr
       onError("File is too large. Maximum size is 10 MB.");
       return;
     }
-    onFileSelected(file);
+    // PDFs and parser-disabled flows go straight to upload.
+    if (!enableParser || file.type === "application/pdf") {
+      onFileSelected(file);
+      return;
+    }
+    setPendingFile(file);
+    void runParser(file);
   }
 
   function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
@@ -110,6 +148,28 @@ export function AddDocumentSheet({ categoryLabel, onClose, onFileSelected, onErr
 
   function handleScannerCapture(file: File) {
     handleFile(file);
+  }
+
+  if (mode === "ocr") {
+    return (
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 320, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18 }}>
+        <div style={{ width: 40, height: 40, border: "3px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", borderRadius: "50%", animation: "scanSpin 0.9s linear infinite" }} />
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "rgba(255,255,255,0.85)", margin: 0 }}>Reading document…</p>
+        <style>{`@keyframes scanSpin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (mode === "parsed" && parseResult && pendingFile) {
+    return (
+      <ParsedDocumentSheet
+        parseResult={parseResult}
+        onConfirm={(confirmed) => {
+          onFileSelected(pendingFile, confirmed);
+        }}
+        onClose={onClose}
+      />
+    );
   }
 
   if (mode === "scanner") {

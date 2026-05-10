@@ -1,0 +1,74 @@
+Build a rule based document parser for Gari. The document scanning and storage is partially working already — do not break what exists. Only add the parsing intelligence on top of it.
+WHAT THE PARSER DOES:
+After a document is captured by the camera or uploaded, Google ML Kit Text Recognition extracts the raw text from the image on device. The raw text is then passed to a rule based parser — this is pure JavaScript logic, no AI, no external API calls. The parser identifies what type of document it is and extracts the relevant information automatically. That information is then routed to the correct section of the app without the user having to do anything manually.
+HOW TO DETECT DOCUMENT TYPE:
+The parser first identifies what kind of document was scanned by looking for keywords in the extracted text. Use this logic in order:
+If text contains words like “invoice”, “repair order”, “work order”, “labour”, “parts”, “mechanic”, “auto”, “service centre”, “total due”, “amount due” — classify as mechanic invoice.
+If text contains words like “insurance”, “policy”, “insured”, “coverage”, “premium”, “expiry”, “effective date”, “broker”, “deductible” — classify as insurance card or document.
+If text contains words like “registration”, “permit”, “vehicle permit”, “plate”, “licence plate”, “registered owner”, “ministry of transportation”, “MTO” — classify as registration.
+If text contains words like “receipt”, “thank you for your purchase”, “subtotal”, “HST”, “GST”, “change due”, “payment”, “visa”, “mastercard”, “debit” — classify as receipt.
+If no clear type is detected — classify as unknown and store as a general document without attempting extraction.
+MECHANIC INVOICE PARSER:
+Extract these fields using pattern matching:
+Shop name — usually the largest text at the top of the document or on a header line. Look for text before the address. Common patterns: text followed by “Auto”, “Motors”, “Garage”, “Service”, “Automotive”, “Repair”.
+Date — look for patterns matching DD/MM/YYYY, MM/DD/YYYY, Month DD YYYY, DD Month YYYY. Extract the most prominent date which is usually the invoice date not individual line item dates.
+Total amount — look for the last and largest dollar amount on the document. Keywords to look near: “Total”, “Grand Total”, “Amount Due”, “Balance Due”, “Total Due”. Extract the number following these keywords. Strip currency symbols and commas before storing as a number.
+Services performed — look for line items that describe work done. Common patterns: lines containing words like “oil change”, “brake”, “tire”, “filter”, “flush”, “inspection”, “alignment”, “battery”, “belt”, “fluid”, “rotation”, “repair”, “replace”, “install”. Extract each line as a separate service entry.
+After extracting from a mechanic invoice do these actions automatically:
+	•	Create an expense entry in the expenses table with type set to “maintenance”, amount set to the extracted total, description set to the shop name and services list, created_at set to the extracted date if found or today’s date.
+	•	Create a reminder entry suggesting the next service — if oil change is in the services list suggest a reminder for 5000km or 6 months from the invoice date whichever comes first.
+	•	Update the service history section with the shop name, date, and services performed.
+Show the user a confirmation card before saving anything — display what was extracted with the option to edit any field. Two buttons — Confirm and Save, and Edit Details. Only save after confirmation.
+INSURANCE DOCUMENT PARSER:
+Extract these fields:
+Provider name — look for known insurance company names: Intact, Aviva, Wawanesa, Co-operators, Desjardins, TD Insurance, Belair, Economical, Gore Mutual, Allstate, State Farm, CAA Insurance. Also look for text near “insured by” or “underwritten by”.
+Policy number — look for patterns near the word “policy” followed by alphanumeric strings typically 8-15 characters.
+Expiry date — look for dates near words like “expiry”, “expires”, “expiration”, “effective until”, “valid until”, “renewal date”.
+Coverage type — look for words like “liability”, “collision”, “comprehensive”, “accident benefits”.
+After extracting from insurance do these actions automatically:
+	•	Update the insurance document record with extracted provider name and expiry date.
+	•	Create a reminder 30 days before expiry date saying “Insurance renewal due in 30 days — [provider name]”.
+	•	Create a second reminder 7 days before expiry saying “Insurance expires in 7 days — renew now”.
+Show confirmation card before saving.
+REGISTRATION PARSER:
+Extract these fields:
+Plate number — look for patterns matching Canadian licence plate formats — typically 4 letters followed by 3 numbers or similar combinations. Also look near the words “plate”, “licence plate”, “permit number”.
+Expiry date — look for dates near “expires”, “expiry”, “renewal”, “valid until”.
+Registered owner — look for text near “registered owner”, “owner”, “name”.
+After extracting from registration do these actions automatically:
+	•	Update the vehicle profile with the plate number if not already set.
+	•	Create a reminder 30 days before registration expiry.
+Show confirmation card before saving.
+RECEIPT PARSER:
+Extract these fields:
+Merchant name — usually the largest text at the top. Look for it before the address line.
+Date — same date pattern matching as invoice parser.
+Total amount — look near “Total”, “Amount”, “Grand Total”, “Balance”. Take the largest amount found near these keywords.
+Expense category guess — use merchant name to guess category:
+	•	If merchant contains “shell”, “esso”, “petro”, “pioneer”, “ultramar”, “husky”, “mobil”, “chevron”, “gas”, “fuel”, “petrol” — category is Fuel.
+	•	If merchant contains “canadian tire”, “napa”, “autozone”, “parts source”, “lordco”, “midas”, “jiffy lube”, “oil change”, “brake” — category is Maintenance.
+	•	If merchant contains “carquest”, “autoparts”, “rockauto”, “advance auto” — category is Parts.
+	•	Otherwise — category is Other.
+After extracting from receipt do these actions automatically:
+	•	Create expense entry with guessed category, extracted amount, merchant as description, extracted date.
+Show confirmation card before saving.
+CONFIRMATION CARD UI:
+After parsing any document show a bottom sheet that slides up smoothly. It displays:
+Header — document type detected, shown as a pill badge. Green badge for successfully detected type, grey for unknown.
+Extracted fields — each field shown as a labelled row with the extracted value. All fields are editable — tapping a field opens an inline text input so user can correct any mistakes.
+Actions taken section — a list of what will happen when confirmed. For example “Expense of $234.50 will be logged” and “Reminder set for June 15 2026”. Each action shown with a small icon and description.
+Two buttons at the bottom — Confirm and Save in #1F6B2E background white text, and Edit Details as a text link.
+If document type could not be detected — show “We couldn’t identify this document type. It has been saved to your documents.” with no automatic actions taken.
+UNKNOWN DOCUMENT HANDLING:
+If the parser cannot classify the document — still store it in Supabase as a general document. Never lose a document just because it couldn’t be parsed. Show the user a simple message that it was saved but could not be automatically processed.
+ERROR HANDLING:
+If ML Kit cannot extract any text from the image — show “Couldn’t read this document. Try taking the photo in better lighting or retake it.” with a retake option.
+If parsing succeeds but extraction returns empty fields — show the confirmation card with empty fields so user can fill them in manually.
+Never show raw errors to the user.
+Never call any external AI API for parsing — this is rule based code only.
+IMPORTANT:
+All text extraction happens on device using ML Kit — nothing is uploaded for processing.
+All parsing is rule based JavaScript — no AI API calls anywhere in this feature.
+Do not break existing document capture and storage functionality.
+Build on top of what already exists.
+Show me the result when done.

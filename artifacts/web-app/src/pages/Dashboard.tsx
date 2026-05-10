@@ -4,7 +4,10 @@ import { useAuth } from "@/context/AuthContext";
 import { useVehicle } from "@/context/VehicleContext";
 import { getDocumentsByVehicleId, Document, uploadDocument, deleteDocumentWithFile } from "@/lib/api/documents";
 import { getExpensesByVehicleId, Expense, addExpense } from "@/lib/api/expenses";
-import { Vehicle } from "@/lib/api/vehicles";
+import { Vehicle, updateVehicle } from "@/lib/api/vehicles";
+import { saveReminder } from "@/lib/reminders";
+import { addDays, formatDate } from "@/lib/documentParser";
+import type { ConfirmedDocument } from "@/components/documents/ParsedDocumentSheet";
 import { Mechanic, getMechanicByVehicleId, createMechanic, updateMechanic, deleteMechanic } from "@/lib/api/mechanics";
 import { RoadsideAssistance, getRoadsideByUserId, createRoadside, updateRoadside, deleteRoadside } from "@/lib/api/roadsideAssistance";
 import { GarageIcon } from "@/components/ui/GarageIcon";
@@ -2055,21 +2058,104 @@ function DocumentsPage({
     setTimeout(() => setToast(null), 2000);
   }
 
-  async function handleFileSelected(file: File, type: string, replacing: boolean) {
+  async function applyParsedActions(parsed: ConfirmedDocument): Promise<number> {
+    const f = parsed.fields;
+    let actionCount = 0;
+    try {
+      // Service date in ISO form, used for both mechanic invoices and reminders
+      const serviceDateIso = f.date && /^\d{4}-\d{2}-\d{2}$/.test(f.date) ? f.date : undefined;
+      const expenseCreatedAt = serviceDateIso ? new Date(`${serviceDateIso}T00:00:00Z`).toISOString() : undefined;
+
+      if (parsed.type === "mechanic_invoice") {
+        const amount = parseFloat(f.amount || "");
+        if (Number.isFinite(amount) && amount > 0) {
+          const description = [f.shopName, f.services].filter(Boolean).join(" — ");
+          await addExpense({
+            user_id: userId,
+            vehicle_id: vehicle.id,
+            type: "maintenance",
+            amount,
+            description: description || undefined,
+            ...(expenseCreatedAt ? { created_at: expenseCreatedAt } : {}),
+          });
+          actionCount++;
+        }
+        if (f.services && /oil change/i.test(f.services)) {
+          const baseDate = f.date && /^\d{4}-\d{2}-\d{2}$/.test(f.date) ? f.date : new Date().toISOString().slice(0, 10);
+          const due = addDays(baseDate, 180);
+          if (due) {
+            saveReminder(vehicle.id, { title: "Oil change due (6 months / 5,000 km)", due_date: due, source: "service" });
+            actionCount++;
+          }
+        }
+      } else if (parsed.type === "insurance") {
+        if (f.expiryDate && /^\d{4}-\d{2}-\d{2}$/.test(f.expiryDate)) {
+          const provider = f.provider || "Insurance";
+          const d30 = addDays(f.expiryDate, -30);
+          const d7  = addDays(f.expiryDate, -7);
+          if (d30) { saveReminder(vehicle.id, { title: `Insurance renewal due in 30 days — ${provider}`, due_date: d30, source: "insurance" }); actionCount++; }
+          if (d7)  { saveReminder(vehicle.id, { title: `Insurance expires in 7 days — renew now`,         due_date: d7,  source: "insurance" }); actionCount++; }
+        }
+      } else if (parsed.type === "registration") {
+        if (f.plateNumber && !vehicle.license_plate) {
+          try { await updateVehicle(vehicle.id, { license_plate: f.plateNumber }); actionCount++; } catch { /* silent */ }
+        }
+        if (f.expiryDate && /^\d{4}-\d{2}-\d{2}$/.test(f.expiryDate)) {
+          const d30 = addDays(f.expiryDate, -30);
+          if (d30) { saveReminder(vehicle.id, { title: `Registration renewal due — ${formatDate(f.expiryDate)}`, due_date: d30, source: "registration" }); actionCount++; }
+        }
+      } else if (parsed.type === "receipt") {
+        const amount = parseFloat(f.amount || "");
+        if (Number.isFinite(amount) && amount > 0) {
+          await addExpense({
+            user_id: userId,
+            vehicle_id: vehicle.id,
+            type: (f.category || "Other").toLowerCase(),
+            amount,
+            description: f.merchant || undefined,
+            ...(expenseCreatedAt ? { created_at: expenseCreatedAt } : {}),
+          });
+          actionCount++;
+        }
+      }
+    } catch {
+      /* never surface raw errors — just count what succeeded */
+    }
+    return actionCount;
+  }
+
+  async function handleFileSelected(file: File, type: string, replacing: boolean, parsed?: ConfirmedDocument) {
     const replacingDoc = replacing ? viewDoc : null;
     setSheetType(null);
     setUploadingType(type);
     try {
-      await uploadDocument(file, userId, vehicle.id, type);
-      if (replacingDoc) {
-        try {
-          await deleteDocumentWithFile(replacingDoc);
-        } catch {
-          /* leave older copy in place if cleanup fails */
-        }
+      // Storage routing:
+      //  - parser-confirmed type → matching storage bucket
+      //  - parser ran but type is unknown → always "other" (never lose the doc, never mis-route it)
+      //  - parser didn't run (PDF / parser disabled) → use the user-selected category
+      let storageType: string;
+      if (parsed) {
+        if (parsed.type === "mechanic_invoice" || parsed.type === "receipt") storageType = "service";
+        else if (parsed.type === "insurance")    storageType = "insurance";
+        else if (parsed.type === "registration") storageType = "registration";
+        else                                     storageType = "other";
+      } else {
+        storageType = type;
       }
+
+      await uploadDocument(file, userId, vehicle.id, storageType);
+      if (replacingDoc) {
+        try { await deleteDocumentWithFile(replacingDoc); } catch { /* ignore */ }
+      }
+
+      let extras = 0;
+      if (parsed) extras = await applyParsedActions(parsed);
+
       onRefresh();
-      showToast(replacing ? "Document updated" : "Document saved", C.success);
+      const msg = extras > 0
+        ? `Document saved · ${extras} action${extras === 1 ? "" : "s"} taken`
+        : (replacing ? "Document updated" : "Document saved");
+      showToast(msg, C.success);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Upload failed";
       if (msg.toLowerCase().includes("size") || msg.toLowerCase().includes("large")) {
@@ -2270,8 +2356,9 @@ function DocumentsPage({
       {sheetType && (
         <AddDocumentSheet
           categoryLabel={sheetLabel}
+          enableParser
           onClose={() => setSheetType(null)}
-          onFileSelected={(file) => handleFileSelected(file, sheetType, sheetReplacing)}
+          onFileSelected={(file, parsed) => handleFileSelected(file, sheetType, sheetReplacing, parsed)}
           onError={(msg) => { setSheetType(null); showToast(msg, C.error); }}
         />
       )}
