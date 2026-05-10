@@ -1,0 +1,52 @@
+Add an intelligent rule based document parser to Gari. This runs after any document is captured or uploaded. It uses Tesseract.js which is already installed in the project to extract text from the image on device. No AI APIs are called anywhere in this feature — everything is pure JavaScript pattern matching logic.
+HOW IT INTEGRATES WITH EXISTING CODE:
+The existing document capture flow in Dashboard.tsx already handles camera and file upload. After a file is captured and before it is saved to Supabase — intercept it and run it through the parser first. Show the confirmation card to the user. Only save to Supabase after the user confirms.
+CREATE A NEW FILE — src/lib/documentParser.ts:
+This file contains all parsing logic. It exports one main function called parseDocument that takes the raw extracted text as a string and returns a ParsedDocument object containing: documentType, extractedFields, suggestedActions.
+DOCUMENT TYPE DETECTION:
+Classify the document by checking for keywords in the extracted text. Convert text to lowercase before checking.
+Mechanic invoice keywords — invoice, repair order, work order, labour, labor, parts, mechanic, auto, garage, service centre, service center, total due, amount due, shop supplies, technician.
+Insurance keywords — insurance, policy, insured, coverage, premium, expiry, effective date, broker, deductible, liability, collision, comprehensive, intact, aviva, wawanesa, cooperators, desjardins, belair, economical.
+Registration keywords — registration, permit, vehicle permit, licence plate, license plate, registered owner, ministry of transportation, MTO, plate number, permit number.
+Receipt keywords — receipt, thank you for your purchase, subtotal, HST, GST, change due, payment received, visa, mastercard, debit, cash, transaction.
+If multiple types match — pick the one with the most keyword matches. If none match — return type unknown.
+DATE EXTRACTION FUNCTION:
+Create a function called extractDate that takes raw text and returns the first valid date found. Check these patterns in order:
+	•	DD/MM/YYYY and MM/DD/YYYY
+	•	YYYY-MM-DD
+	•	Month DD YYYY written out like May 14 2026
+	•	DD Month YYYY like 14 May 2026
+	•	Abbreviated months like May, Jun, Jul, Aug, Sep, Oct, Nov, Dec, Jan, Feb, Mar, Apr
+Return the date as a JavaScript Date object or null if none found.
+DOLLAR AMOUNT EXTRACTION FUNCTION:
+Create a function called extractAmount that finds dollar amounts in text. Look for patterns matching optional dollar sign followed by digits with optional comma separators and optional decimal places. From all amounts found return the largest one that appears near keywords: total, grand total, amount due, balance due, total due. If none found near those keywords return the largest amount in the document overall. Return as a number rounded to two decimal places.
+SHOP OR MERCHANT NAME EXTRACTION:
+Create a function called extractMerchantName. Take the first three lines of the document. Remove lines that are purely numbers, addresses containing words like street, ave, rd, blvd, or phone numbers matching digit patterns. Return the first remaining line as the merchant name. Trim whitespace and capitalise properly.
+MECHANIC INVOICE PARSER:
+Extract: shop name using extractMerchantName, date using extractDate, total using extractAmount, services as an array of strings — look for lines containing oil change, brake, tire, filter, flush, inspection, alignment, battery, belt, fluid, rotation, repair, replace, install, transmission, coolant, spark, wiper, air filter, cabin filter, differential, wheel bearing, suspension, exhaust, muffler, catalytic, oxygen sensor, alternator, starter, radiator, water pump, timing.
+Return suggested actions: create expense entry with type maintenance, create service history entry, suggest oil change reminder if oil change is in services list.
+INSURANCE PARSER:
+Extract: provider name by checking for known insurer names in the text — Intact, Aviva, Wawanesa, Co-operators, Desjardins, TD Insurance, Belair, Economical, Gore Mutual, Allstate, State Farm, CAA Insurance, Sonnet, Square One. Expiry date using extractDate looking specifically near words expiry, expires, expiration, effective until, valid until, renewal. Policy number by finding alphanumeric strings 8-15 characters near the word policy.
+Return suggested actions: set reminder 30 days before expiry, set reminder 7 days before expiry, update document record with expiry date.
+REGISTRATION PARSER:
+Extract: plate number by looking for Canadian plate patterns — typically combinations of letters and numbers 6-7 characters, or text directly after the words plate or permit. Expiry date using extractDate near words expires, expiry, renewal, valid. Owner name near words registered owner or owner.
+Return suggested actions: update vehicle plate if not set, set reminder 30 days before expiry.
+RECEIPT PARSER:
+Extract: merchant name using extractMerchantName, date using extractDate, total using extractAmount.
+Guess expense category from merchant name — convert to lowercase and check: if contains shell, esso, petro-canada, petrocanada, pioneer, ultramar, husky, mobil, chevron, sunoco, gas, fuel, petrol — category is Fuel. If contains canadian tire, napa, autozone, parts source, lordco, midas, jiffy lube, oil change, brake, mr lube, speedy auto, active green — category is Maintenance. If contains carquest, autoparts, rockauto, advance auto, uni-select — category is Parts. Otherwise category is Other.
+Return suggested actions: create expense entry with guessed category.
+CONFIRMATION CARD COMPONENT — src/components/documents/ParseConfirmCard.tsx:
+This is a bottom sheet that slides up after parsing. It must match the existing app design exactly — white background, green accents #1F6B2E, Rajdhani Bold for headings, DM Sans for body, rounded top corners 20px, handle bar at top.
+Show at the top: a pill badge showing the detected document type. Green background #E8F0E9 text #1F6B2E for known types. Grey for unknown.
+Below that: a section called “What we found” showing each extracted field as a labelled editable row. Label in DM Sans 12px #6B7C6D. Value as an inline text input pre-filled with extracted value. User can tap and edit any field before confirming.
+Below that: a section called “What will happen” showing each suggested action as a row with a small green checkmark icon and description text in DM Sans 13px #0D1C0E.
+Two buttons at the bottom: primary button full width background #1F6B2E white text Rajdhani Bold 18px that says Confirm and Save. Below it a text link that says Skip automatic actions — just save document — this saves the file to Supabase but skips all the automatic expense and reminder creation.
+If document type is unknown: show only the skip option with message “We couldn’t identify this document type. It will be saved to your documents.”
+INTEGRATION INTO EXISTING CAPTURE FLOW:
+After the user captures or selects a file in the existing document flow: run Tesseract.js on the image to get raw text — use the same approach already used in ScanReceiptFlow. Pass the raw text to parseDocument from documentParser.ts. Show ParseConfirmCard with the results. On confirm — execute all suggested actions, then save document to Supabase. On skip — save document to Supabase only with no automatic actions.
+ERROR HANDLING:
+If Tesseract fails to extract any text — skip parsing entirely and go straight to saving the document normally. Show a brief toast: “Document saved. Text could not be read automatically.”
+If parsing returns unknown type — show the confirmation card with unknown state.
+Never block document saving because of a parsing failure. The document must always be saved regardless of whether parsing succeeds.
+Never call any external API for parsing. All logic is local JavaScript only.
+Do not change any existing document capture UI or storage logic. Only add the parser on top of what exists. Show me the result when done

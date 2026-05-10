@@ -24,6 +24,8 @@ export interface ConfirmedDocument {
   type: DocType;
   fields: Record<string, string>;   // edited values keyed by field key
   actions: PlannedAction[];
+  /** When true, save the document only — skip expenses, reminders, and other side effects. */
+  skipActions?: boolean;
 }
 
 interface FieldDef {
@@ -123,8 +125,9 @@ export function ParsedDocumentSheet({ parseResult, onConfirm, onClose }: Props) 
     onConfirm({ type, fields: values, actions });
   }
 
-  function handleEditDetails() {
-    firstInputRef.current?.focus();
+  function handleSkipActions() {
+    setSaving(true);
+    onConfirm({ type, fields: values, actions: [], skipActions: true });
   }
 
   return (
@@ -272,7 +275,7 @@ export function ParsedDocumentSheet({ parseResult, onConfirm, onClose }: Props) 
 
         {!isUnknown && (
           <button
-            onClick={handleEditDetails}
+            onClick={handleSkipActions}
             disabled={saving}
             style={{
               display: "block", width: "100%", marginTop: 10,
@@ -280,9 +283,11 @@ export function ParsedDocumentSheet({ parseResult, onConfirm, onClose }: Props) 
               fontFamily: "'DM Sans', sans-serif", fontSize: 14,
               color: C.muted, cursor: saving ? "default" : "pointer",
               textAlign: "center", minHeight: 36,
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
             }}
           >
-            Edit Details
+            Skip automatic actions — just save document
           </button>
         )}
       </div>

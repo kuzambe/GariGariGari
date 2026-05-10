@@ -1723,7 +1723,7 @@ function DocumentsPage({
       }
 
       let extras = 0;
-      if (parsed) extras = await applyParsedActions(parsed);
+      if (parsed && !parsed.skipActions) extras = await applyParsedActions(parsed);
 
       onRefresh();
       const msg = extras > 0
