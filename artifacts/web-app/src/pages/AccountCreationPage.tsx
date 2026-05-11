@@ -67,6 +67,7 @@ export default function AccountCreationPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [nickname, setNickname] = useState("");
 
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -77,7 +78,13 @@ export default function AccountCreationPage() {
   const [successToast, setSuccessToast] = useState(false);
 
   useEffect(() => {
-    setGuest(getGuestSession());
+    const g = getGuestSession();
+    setGuest(g);
+    // Pre-fill nickname suggestion from the scanned vehicle
+    if (g?.model && !nickname) {
+      setNickname(`My ${g.model}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const passwordsMatch = !confirm || password === confirm;
@@ -92,10 +99,11 @@ export default function AccountCreationPage() {
 
   async function transferGuestToAccount(userId: string, g: GuestSession): Promise<void> {
     const modelLabel = (g.model && g.model.trim()) || "Car";
+    const finalNickname = nickname.trim() || `My ${modelLabel}`;
     try {
       await createVehicle({
         user_id: userId,
-        nickname: `Your ${modelLabel}`,
+        nickname: finalNickname,
         vin: g.vin ?? undefined,
         make: g.make ?? undefined,
         model: g.model ?? undefined,
@@ -349,6 +357,20 @@ export default function AccountCreationPage() {
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>
                 {confirmError ?? "Passwords don't match"}
               </p>
+            )}
+
+            {guest && (
+              <>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: MUTED, margin: "8px 0 -4px" }}>
+                  Give your car a nickname
+                </p>
+                <GariField
+                  placeholder={guest.model ? `My ${guest.model}` : "My car"}
+                  value={nickname}
+                  onChange={setNickname}
+                  autoComplete="off"
+                />
+              </>
             )}
           </>
         )}
