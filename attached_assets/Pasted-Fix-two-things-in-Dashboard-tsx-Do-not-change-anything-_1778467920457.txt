@@ -1,0 +1,25 @@
+Fix two things in Dashboard.tsx. Do not change anything else.
+Fix 1 — HealthGauge real calculation:
+The HealthGauge component is hardcoded to show pct=90. Replace this with a real calculated score.
+In the Dashboard component where LandingPage is rendered, calculate a health score before rendering using this logic:
+Start at 100. Use the expenses array and documents array and issues data that are already available in the Dashboard component scope.
+Subtract 20 if there are no expenses at all and the vehicle mileage is over 10000 — suggests no maintenance has been logged.
+Subtract 15 for each ongoing diagnostic issue up to a maximum subtraction of 30 — so one issue subtracts 15, two or more subtracts 30.
+Subtract 10 if no insurance document exists in the documents array — check if any document has type equal to "insurance".
+Subtract 10 if no ownership document exists — check type equal to "ownership".
+Subtract 10 if mileage is null or undefined — means the user never set it.
+Clamp the result between 0 and 100.
+Pass this calculated score as the pct prop to HealthGauge inside LandingPage. You will need to pass it as a prop through LandingPage down to HealthGauge, or calculate it inside LandingPage itself using the expenses and documents props that are already passed to it.
+Also pass the diagnostic issues into LandingPage as a prop called issues of type DiagnosticIssue array. Fetch them in the main Dashboard component alongside documents and expenses using getDiagnosticIssuesByVehicleId and store in a useState called issues. Use this for the health calculation.
+Fix 2 — Maintenance items real data:
+The MAINTENANCE_ITEMS array is completely static and hardcoded with fake statuses. Replace it with dynamic data based on real expenses.
+Remove the static MAINTENANCE_ITEMS constant entirely.
+Inside DiagnosticsPage generate the maintenance items dynamically from the expenses prop. You need to pass expenses as a prop to DiagnosticsPage — add it to the DiagnosticsPage props interface and pass it from the Dashboard component where DiagnosticsPage is rendered.
+Generate four maintenance items dynamically:
+Oil Change — find the most recent expense where type is maintenance and description contains oil change case insensitive. If found and the expense created_at date is within 180 days ago status is good. If between 180 and 270 days status is due-soon. If over 270 days or not found status is overdue.
+Tire Rotation — find most recent expense where description contains tire rotation case insensitive. If within 365 days good. If between 365 and 450 days due-soon. If over 450 days or not found overdue.
+Brake Inspection — find most recent expense where description contains brake case insensitive. If within 730 days good. If between 730 and 900 days due-soon. If over 900 days or not found overdue.
+Battery Check — find most recent expense where description contains battery case insensitive. If within 1095 days which is 3 years good. If between 1095 and 1460 days due-soon. If over 1460 days or not found overdue.
+For each item also show the date of the last service in small muted text below the status label if a matching expense was found. Format as "Last: Month Day Year".
+If no expenses exist at all show all four items with status overdue and a note below the list in DM Sans 13px muted color: "Log your first service in Finances to track maintenance status."
+Do not change any other functionality, styling, or any other part of the file. Only fix HealthGauge calculation and maintenance items dynamic data.

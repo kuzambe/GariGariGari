@@ -680,6 +680,7 @@ function LandingPage({
   vehicle,
   vehicles,
   userId,
+  healthScore,
   onSignOut,
   onGoToPage,
   onOpenSettings,
@@ -690,6 +691,8 @@ function LandingPage({
   userId: string;
   expenses: Expense[];
   documents: Document[];
+  issues: DiagnosticIssue[];
+  healthScore: number;
   onSignOut: () => void;
   onGoToPage: (p: number) => void;
   onOpenSettings: () => void;
@@ -1072,7 +1075,7 @@ function LandingPage({
 
       {/* Health gauge */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
-        <HealthGauge pct={90} />
+        <HealthGauge pct={healthScore} />
       </div>
 
       {/* Quick log shortcuts */}
@@ -2500,13 +2503,6 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
 /* ── PAGE 5: DIAGNOSTICS ───────────────────────────── */
 type IssueStatus = "overdue" | "due-soon" | "good";
 
-const MAINTENANCE_ITEMS: { label: string; status: IssueStatus }[] = [
-  { label: "Oil Change", status: "good" },
-  { label: "Tire Rotation", status: "due-soon" },
-  { label: "Brake Inspection", status: "good" },
-  { label: "Battery Check", status: "good" },
-];
-
 const STATUS_COLOR: Record<IssueStatus, string> = {
   overdue: C.error,
   "due-soon": "#E5A020",
@@ -2518,7 +2514,43 @@ const STATUS_LABEL: Record<IssueStatus, string> = {
   good: "Good",
 };
 
-function DiagnosticsPage({ vehicle, userId, onOpenSettings }: { vehicle: Vehicle; userId: string; onOpenSettings: () => void }) {
+function DiagnosticsPage({ vehicle, expenses, userId, onOpenSettings }: { vehicle: Vehicle; expenses: Expense[]; userId: string; onOpenSettings: () => void }) {
+  const maintenanceItems: { label: string; status: IssueStatus; lastDate: string | null }[] = (() => {
+    const now = Date.now();
+    const DAY = 86400000;
+    function findLatest(keyword: string): Expense | null {
+      const kw = keyword.toLowerCase();
+      const matches = expenses.filter((e) => e.type === "maintenance" && (e.description ?? "").toLowerCase().includes(kw));
+      if (matches.length === 0) return null;
+      return matches.reduce((a, b) => new Date(a.created_at).getTime() > new Date(b.created_at).getTime() ? a : b);
+    }
+    function statusFor(exp: Expense | null, goodDays: number, dueSoonDays: number): IssueStatus {
+      if (!exp) return "overdue";
+      const ageDays = (now - new Date(exp.created_at).getTime()) / DAY;
+      if (ageDays <= goodDays) return "good";
+      if (ageDays <= dueSoonDays) return "due-soon";
+      return "overdue";
+    }
+    function fmtDate(iso: string): string {
+      const d = new Date(iso);
+      return `Last: ${d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`;
+    }
+    const specs: { label: string; keyword: string; good: number; due: number }[] = [
+      { label: "Oil Change", keyword: "oil change", good: 180, due: 270 },
+      { label: "Tire Rotation", keyword: "tire rotation", good: 365, due: 450 },
+      { label: "Brake Inspection", keyword: "brake", good: 730, due: 900 },
+      { label: "Battery Check", keyword: "battery", good: 1095, due: 1460 },
+    ];
+    return specs.map((s) => {
+      const exp = findLatest(s.keyword);
+      return {
+        label: s.label,
+        status: statusFor(exp, s.good, s.due),
+        lastDate: exp ? fmtDate(exp.created_at) : null,
+      };
+    });
+  })();
+  const noExpenses = expenses.length === 0;
   const [issues, setIssues] = useState<DiagnosticIssue[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [issueText, setIssueText] = useState("");
@@ -2603,7 +2635,7 @@ function DiagnosticsPage({ vehicle, userId, onOpenSettings }: { vehicle: Vehicle
           Maintenance
         </h2>
         <div style={{ display: "flex", flexDirection: "column", gap: 0, marginBottom: 28, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-          {MAINTENANCE_ITEMS.map((item, i) => (
+          {maintenanceItems.map((item, i) => (
             <div
               key={item.label}
               style={{
@@ -2611,17 +2643,29 @@ function DiagnosticsPage({ vehicle, userId, onOpenSettings }: { vehicle: Vehicle
                 alignItems: "center",
                 padding: "14px 16px",
                 background: i % 2 === 0 ? C.bg : C.sage,
-                borderBottom: i < MAINTENANCE_ITEMS.length - 1 ? `1px solid ${C.border}` : "none",
+                borderBottom: i < maintenanceItems.length - 1 ? `1px solid ${C.border}` : "none",
               }}
             >
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: STATUS_COLOR[item.status], marginRight: 12, flexShrink: 0 }} />
               <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>{item.label}</span>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: STATUS_COLOR[item.status], fontWeight: 500 }}>
-                {STATUS_LABEL[item.status]}
-              </span>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: STATUS_COLOR[item.status], fontWeight: 500 }}>
+                  {STATUS_LABEL[item.status]}
+                </span>
+                {item.lastDate && (
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted }}>
+                    {item.lastDate}
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
+        {noExpenses && (
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "-16px 0 24px" }}>
+            Log your first service in Finances to track maintenance status.
+          </p>
+        )}
 
         {/* Issue log */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -2738,6 +2782,7 @@ export default function Dashboard() {
   const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [issues, setIssues] = useState<DiagnosticIssue[]>([]);
   const [docsLoading, setDocsLoading] = useState(true);
 
   useEffect(() => {
@@ -2752,8 +2797,24 @@ export default function Dashboard() {
         .catch(() => {})
         .finally(() => setDocsLoading(false));
       getExpensesByVehicleId(vehicle.id).then(setExpenses).catch(() => {});
+      getDiagnosticIssuesByVehicleId(vehicle.id).then(setIssues).catch(() => {});
     }
   }, [vehicle]);
+
+  const healthScore = (() => {
+    if (!vehicle) return 100;
+    let score = 100;
+    const mileage = vehicle.mileage;
+    if (expenses.length === 0 && typeof mileage === "number" && mileage > 10000) {
+      score -= 20;
+    }
+    const ongoingIssues = issues.filter((i) => i.status !== "resolved").length;
+    score -= Math.min(ongoingIssues, 2) * 15;
+    if (!documents.some((d) => d.type === "insurance")) score -= 10;
+    if (!documents.some((d) => d.type === "ownership")) score -= 10;
+    if (mileage === null || mileage === undefined) score -= 10;
+    return Math.max(0, Math.min(100, score));
+  })();
 
   const handleScroll = () => {
     if (!scrollRef.current) return;
@@ -2805,11 +2866,11 @@ export default function Dashboard() {
           msOverflowStyle: "none",
         } as React.CSSProperties}
       >
-        <LandingPage vehicle={vehicle} vehicles={vehicles} expenses={expenses} documents={documents} userId={user?.id ?? ""} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} onSwitchVehicle={(v) => switchVehicle(v.id)} />
+        <LandingPage vehicle={vehicle} vehicles={vehicles} expenses={expenses} documents={documents} issues={issues} healthScore={healthScore} userId={user?.id ?? ""} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} onSwitchVehicle={(v) => switchVehicle(v.id)} />
         <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} onOpenSettings={() => setShowSettings(true)} docsLoading={docsLoading} />
         <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} onOpenSettings={() => setShowSettings(true)} />
         <PartsPage vehicle={vehicle} onOpenSettings={() => setShowSettings(true)} />
-        <DiagnosticsPage vehicle={vehicle} userId={user?.id ?? ""} onOpenSettings={() => setShowSettings(true)} />
+        <DiagnosticsPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onOpenSettings={() => setShowSettings(true)} />
       </div>
 
       {/* Settings sheet */}
