@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "MjOKiJXTlgOti5FVus3XE"
+uri = "file://.local/exports/Dashboard.tsx.txt"
+type = "text"
+title = "Dashboard.tsx (complete, 2919 lines)"
