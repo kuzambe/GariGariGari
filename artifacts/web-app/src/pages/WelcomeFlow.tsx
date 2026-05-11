@@ -55,8 +55,9 @@ async function lookupVinNHTSA(vin: string, ms = 8000): Promise<VinData | null> {
  * ───────────────────────────────────────────────────────────── */
 export default function WelcomeFlow() {
   const [, navigate] = useLocation();
-  // Returning guest users land on guest_dashboard rather than re-scanning.
-  const [step, setStep] = useState<Step>(() => (getGuestSession() ? "guest_dashboard" : "vin_scan"));
+  const { refetch: refetchVehicle } = useVehicle();
+  // Always start at vin_scan when arriving at /welcome (signed out flow).
+  const [step, setStep] = useState<Step>("vin_scan");
 
   // Per spec: never let user get stuck. Reset step if guest session is cleared mid-flow.
   useEffect(() => {
@@ -69,9 +70,23 @@ export default function WelcomeFlow() {
     <>
       {step === "vin_scan" && (
         <VinScanStep
-          onScanned={() => setStep("guest_dashboard")}
-          onSkip={() => setStep("create_account")}
-          onSignIn={() => setStep("sign_in")}
+          onComplete={async (p) => {
+            setGuestSession({
+              vin: p.vin,
+              make: p.make,
+              model: p.model,
+              year: p.year,
+              trim: p.trim,
+              engine: p.engine,
+              fuel_type: p.fuel_type,
+              body_style: p.body_style,
+              is_manual_entry: p.isManualEntry,
+            });
+            await refetchVehicle();
+            setStep("guest_dashboard");
+          }}
+          topLeftAction={{ label: "Skip", onClick: () => setStep("create_account") }}
+          topRightAction={{ label: "Sign in", onClick: () => setStep("sign_in") }}
         />
       )}
       {step === "guest_dashboard" && (
@@ -102,16 +117,29 @@ export default function WelcomeFlow() {
 }
 
 /* ─────────────────────────────────────────────────────────────
- *  STEP 1: VIN scan
+ *  STEP 1: VIN scan — exported so Dashboard "Add Vehicle" can reuse it
  * ───────────────────────────────────────────────────────────── */
-function VinScanStep({
-  onScanned, onSkip, onSignIn,
+export interface VinScanCompletePayload {
+  vin: string | null;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  trim: string | null;
+  engine: string | null;
+  fuel_type: string | null;
+  body_style: string | null;
+  isManualEntry: boolean;
+}
+
+interface CornerAction { label: string; onClick: () => void }
+
+export function VinScanStep({
+  onComplete, topLeftAction, topRightAction,
 }: {
-  onScanned: () => void;
-  onSkip: () => void;
-  onSignIn: () => void;
+  onComplete: (payload: VinScanCompletePayload) => Promise<void> | void;
+  topLeftAction?: CornerAction;
+  topRightAction?: CornerAction;
 }) {
-  const { refetch: refetchVehicle } = useVehicle();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectedRef = useRef(false);
@@ -147,7 +175,7 @@ function VinScanStep({
       setStage("manual-vehicle");
       return;
     }
-    setGuestSession({
+    await onComplete({
       vin,
       make: data.make || null,
       model: data.model || null,
@@ -156,10 +184,9 @@ function VinScanStep({
       engine: data.engine || null,
       fuel_type: data.fuel_type || null,
       body_style: data.body_style || null,
+      isManualEntry: false,
     });
-    await refetchVehicle();
-    onScanned();
-  }, [stopCamera, refetchVehicle, onScanned]);
+  }, [stopCamera, onComplete]);
 
   // Start camera + barcode reader
   useEffect(() => {
@@ -206,7 +233,7 @@ function VinScanStep({
     const make = manualVehicle.make.trim();
     const model = manualVehicle.model.trim();
     if (!make || !model) return;
-    setGuestSession({
+    await onComplete({
       vin: vinForLookup || null,
       make,
       model,
@@ -215,10 +242,8 @@ function VinScanStep({
       engine: null,
       fuel_type: null,
       body_style: null,
-      is_manual_entry: true,
+      isManualEntry: true,
     });
-    await refetchVehicle();
-    onScanned();
   }
 
   // ── Loading overlay (NHTSA lookup) ──
@@ -262,7 +287,9 @@ function VinScanStep({
         <button onClick={handleManualVehicleSave} disabled={!canSave} style={{ ...primaryBtn, opacity: canSave ? 1 : 0.6 }}>
           CONTINUE
         </button>
-        <button onClick={onSkip} style={textLink}>Skip — sign up directly</button>
+        {topLeftAction && (
+          <button onClick={topLeftAction.onClick} style={textLink}>{topLeftAction.label}</button>
+        )}
       </div>
     );
   }
@@ -278,7 +305,12 @@ function VinScanStep({
         <button onClick={() => setShowManualVinInput(true)} style={primaryBtn}>
           ENTER VIN MANUALLY
         </button>
-        <button onClick={onSignIn} style={{ ...textLink, color: "rgba(255,255,255,0.7)" }}>Sign in instead</button>
+        {topRightAction && (
+          <button onClick={topRightAction.onClick} style={{ ...textLink, color: "rgba(255,255,255,0.7)" }}>{topRightAction.label} instead</button>
+        )}
+        {topLeftAction && (
+          <button onClick={topLeftAction.onClick} style={{ ...textLink, color: "rgba(255,255,255,0.55)" }}>{topLeftAction.label}</button>
+        )}
         {showManualVinInput && (
           <ManualVinOverlay
             value={manualVin}
@@ -304,9 +336,13 @@ function VinScanStep({
       </div>
 
       {/* Top left — Skip */}
-      <button onClick={() => { stopCamera(); onSkip(); }} style={cornerLink("left")}>Skip</button>
+      {topLeftAction && (
+        <button onClick={() => { stopCamera(); topLeftAction.onClick(); }} style={cornerLink("left")}>{topLeftAction.label}</button>
+      )}
       {/* Top right — Sign in */}
-      <button onClick={() => { stopCamera(); onSignIn(); }} style={cornerLink("right")}>Sign in</button>
+      {topRightAction && (
+        <button onClick={() => { stopCamera(); topRightAction.onClick(); }} style={cornerLink("right")}>{topRightAction.label}</button>
+      )}
 
       {/* Center scanning frame */}
       <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 320, maxWidth: "85vw", height: 80, border: "2px solid #FFFFFF", borderRadius: 10, boxSizing: "border-box", overflow: "hidden", pointerEvents: "none" }}>

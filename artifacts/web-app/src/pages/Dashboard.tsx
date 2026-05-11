@@ -15,7 +15,8 @@ import { Odometer } from "@/components/car/Odometer";
 import { getManualUrl } from "@/lib/handbookDatabase";
 import { AddDocumentSheet } from "@/components/documents/AddDocumentSheet";
 import { usePreferences } from "@/context/PreferencesContext";
-import VehicleSetup from "@/pages/VehicleSetup";
+import { VinScanStep } from "@/pages/WelcomeFlow";
+import { createVehicle } from "@/lib/api/vehicles";
 import { ScanReceiptFlow } from "@/components/finance/ScanReceiptFlow";
 import FloatingScanButton from "@/components/scan/FloatingScanButton";
 import { SettingsSheet } from "@/components/settings/SettingsSheet";
@@ -2886,15 +2887,15 @@ export default function Dashboard() {
   };
 
   async function handleSignOut() {
+    const { clearGuestSession } = await import("@/lib/guestSession");
+    clearGuestSession();
     if (isGuest) {
-      const { clearGuestSession } = await import("@/lib/guestSession");
-      clearGuestSession();
       await refetchVehicles();
       navigate("/welcome");
       return;
     }
     await signOut();
-    navigate("/auth");
+    navigate("/welcome");
   }
 
   function refreshDocs() {
@@ -2928,7 +2929,7 @@ export default function Dashboard() {
           msOverflowStyle: "none",
         } as React.CSSProperties}
       >
-        <LandingPage vehicle={vehicle} vehicles={vehicles} expenses={expenses} documents={documents} issues={issues} healthScore={healthScore} isGuest={isGuest} onSignUpFromGuest={() => navigate("/auth")} userId={user?.id ?? ""} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} onSwitchVehicle={(v) => switchVehicle(v.id)} />
+        <LandingPage vehicle={vehicle} vehicles={vehicles} expenses={expenses} documents={documents} issues={issues} healthScore={healthScore} isGuest={isGuest} onSignUpFromGuest={() => navigate("/welcome")} userId={user?.id ?? ""} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} onSwitchVehicle={(v) => switchVehicle(v.id)} />
         <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} onOpenSettings={() => setShowSettings(true)} docsLoading={docsLoading} />
         <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} onOpenSettings={() => setShowSettings(true)} />
         <PartsPage vehicle={vehicle} onOpenSettings={() => setShowSettings(true)} />
@@ -2945,15 +2946,33 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Add Vehicle overlay */}
-      {showAddVehicle && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 220, overflowY: "auto" }}>
-          <VehicleSetup
-            onCancel={() => setShowAddVehicle(false)}
-            onSuccess={(newVehicle) => {
-              switchVehicle(newVehicle.id);
-              setShowAddVehicle(false);
+      {/* Add Vehicle overlay — uses the same VIN scan flow as onboarding */}
+      {showAddVehicle && user?.id && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 220 }}>
+          <VinScanStep
+            onComplete={async (p) => {
+              const modelLabel = (p.model && p.model.trim()) || "Car";
+              try {
+                const created = await createVehicle({
+                  user_id: user.id,
+                  nickname: `Your ${modelLabel}`,
+                  vin: p.vin ?? undefined,
+                  make: p.make ?? undefined,
+                  model: p.model ?? undefined,
+                  year: p.year ?? undefined,
+                  trim: p.trim ?? undefined,
+                  engine: p.engine ?? undefined,
+                  fuel_type: p.fuel_type ?? undefined,
+                  body_style: p.body_style ?? undefined,
+                  mileage_unit: "km",
+                });
+                await refetchVehicles();
+                switchVehicle(created.id);
+              } finally {
+                setShowAddVehicle(false);
+              }
             }}
+            topLeftAction={{ label: "Cancel", onClick: () => setShowAddVehicle(false) }}
           />
         </div>
       )}
