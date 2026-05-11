@@ -17,6 +17,7 @@ import { AddDocumentSheet } from "@/components/documents/AddDocumentSheet";
 import { usePreferences } from "@/context/PreferencesContext";
 import VehicleSetup from "@/pages/VehicleSetup";
 import { ScanReceiptFlow } from "@/components/finance/ScanReceiptFlow";
+import FloatingScanButton from "@/components/scan/FloatingScanButton";
 import { SettingsSheet } from "@/components/settings/SettingsSheet";
 import { CategoryPickerSheet, DOC_CATEGORIES } from "@/components/finance/CategoryPickerSheet";
 import { CategoryDocumentsListSheet } from "@/components/documents/CategoryDocumentsListSheet";
@@ -681,6 +682,8 @@ function LandingPage({
   vehicles,
   userId,
   healthScore,
+  isGuest,
+  onSignUpFromGuest,
   onSignOut,
   onGoToPage,
   onOpenSettings,
@@ -693,6 +696,8 @@ function LandingPage({
   documents: Document[];
   issues: DiagnosticIssue[];
   healthScore: number;
+  isGuest: boolean;
+  onSignUpFromGuest: () => void;
   onSignOut: () => void;
   onGoToPage: (p: number) => void;
   onOpenSettings: () => void;
@@ -1053,6 +1058,52 @@ function LandingPage({
           }}>
             {subtitle}
           </p>
+        )}
+
+        {/* Guest mode save banner */}
+        {isGuest && (
+          <div
+            style={{
+              marginTop: 14,
+              background: "rgba(31,107,46,0.08)",
+              border: "1px solid rgba(31,107,46,0.2)",
+              borderRadius: 12,
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <span
+              style={{
+                flex: 1,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13,
+                color: "#1F6B2E",
+                lineHeight: 1.35,
+              }}
+            >
+              Save your garage — create a free account to keep everything.
+            </span>
+            <button
+              onClick={onSignUpFromGuest}
+              style={{
+                background: "#1F6B2E",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 8,
+                padding: "6px 14px",
+                fontFamily: "'Rajdhani', sans-serif",
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: "pointer",
+                letterSpacing: "0.03em",
+                flexShrink: 0,
+              }}
+            >
+              Sign up
+            </button>
+          </div>
         )}
 
 
@@ -2773,7 +2824,7 @@ function DiagnosticsPage({ vehicle, expenses, userId, onOpenSettings }: { vehicl
 export default function Dashboard() {
   const [, navigate] = useLocation();
   const { user, signOut } = useAuth();
-  const { vehicle, vehicles, loading, switchVehicle } = useVehicle();
+  const { vehicle, vehicles, loading, switchVehicle, isGuest, refetch: refetchVehicles } = useVehicle();
   const [currentPage, setCurrentPage] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showAddVehicle, setShowAddVehicle] = useState(false);
@@ -2786,8 +2837,12 @@ export default function Dashboard() {
   const [docsLoading, setDocsLoading] = useState(true);
 
   useEffect(() => {
-    if (!loading && !vehicle) navigate("/setup");
-  }, [loading, vehicle]);
+    if (loading) return;
+    if (vehicle) return;
+    // No vehicle and not in guest mode: only redirect if a real auth session exists.
+    // (Unauthenticated users with no guest session are routed by App.tsx; avoid bouncing.)
+    if (user && !isGuest) navigate("/setup");
+  }, [loading, vehicle, isGuest, user]);
 
   useEffect(() => {
     if (vehicle) {
@@ -2831,6 +2886,13 @@ export default function Dashboard() {
   };
 
   async function handleSignOut() {
+    if (isGuest) {
+      const { clearGuestSession } = await import("@/lib/guestSession");
+      clearGuestSession();
+      await refetchVehicles();
+      navigate("/welcome");
+      return;
+    }
     await signOut();
     navigate("/auth");
   }
@@ -2866,7 +2928,7 @@ export default function Dashboard() {
           msOverflowStyle: "none",
         } as React.CSSProperties}
       >
-        <LandingPage vehicle={vehicle} vehicles={vehicles} expenses={expenses} documents={documents} issues={issues} healthScore={healthScore} userId={user?.id ?? ""} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} onSwitchVehicle={(v) => switchVehicle(v.id)} />
+        <LandingPage vehicle={vehicle} vehicles={vehicles} expenses={expenses} documents={documents} issues={issues} healthScore={healthScore} isGuest={isGuest} onSignUpFromGuest={() => navigate("/auth")} userId={user?.id ?? ""} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} onSwitchVehicle={(v) => switchVehicle(v.id)} />
         <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} onOpenSettings={() => setShowSettings(true)} docsLoading={docsLoading} />
         <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} onOpenSettings={() => setShowSettings(true)} />
         <PartsPage vehicle={vehicle} onOpenSettings={() => setShowSettings(true)} />
@@ -2895,6 +2957,17 @@ export default function Dashboard() {
           />
         </div>
       )}
+
+      {/* Floating smart scan button — visible on every page, hidden behind modals */}
+      <FloatingScanButton
+        vehicleId={vehicle.id === "guest-vehicle" ? null : vehicle.id}
+        userId={user?.id ?? ""}
+        isGuest={isGuest}
+        hidden={showSettings || showAddVehicle}
+        onDocumentSaved={refreshDocs}
+        onExpenseSaved={refreshExpenses}
+        onVehicleSaved={() => { refetchVehicles(); }}
+      />
 
       {/* Page indicator — sliding capsule with active label */}
       <div

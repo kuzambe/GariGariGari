@@ -3,9 +3,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { VehicleProvider, useVehicle } from "@/context/VehicleContext";
 import { PreferencesProvider, usePreferences } from "@/context/PreferencesContext";
-import AuthPage from "@/pages/AuthPage";
+import AccountCreationPage from "@/pages/AccountCreationPage";
 import VehicleSetup from "@/pages/VehicleSetup";
+import VinScanPage from "@/pages/VinScanPage";
 import Dashboard from "@/pages/Dashboard";
+import { getGuestSession } from "@/lib/guestSession";
 
 const queryClient = new QueryClient();
 
@@ -34,7 +36,11 @@ function LoadingScreen() {
 function ProtectedRoute({ component: Component }: { component: () => JSX.Element }) {
   const { session, loading } = useAuth();
   if (loading) return <LoadingScreen />;
-  if (!session) return <Redirect to="/auth" />;
+  if (!session) {
+    // Allow guest mode if a guest session exists
+    if (getGuestSession()) return <Component />;
+    return <Redirect to="/welcome" />;
+  }
   return <Component />;
 }
 
@@ -42,7 +48,7 @@ function SetupRoute() {
   const { session, loading: authLoading } = useAuth();
   const { vehicle, loading: vehicleLoading } = useVehicle();
   if (authLoading || vehicleLoading) return <LoadingScreen />;
-  if (!session) return <Redirect to="/auth" />;
+  if (!session) return <Redirect to="/welcome" />;
   if (vehicle) return <Redirect to="/dashboard" />;
   return <VehicleSetup />;
 }
@@ -51,13 +57,25 @@ function AuthRoute() {
   const { session, loading } = useAuth();
   if (loading) return <LoadingScreen />;
   if (session) return <Redirect to="/dashboard" />;
-  return <AuthPage />;
+  return <AccountCreationPage />;
+}
+
+function WelcomeRoute() {
+  const { session, loading } = useAuth();
+  if (loading) return <LoadingScreen />;
+  // Authenticated users skip the VIN scan entirely
+  if (session) return <Redirect to="/dashboard" />;
+  // Returning guest users with a guest session go straight to dashboard
+  if (getGuestSession()) return <Redirect to="/dashboard" />;
+  return <VinScanPage />;
 }
 
 function HomeRoute() {
   const { session, loading } = useAuth();
   if (loading) return <LoadingScreen />;
-  return <Redirect to={session ? "/dashboard" : "/auth"} />;
+  if (session) return <Redirect to="/dashboard" />;
+  if (getGuestSession()) return <Redirect to="/dashboard" />;
+  return <Redirect to="/welcome" />;
 }
 
 function PhoneFrame({ children }: { children: React.ReactNode }) {
@@ -91,6 +109,7 @@ function PhoneFrame({ children }: { children: React.ReactNode }) {
 function Router() {
   return (
     <Switch>
+      <Route path="/welcome" component={WelcomeRoute} />
       <Route path="/auth" component={AuthRoute} />
       <Route path="/setup" component={SetupRoute} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />

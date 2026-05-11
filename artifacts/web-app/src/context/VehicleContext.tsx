@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { type Vehicle, getAllVehiclesByUserId } from "@/lib/api/vehicles";
 import { useAuth } from "@/context/AuthContext";
+import { getGuestSession, guestSessionToVehicle } from "@/lib/guestSession";
 
 const ACTIVE_KEY = "gari_active_vehicle_id";
 
@@ -9,6 +10,7 @@ interface VehicleContextType {
   vehicles: Vehicle[];
   loading: boolean;
   error: string | null;
+  isGuest: boolean;
   refetch: () => Promise<void>;
   setVehicle: (v: Vehicle) => void;
   switchVehicle: (id: string) => void;
@@ -19,25 +21,39 @@ const VehicleContext = createContext<VehicleContextType>({
   vehicles: [],
   loading: true,
   error: null,
+  isGuest: false,
   refetch: async () => {},
   setVehicle: () => {},
   switchVehicle: () => {},
 });
 
 export function VehicleProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehicle, setVehicleState] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   const fetchVehicles = async () => {
     if (!user) {
-      setVehicles([]);
-      setVehicleState(null);
+      // No authenticated user — check for guest session
+      const guest = getGuestSession();
+      if (guest) {
+        const synthetic = guestSessionToVehicle(guest);
+        setVehicles([synthetic]);
+        setVehicleState(synthetic);
+        setIsGuest(true);
+      } else {
+        setVehicles([]);
+        setVehicleState(null);
+        setIsGuest(false);
+      }
       setLoading(false);
       return;
     }
+
+    setIsGuest(false);
     setLoading(true);
     setError(null);
     try {
@@ -56,7 +72,10 @@ export function VehicleProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  useEffect(() => { fetchVehicles(); }, [user?.id]);
+  useEffect(() => {
+    if (authLoading) return;
+    fetchVehicles();
+  }, [user?.id, authLoading]);
 
   function setVehicle(v: Vehicle) {
     setVehicleState(v);
@@ -69,7 +88,7 @@ export function VehicleProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <VehicleContext.Provider value={{ vehicle, vehicles, loading, error, refetch: fetchVehicles, setVehicle, switchVehicle }}>
+    <VehicleContext.Provider value={{ vehicle, vehicles, loading, error, isGuest, refetch: fetchVehicles, setVehicle, switchVehicle }}>
       {children}
     </VehicleContext.Provider>
   );

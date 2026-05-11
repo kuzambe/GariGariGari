@@ -1,0 +1,82 @@
+ FLOATING SMART SCAN BUTTON
+Paste this separately after Prompt 1 is done and working:
+
+Add a floating smart scan button to Gari. This button provides universal quick access to scanning from anywhere in the app. It must work for both authenticated users and guest users.
+BUTTON APPEARANCE AND POSITION:
+A circular floating action button positioned fixed at bottom right of the screen. Bottom 88px to sit above the page indicator dots. Right 20px. Width and height 56px. Border radius 50%. Background #1F6B2E. Box shadow 0 4px 20px rgba(31,107,46,0.35) for a green glow effect. Z-index 150 so it floats above all page content but below modal sheets which use z-index 200.
+Inside the button — a scan icon SVG. Use this icon: two L-shaped corner brackets forming a square scanning frame, similar to a QR code scanner viewfinder. Stroke color white, stroke width 2, no fill. Size 24x24px centered in the button.
+On press — scale down to 0.92 with transition 0.1s ease. On release scale back to 1. This gives tactile feedback.
+The button should have a subtle breathing animation when idle — a very gentle pulse on the box shadow going from 0 4px 20px rgba(31,107,46,0.35) to 0 4px 28px rgba(31,107,46,0.55) over 2 seconds repeating. Use CSS keyframes. This makes it feel alive without being distracting.
+BUTTON BEHAVIOR — WHAT HAPPENS WHEN TAPPED:
+A bottom sheet slides up from the bottom with the scan options. The sheet has a handle bar at the top, white background, rounded top corners 22px, max height 70vh. Behind it a dark overlay rgba(0,0,0,0.4) covers the rest of the screen. Tapping the overlay closes the sheet.
+The sheet header — no title. Just the handle bar and immediately below it the scan options. Keep it fast and minimal.
+SCAN OPTIONS — shown as a vertical list of tappable rows inside the sheet:
+Option 1 — Smart Document Scan:
+Icon — a document with a scan line across it, SVG, stroke #1F6B2E stroke width 1.8.
+Title — "Smart Document Scan" in Rajdhani Bold 18px #0D1C0E.
+Subtitle — "Invoices, insurance, receipts, registration — we'll sort it automatically" in DM Sans 13px #6B7C6D.
+Row height 72px, padding 0 20px, border bottom 1px solid #E8E6E0.
+Option 2 — Scan VIN:
+Icon — a barcode SVG, stroke #1F6B2E stroke width 1.8.
+Title — "Scan VIN" in Rajdhani Bold 18px #0D1C0E.
+Subtitle — "Add a new vehicle or look up any car instantly" in DM Sans 13px #6B7C6D.
+Row height 72px, padding 0 20px, border bottom 1px solid #E8E6E0.
+Option 3 — Scan Receipt:
+Icon — a receipt SVG with a dollar sign, stroke #1F6B2E stroke width 1.8.
+Title — "Scan Receipt" in Rajdhani Bold 18px #0D1C0E.
+Subtitle — "Log fuel and maintenance spending instantly" in DM Sans 13px #6B7C6D.
+Row height 72px, padding 0 20px, no border bottom.
+Cancel text link at the very bottom of the sheet — "Cancel" in DM Sans 14px #6B7C6D centered, padding 16px 0. Tapping dismisses the sheet.
+SMART DOCUMENT SCAN FLOW — triggered by Option 1:
+Close the options sheet. Open a full screen camera view immediately.
+Dark background. Centered rectangular scanning frame 300px wide 200px tall, white border 2px, rounded corners 12px, corner accents in #1F6B2E at each corner extending 20px.
+Scanning animation — a green line 1px height moves top to bottom inside the frame continuously.
+Top left — X button 44px circle background rgba(0,0,0,0.5) white X to close.
+Bottom instruction in DM Sans 13px white 0.7 opacity: "Position document within the frame"
+Large white capture button 64px diameter centered at bottom 40px from bottom. Tapping captures the image.
+After capture:
+Run Tesseract.js on the captured image to extract raw text. Show a brief processing overlay on the camera view — dark background with centered Gari icon spinning and text "Reading document…" in DM Sans 14px white.
+Pass the raw text to the existing parseDocument function from src/lib/documentParser.ts.
+The parser returns a document type and extracted fields.
+Based on document type route as follows:
+mechanic_invoice → automatically go to Documents page, open the AddDocumentSheet with type service, AND simultaneously prepare an expense entry. Show the ParsedDocumentSheet confirmation card.
+insurance → go to Documents page, open AddDocumentSheet with type insurance. Show confirmation card.
+registration → go to Documents page, open AddDocumentSheet with type registration. Show confirmation card.
+receipt → go directly to the ScanReceiptFlow confirmation sheet with pre-filled fields from the parser.
+unknown → show the confirmation card with unknown state, let user choose where to save it manually from a dropdown of document categories.
+The confirmation card for smart document scan matches the existing ParsedDocumentSheet component styling exactly. Show what was detected, what will happen, and Confirm and Save button plus Skip automatic actions text link.
+After confirmation:
+Save the document to Supabase Storage and documents table using existing uploadDocument function.
+Execute any parsed actions using the existing applyParsedActions function in Dashboard.tsx.
+Call the appropriate refresh function — refreshDocs or refreshExpenses depending on what was saved.
+Show a success toast at the top: "[Document type] saved" with green background for 2 seconds.
+Close everything and return to whatever page the user was on before tapping the floating button.
+SCAN VIN FLOW — triggered by Option 2:
+Close the options sheet. Open a full screen camera view designed for VIN scanning.
+Dark background. Rectangular cutout 320px wide 80px tall centered — proportioned for a VIN sticker. Animated green scanning line inside.
+Top left X button to close. Returns to whatever page user was on.
+Bottom text in DM Sans 13px white 0.6 opacity: "Point at VIN barcode on door frame or dashboard"
+Two buttons at the very bottom:
+"Scan Barcode" in Rajdhani Bold 16px #1F6B2E background white rounded 12px — activates barcode reader using @zxing/browser targeting Code128 and Code39 formats.
+"Enter manually" in DM Sans 13px white 0.6 opacity below — opens text input overlay for manual 17-character VIN entry with live validation.
+After VIN is detected or entered:
+Validate 17 characters, no I O Q.
+Call NHTSA API. Show "Looking up vehicle…" loading state.
+Display results in a clean confirmation card that slides up — shows make, model, year, trim in a card with #F4F7F2 background.
+Two scenarios:
+If user has no vehicle yet or is in guest mode — show "Add this vehicle to your garage" button in #1F6B2E. Tapping creates the vehicle in Supabase and refreshes VehicleContext.
+If user already has a vehicle — show two options: "Add as new vehicle" and "Update current vehicle VIN". Both options clearly labeled. Update replaces the VIN on the current vehicle record. Add creates a new vehicle record.
+If NHTSA returns no data — show "Vehicle not found in database" with fields to enter make, model, year manually and an Add Vehicle button.
+SCAN RECEIPT FLOW — triggered by Option 3:
+Close the options sheet. Open the existing ScanReceiptFlow component directly. This is already built — just trigger it. Pass the current userId and vehicleId from the authenticated context. On saved call refreshExpenses. On close return to current page.
+GUEST MODE BEHAVIOR:
+The floating button is visible in guest mode. Smart Document Scan and Scan Receipt work the same way but instead of saving to Supabase save to the gari_guest_session in localStorage under a documents array and expenses array. Show a note on the confirmation card: "This will be saved to your account when you sign up." Scan VIN in guest mode — if a VIN is already in the guest session ask "Replace your current guest vehicle?" with confirm and cancel options.
+PLACEMENT IN THE COMPONENT TREE:
+Add the floating button directly inside the main Dashboard component return statement, after the swipe container div and before the page indicator dots div. It must be a fixed position element so it stays visible regardless of which page is being viewed. It should not be inside any of the five page components — it lives at the Dashboard level.
+For the guest onboarding flow add the floating button to the guest dashboard view as well at the same position.
+HIDE THE BUTTON WHEN:
+Any modal sheet or full screen overlay is open — specifically when showSettings is true, when the CarGPT sheet is open, when the mechanic or roadside sheet is open, when a document is being viewed full screen. Add a state variable called scanButtonVisible defaulting to true. Set it to false whenever any of those overlays open and back to true when they close.
+ANIMATION ON APPEARANCE:
+When the button first appears after the dashboard loads animate it sliding up from below — transform translateY 80px to translateY 0 with opacity 0 to 1 over 0.4s with 0.6s delay so it appears after the dashboard has settled. Use CSS animation.
+Do not change any existing functionality. Only add the floating button and its three scan flows on top of what exists. The existing document scanning in the Documents page and receipt scanning in the Finances page should continue to work exactly as before — the floating button is additive not a replacement.
+Show me the floating button and the options sheet first when done.

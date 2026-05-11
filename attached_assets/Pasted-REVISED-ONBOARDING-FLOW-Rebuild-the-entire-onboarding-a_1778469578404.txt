@@ -1,0 +1,69 @@
+REVISED ONBOARDING FLOW
+
+Rebuild the entire onboarding and authentication flow for Gari. This is a value-first onboarding — the user sees and experiences the app before being asked to create an account. Do not break any existing authenticated dashboard functionality. Only change what happens before a user is logged in.
+CURRENT FLOW TO REPLACE:
+Currently the app shows an auth page with email and password immediately on open. Replace this entirely with the new flow described below.
+NEW ONBOARDING FLOW — STEP BY STEP:
+STEP 1 — VIN SCAN SCREEN — shown immediately when app opens to unauthenticated users:
+This is the very first thing any new user sees. No email, no password, no sign up form. Just a camera experience.
+Full screen camera view. Dark overlay with a rectangular cutout in the center sized approximately 320px wide by 80px tall with rounded corners 10px. This shape matches the proportions of a VIN sticker on a door jamb. A subtle animated scanning line moves top to bottom inside the cutout repeatedly — a thin green line 2px height that loops every 1.5 seconds using CSS animation.
+At the top of the screen centered — the Gari logo image from public/gari-icon-new-nobg.png at 36px height beside the word GARI in Rajdhani Bold 28px white. This is the only branding visible.
+Below the cutout — instruction text in DM Sans 14px white with 0.6 opacity: "Point your camera at the VIN sticker on your door jamb or dashboard"
+Below that — two smaller instruction lines in DM Sans 12px white 0.45 opacity: "The VIN is a 17-character code" and "Usually found on the driver's side door frame"
+At the bottom — two buttons:
+Primary button — "Scan Barcode" in Rajdhani Bold 18px, background #1F6B2E, full width, rounded 14px, height 54px. Activates barcode scanning mode using a barcode scanning library. Attempt to install and use @zxing/browser for barcode detection — it handles Code128 and Code39 barcodes which are what VIN stickers use. If @zxing/browser cannot be installed use a manual approach where the user photographs the sticker and ML Kit reads the text.
+Secondary button below it — "Enter VIN manually" in DM Sans 14px white 0.7 opacity, no background, no border. Tapping opens a text input overlay on top of the camera view where the user types the 17-character VIN with a character counter. Input validates — must be exactly 17 characters, no I O or Q letters. A green confirm button appears when valid.
+At the very top right — a small "Skip" text link in DM Sans 13px white 0.5 opacity. Tapping Skip goes directly to the standard sign up screen. Skip should be subtle — not prominent, but accessible.
+BARCODE SCAN BEHAVIOR:
+Use the device rear camera. As soon as a barcode is detected automatically extract the VIN string without requiring the user to tap anything. Validate it is 17 characters. If valid immediately proceed to the API call. Do not show a confirmation before calling the API — speed is the priority here. The user should feel like it happened instantly.
+After successful VIN scan or manual entry:
+Call the NHTSA API at https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/VINHERE?format=json
+Show a brief loading state — the camera view fades to dark and a centered loading indicator appears showing the Gari icon spinning gently with text below in DM Sans 14px white: "Looking up your vehicle…"
+STEP 2 — GUEST DASHBOARD — shown after VIN is successfully looked up:
+The camera closes. The full dashboard appears exactly as it does for authenticated users but in guest mode. Store all guest data in localStorage under the key gari_guest_session as a JSON object.
+The guest dashboard shows:
+The car nickname defaults to the make and model — so "Your Civic" or "Your Camry" until the user sets a nickname later.
+The year make model and trim pulled from NHTSA displayed correctly.
+The health score calculated from available data — since no expenses or documents exist yet it will show a low score which is honest.
+All five swipe pages accessible — Documents, Finances, Parts, Diagnostics all work but show empty states with prompts to save data.
+The floating smart scan button is visible and functional — tapping it shows the document scanner.
+At the top of the landing page in guest mode — a persistent but unobtrusive banner below the car nickname. Background rgba(31,107,46,0.08), border 1px solid rgba(31,107,46,0.2), border radius 12px, padding 10px 16px. Left side — text in DM Sans 13px #1F6B2E: "Save your garage — create a free account to keep everything." Right side — a small button "Sign up" in Rajdhani Bold 14px background #1F6B2E white text rounded 8px padding 6px 14px. Tapping Sign up opens the account creation flow.
+The banner should not be intrusive. It appears once and stays visible but does not block any content or pop up repeatedly.
+In the Parts page in guest mode — searches are pre-filled with the guest vehicle make model year just like the authenticated version.
+STEP 3 — ACCOUNT CREATION — triggered when user taps Sign up from the banner or Skip from the VIN scan:
+This replaces the current AuthPage for new users. Full screen, white background #FAFAF8.
+At the top center — the Gari garage door logo icon at 40px, below it GARI in Rajdhani Bold 36px #0D1C0E. Below that in DM Sans 13px #6B7C6D: "Create your free account to save your garage."
+If the user came from the guest dashboard — show the car they scanned in a small summary card. Background #F4F7F2, border radius 12px, padding 12px 16px, showing the car nickname and year make model in DM Sans 14px. This reminds them what they're saving. Text above the card in DM Sans 13px #6B7C6D: "We'll save this to your account:"
+Below that — the sign up form:
+Email input — full width, background white, border 1.5px solid #D4DDD5, border radius 12px, padding 14px 16px, DM Sans 15px, placeholder "Email address", focus border color #1F6B2E with no blue outline anywhere using outline none and box-shadow none.
+Password input — same styling, placeholder "Create a password", minimum 8 characters.
+Confirm password input — same styling, placeholder "Confirm password". Show inline error "Passwords don't match" in #C0392B DM Sans 12px if they don't match.
+Create Account button — full width, background #1F6B2E, white text, Rajdhani Bold 18px, border radius 12px, height 54px. Disabled and opacity 0.6 if any field is invalid.
+Below the button — a toggle link in DM Sans 13px #6B7C6D: "Already have an account? Sign in" — tapping shows the sign in form instead of sign up.
+Sign in form has email and password inputs and a Sign In button with same styling. Below it "Don't have an account? Create one" toggle.
+ERROR HANDLING FOR AUTH:
+Email already in use — show "This email is already registered. Sign in instead?" with a tap to switch to sign in.
+Wrong password — "Incorrect password. Please try again."
+Weak password — "Password must be at least 8 characters."
+Network error — "Connection failed. Please check your internet and try again."
+All errors shown inline below the relevant input in DM Sans 12px #C0392B. Never use alert() or browser dialogs.
+STEP 4 — DATA TRANSFER — happens automatically after successful account creation:
+After the user successfully creates an account read the gari_guest_session from localStorage. If it exists:
+Create a new vehicle record in Supabase vehicles table using the guest session data — VIN, make, model, year, trim, engine, fuel type, body style. Set the nickname to the make and model combined for now — "Your [Model]". Set user_id to the newly authenticated user's ID.
+Delete the gari_guest_session from localStorage.
+Redirect to the dashboard which now shows their saved vehicle.
+Show a brief success toast at the top in #1F6B2E background white text: "Your garage is saved!" for 2 seconds.
+If account creation fails for any reason — do not delete the guest session. The user should be able to try again and their guest data should still be there.
+EXISTING USER FLOW — returning users who are already registered:
+If a user opens the app and already has a valid Supabase session — skip the VIN scan screen entirely and go straight to the dashboard as normal. Do not show the guest flow to returning users. The guest onboarding is only for first time users with no session.
+If a user taps Sign in instead of Sign up — skip the VIN scan and go straight to the sign in form. Do not force VIN scan on returning users.
+GUEST SESSION DATA STRUCTURE in localStorage key gari_guest_session:
+Store as JSON with these fields: vin, make, model, year, trim, engine, fuel_type, body_style, scanned_at timestamp, is_guest boolean true.
+TECHNICAL NOTES:
+Camera permissions — if the user denies camera permission on the VIN scan screen show a fallback screen with the Gari logo, a message "Camera access is needed to scan your VIN" in DM Sans 14px #6B7C6D, an "Enter VIN manually" button in #1F6B2E, and the Skip link.
+The VIN scan screen must use the rear camera not the front camera.
+All camera streams must be properly stopped and released when navigating away from the scan screen to prevent battery drain and camera light staying on.
+The NHTSA API call should timeout after 8 seconds — if it times out show "Couldn't look up this VIN. You can add your car details manually." and proceed to a manual entry form with fields for make, model, year, trim.
+Never block the user from proceeding — every step has a manual fallback or skip option.
+The guest mode must feel identical to the authenticated mode in terms of UI. The only difference is the save banner and the fact that nothing persists to Supabase until sign up.
+Do not change anything about the authenticated dashboard experience. Only change the pre-authentication onboarding flow. Show me the VIN scan screen first when done.
