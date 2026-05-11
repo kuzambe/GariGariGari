@@ -1,0 +1,72 @@
+The onboarding flow is still wrong. The app is still showing email and password sign up before the VIN scan. This needs to be fixed at the routing level in App.tsx and the auth flow entirely.
+The core problem is that App.tsx currently redirects all unauthenticated users to /auth immediately. This must change. Unauthenticated users should see the VIN scan screen first, not a login form.
+Here is exactly what needs to change:
+STEP 1 — Add a new route in App.tsx:
+Add a new route at the path /welcome. This route renders a new component called WelcomeFlow. This route must be accessible without authentication — do not wrap it in ProtectedRoute.
+Change the root route / so that instead of redirecting unauthenticated users to /auth it redirects them to /welcome.
+So the routing logic for / becomes: if session exists go to /dashboard, if no session go to /welcome.
+The /auth route stays but it is no longer the default for unauthenticated users. It is only reached by users who explicitly want to sign in to an existing account, or from within the WelcomeFlow when the user taps sign in.
+STEP 2 — Create the WelcomeFlow component at src/pages/WelcomeFlow.tsx:
+This single component manages the entire pre-authentication experience. It has internal state to track which step the user is on. Steps are: vin_scan, guest_dashboard, create_account, sign_in.
+Initial step is always vin_scan.
+VIN SCAN STEP — this is what unauthenticated users see first. Not a login form. A camera:
+Full screen. Background #000000.
+At the top center — Gari logo image at 36px height beside GARI in Rajdhani Bold 28px color white. Positioned 60px from top.
+Center of screen — a rectangular scanning frame. Width 320px height 80px. Border 2px solid white. Border radius 10px. Four corner accents in #1F6B2E — small L-shapes 20px long at each corner rendered as absolutely positioned divs. Inside the frame a green scanning line animates top to bottom continuously using CSS keyframes — height 2px background #1F6B2E opacity 0.8 animating from top 0 to top 76px over 1.5s repeating.
+Below the frame — instruction text in DM Sans 14px white opacity 0.7: "Point at the VIN sticker on your door frame"
+Below that in DM Sans 12px white opacity 0.45: "17-character code · Usually driver's side door jamb"
+Bottom section — two buttons stacked:
+First button — "Scan Barcode" full width background #1F6B2E white text Rajdhani Bold 18px border radius 14px height 54px. Attempts barcode scanning using @zxing/browser BrowserMultiFormatReader targeting the rear camera. On successful decode validate 17 characters and call NHTSA API.
+Second button — "Enter VIN manually" full width background transparent border none DM Sans 14px white opacity 0.7. Tapping shows a text input overlay on top of the camera — dark semi-transparent background, centered white input field with character counter X/17, green confirm button that activates when exactly 17 valid characters are entered.
+Top right corner — "Sign in" text link in DM Sans 13px white opacity 0.5. Tapping navigates to sign_in step. This is for returning users who already have an account.
+Top left corner — "Skip" text link in DM Sans 13px white opacity 0.5. Tapping navigates to create_account step without scanning.
+Camera permission denied state — if camera access is denied show a dark screen with Gari logo, message "Camera access needed to scan your VIN" in DM Sans 14px white, "Enter VIN manually" button in #1F6B2E, and "Sign in instead" text link.
+After successful VIN scan or manual entry:
+Show loading overlay — dark background, Gari icon spinning, "Looking up your vehicle…" in DM Sans 14px white.
+Call NHTSA API at https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/VINHERE?format=json with 8 second timeout.
+On success — store result in localStorage under gari_guest_session as JSON with fields vin, make, model, year, trim, engine, fuel_type, body_style, scanned_at, is_guest true. Navigate to guest_dashboard step.
+On failure or no data — show "Couldn't identify this VIN" message with a manual entry form for make, model, year, trim. On submit store in gari_guest_session with is_manual_entry true. Navigate to guest_dashboard step.
+GUEST DASHBOARD STEP:
+The WelcomeFlow renders a simplified version of the dashboard using only the data from gari_guest_session in localStorage. It does not require Supabase. It does not require authentication.
+Build a lightweight guest dashboard inside WelcomeFlow that shows:
+The car nickname — use "Your [Model]" from the guest session data.
+Year make model subtitle.
+The SculptedCar SVG from Dashboard.tsx.
+The HealthGauge at 60 — a mid score since no real data exists yet.
+Three stat pills — year, make, mileage showing "Not set".
+A message below the car in DM Sans 13px #6B7C6D centered: "Scan documents and receipts to build your garage."
+Below all of this — a prominent card with background #1F6B2E border radius 16px padding 20px margin 20px. Inside:
+Title in Rajdhani Bold 20px white: "Save your garage"
+Subtitle in DM Sans 13px white opacity 0.8: "Create a free account to keep your vehicle data, documents, and history."
+A white button full width border radius 12px padding 14px text in #1F6B2E Rajdhani Bold 18px: "Create Free Account" — tapping navigates to create_account step.
+Below the button — a text link in DM Sans 13px white opacity 0.6: "Already have an account? Sign in" — tapping navigates to sign_in step.
+At the top of the guest dashboard — a back arrow top left that returns to vin_scan step in case they want to rescan.
+CREATE ACCOUNT STEP:
+White background #FAFAF8. Gari logo and GARI wordmark centered at top.
+If guest session exists — show a small vehicle summary card above the form. Background #F4F7F2 border radius 12px padding 12px 16px showing the car details. Text above it in DM Sans 13px #6B7C6D: "We'll save this vehicle to your account:"
+Email input, password input, confirm password input. All styled with background white border 1.5px solid #D4DDD5 border radius 12px padding 14px 16px DM Sans 15px focus border #1F6B2E no blue outline.
+"Create Account" button full width background #1F6B2E white text Rajdhani Bold 18px border radius 12px height 54px.
+Inline validation — confirm password mismatch shows error in #C0392B DM Sans 12px. Empty fields keep button disabled at opacity 0.6.
+On successful account creation:
+Read gari_guest_session from localStorage.
+If it exists create a vehicle record in Supabase vehicles table with all the guest session fields and user_id set to the new user's ID. Set nickname to "Your [Model]".
+Delete gari_guest_session from localStorage.
+Navigate to /dashboard.
+Show success toast "Your garage is saved!" green background for 2 seconds.
+On failure show inline error messages. Never use alert(). Never delete guest session on failure.
+"Already have an account? Sign in" text link below form — navigates to sign_in step.
+SIGN IN STEP:
+White background. Gari logo at top.
+Email and password inputs same styling as create account.
+"Sign In" button same styling.
+On success navigate to /dashboard.
+On failure show inline error.
+"Don't have an account? Create one" text link — navigates to create_account step.
+Back arrow top left — returns to vin_scan step.
+IMPORTANT TECHNICAL REQUIREMENTS:
+The camera stream in vin_scan step must be completely stopped and all tracks released when navigating away from that step. Use a useEffect cleanup function that calls stream.getTracks().forEach(track => track.stop()) to prevent the camera light staying on.
+The @zxing/browser package should be installed if not already present. Import BrowserMultiFormatReader from @zxing/browser for barcode scanning.
+The gari_guest_session in localStorage should be checked on app load. If it exists and the user is not authenticated navigate to /welcome at the guest_dashboard step rather than vin_scan — so returning guest users do not have to rescan.
+All error states have graceful fallbacks. Nothing should ever leave the user stuck.
+Do not modify Dashboard.tsx at all. Do not modify any authenticated user flows. Do not change the VehicleContext or AuthContext. Only add the WelcomeFlow component and update the routing in App.tsx.
+Build the VIN scan screen first and show me the result before building the other steps.

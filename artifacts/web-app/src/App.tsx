@@ -5,7 +5,7 @@ import { VehicleProvider, useVehicle } from "@/context/VehicleContext";
 import { PreferencesProvider, usePreferences } from "@/context/PreferencesContext";
 import AccountCreationPage from "@/pages/AccountCreationPage";
 import VehicleSetup from "@/pages/VehicleSetup";
-import VinScanPage from "@/pages/VinScanPage";
+import WelcomeFlow from "@/pages/WelcomeFlow";
 import Dashboard from "@/pages/Dashboard";
 import { getGuestSession } from "@/lib/guestSession";
 
@@ -63,11 +63,10 @@ function AuthRoute() {
 function WelcomeRoute() {
   const { session, loading } = useAuth();
   if (loading) return <LoadingScreen />;
-  // Authenticated users skip the VIN scan entirely
+  // Authenticated users skip the welcome flow entirely
   if (session) return <Redirect to="/dashboard" />;
-  // Returning guest users with a guest session go straight to dashboard
-  if (getGuestSession()) return <Redirect to="/dashboard" />;
-  return <VinScanPage />;
+  // WelcomeFlow itself decides whether to start at vin_scan or guest_dashboard
+  return <WelcomeFlow />;
 }
 
 function HomeRoute() {

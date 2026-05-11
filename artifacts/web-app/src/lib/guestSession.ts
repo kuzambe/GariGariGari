@@ -13,6 +13,7 @@ export interface GuestSession {
   body_style: string | null;
   scanned_at: string;
   is_guest: true;
+  is_manual_entry?: boolean;
 }
 
 export type GuestSessionInput = Omit<GuestSession, "scanned_at" | "is_guest">;
