@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { usePreferences } from "@/context/PreferencesContext";
+import { updateVehicle, deleteVehicle, type Vehicle } from "@/lib/api/vehicles";
 
 const C = {
   bg:         "var(--gc-bg)",
@@ -50,12 +51,22 @@ interface SettingsSheetProps {
   onSignOut: () => void;
   onClose: () => void;
   onAddVehicle: () => void;
+  vehicle?: Vehicle | null;
+  isGuest?: boolean;
+  onVehicleUpdated?: () => void | Promise<void>;
+  onVehicleDeleted?: () => void | Promise<void>;
 }
 
-export function SettingsSheet({ userEmail, onSignOut, onClose, onAddVehicle }: SettingsSheetProps) {
+export function SettingsSheet({
+  userEmail, onSignOut, onClose, onAddVehicle,
+  vehicle, isGuest, onVehicleUpdated, onVehicleDeleted,
+}: SettingsSheetProps) {
   const { darkMode, setDarkMode, distanceUnit, setDistanceUnit } = usePreferences();
   const [showUnits, setShowUnits] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showEditVehicle, setShowEditVehicle] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const canEditVehicle = !!vehicle && !isGuest && vehicle.id !== "guest-vehicle";
 
   return (
     <div
@@ -193,20 +204,63 @@ export function SettingsSheet({ userEmail, onSignOut, onClose, onAddVehicle }: S
           </div>
         </div>
 
-        {/* Add Vehicle */}
-        <button
-          onClick={onAddVehicle}
-          className="gari-press"
-          style={{
-            width: "100%", background: "none", border: `1.5px solid var(--gc-border)`,
-            borderRadius: 14, padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
-            fontSize: 14, color: C.text, cursor: "pointer", textAlign: "left",
-            display: "flex", alignItems: "center", gap: 10, marginBottom: 10,
-          }}
-        >
-          <span style={{ flex: 1 }}>Add Vehicle</span>
-          <span style={{ color: C.muted, fontSize: 13 }}>+</span>
-        </button>
+        {/* Vehicle section */}
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
+          Vehicle
+        </p>
+        <div style={{ background: C.sage, borderRadius: 14, marginBottom: 10, overflow: "hidden" }}>
+          {/* Edit Vehicle */}
+          {canEditVehicle && vehicle && (
+            <button
+              onClick={() => setShowEditVehicle(true)}
+              className="gari-press"
+              style={{
+                width: "100%", background: "none", border: "none",
+                borderBottom: `1px solid var(--gc-border)`,
+                padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
+                fontSize: 14, color: C.text, cursor: "pointer", textAlign: "left",
+                display: "flex", alignItems: "center", gap: 10,
+              }}
+            >
+              <span style={{ flex: 1 }}>Edit Vehicle</span>
+              <span style={{ color: C.muted, fontSize: 13 }}>›</span>
+            </button>
+          )}
+
+          {/* Add Vehicle */}
+          <button
+            onClick={onAddVehicle}
+            className="gari-press"
+            style={{
+              width: "100%", background: "none", border: "none",
+              padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
+              fontSize: 14, color: C.text, cursor: "pointer", textAlign: "left",
+              display: "flex", alignItems: "center", gap: 10,
+              ...(canEditVehicle ? {} : {}),
+            }}
+          >
+            <span style={{ flex: 1 }}>Add Vehicle</span>
+            <span style={{ color: C.muted, fontSize: 13 }}>+</span>
+          </button>
+
+          {/* Remove Vehicle */}
+          {canEditVehicle && vehicle && (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="gari-press"
+              style={{
+                width: "100%", background: "none", border: "none",
+                borderTop: `1px solid var(--gc-border)`,
+                padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
+                fontSize: 14, color: "#C0392B", cursor: "pointer", textAlign: "left",
+                display: "flex", alignItems: "center", gap: 10,
+              }}
+            >
+              <span style={{ flex: 1 }}>Remove Vehicle</span>
+              <span style={{ color: "#C0392B", opacity: 0.6, fontSize: 13 }}>›</span>
+            </button>
+          )}
+        </div>
 
         {/* Sign out */}
         <button
@@ -222,6 +276,35 @@ export function SettingsSheet({ userEmail, onSignOut, onClose, onAddVehicle }: S
           <span>Sign out</span>
         </button>
       </div>
+
+      {/* Edit Vehicle overlay */}
+      {showEditVehicle && vehicle && (
+        <EditVehicleSheet
+          vehicle={vehicle}
+          onClose={() => setShowEditVehicle(false)}
+          onSaved={async () => {
+            setShowEditVehicle(false);
+            await onVehicleUpdated?.();
+          }}
+        />
+      )}
+
+      {/* Remove Vehicle confirmation */}
+      {confirmDelete && vehicle && (
+        <ConfirmDeleteVehicle
+          vehicleLabel={vehicle.nickname || `${vehicle.year ?? ""} ${vehicle.make ?? ""} ${vehicle.model ?? ""}`.trim() || "this vehicle"}
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={async () => {
+            try {
+              await deleteVehicle(vehicle.id);
+              setConfirmDelete(false);
+              await onVehicleDeleted?.();
+            } catch {
+              setConfirmDelete(false);
+            }
+          }}
+        />
+      )}
 
       {/* Notifications full-screen overlay */}
       {showNotifications && (
@@ -283,6 +366,188 @@ export function SettingsSheet({ userEmail, onSignOut, onClose, onAddVehicle }: S
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Edit Vehicle sheet ──────────────────────────────────── */
+function EditVehicleSheet({
+  vehicle, onClose, onSaved,
+}: {
+  vehicle: Vehicle;
+  onClose: () => void;
+  onSaved: () => void | Promise<void>;
+}) {
+  const [form, setForm] = useState({
+    nickname: vehicle.nickname ?? "",
+    make: vehicle.make ?? "",
+    model: vehicle.model ?? "",
+    year: vehicle.year != null ? String(vehicle.year) : "",
+    trim: vehicle.trim ?? "",
+    license_plate: vehicle.license_plate ?? "",
+    mileage: vehicle.mileage != null ? String(vehicle.mileage) : "",
+    vin: vehicle.vin ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  function set<K extends keyof typeof form>(k: K, v: string) {
+    setForm((p) => ({ ...p, [k]: v }));
+  }
+
+  async function handleSave() {
+    if (!form.nickname.trim()) { setErr("Nickname can't be empty."); return; }
+    setSaving(true); setErr(null);
+    try {
+      await updateVehicle(vehicle.id, {
+        nickname: form.nickname.trim(),
+        make: form.make.trim() || null,
+        model: form.model.trim() || null,
+        year: form.year.trim() ? (parseInt(form.year.trim(), 10) || null) : null,
+        trim: form.trim.trim() || null,
+        license_plate: form.license_plate.trim() || null,
+        mileage: form.mileage.trim() ? (parseInt(form.mileage.trim(), 10) || null) : null,
+        vin: form.vin.trim() ? form.vin.trim().toUpperCase() : null,
+      });
+      await onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't save changes.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%", background: "var(--gc-bg)",
+    border: `1.5px solid var(--gc-border)`, borderRadius: 12,
+    padding: "12px 14px", fontFamily: "'DM Sans', sans-serif",
+    fontSize: 15, color: C.text, outline: "none", boxSizing: "border-box",
+  };
+  const labelStyle: React.CSSProperties = {
+    fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted,
+    margin: "0 0 4px", letterSpacing: "0.04em",
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 230, background: "rgba(0,0,0,0.55)", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: C.bg, borderRadius: "22px 22px 0 0", padding: "12px 24px 32px", maxWidth: 430, width: "100%", margin: "0 auto", maxHeight: "92vh", overflowY: "auto", boxShadow: "0 -4px 32px rgba(0,0,0,0.25)" }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 16px" }} />
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 18 }}>
+          <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 22, color: C.text, margin: 0, flex: 1 }}>Edit Vehicle</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.muted, fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }}>×</button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div>
+            <p style={labelStyle}>Nickname</p>
+            <input style={inputStyle} value={form.nickname} onChange={(e) => set("nickname", e.target.value)} placeholder="Your Camry" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <p style={labelStyle}>Make</p>
+              <input style={inputStyle} value={form.make} onChange={(e) => set("make", e.target.value)} placeholder="Toyota" />
+            </div>
+            <div>
+              <p style={labelStyle}>Model</p>
+              <input style={inputStyle} value={form.model} onChange={(e) => set("model", e.target.value)} placeholder="Camry" />
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <p style={labelStyle}>Year</p>
+              <input style={inputStyle} type="number" inputMode="numeric" value={form.year} onChange={(e) => set("year", e.target.value)} placeholder="2020" />
+            </div>
+            <div>
+              <p style={labelStyle}>Trim</p>
+              <input style={inputStyle} value={form.trim} onChange={(e) => set("trim", e.target.value)} placeholder="LE" />
+            </div>
+          </div>
+          <div>
+            <p style={labelStyle}>License plate</p>
+            <input style={inputStyle} value={form.license_plate} onChange={(e) => set("license_plate", e.target.value)} placeholder="ABC-1234" />
+          </div>
+          <div>
+            <p style={labelStyle}>Mileage</p>
+            <input style={inputStyle} type="number" inputMode="numeric" value={form.mileage} onChange={(e) => set("mileage", e.target.value)} placeholder="0" />
+          </div>
+          <div>
+            <p style={labelStyle}>VIN</p>
+            <input style={{ ...inputStyle, textTransform: "uppercase", letterSpacing: "0.04em" }} maxLength={17} value={form.vin} onChange={(e) => set("vin", e.target.value.toUpperCase())} placeholder="17-character VIN" />
+          </div>
+
+          {err && (
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#C0392B", margin: 0 }}>{err}</p>
+          )}
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              marginTop: 6, height: 52, borderRadius: 14, border: "none",
+              background: C.green, color: "#fff", cursor: saving ? "default" : "pointer",
+              fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18,
+              letterSpacing: "0.04em", opacity: saving ? 0.6 : 1,
+            }}
+          >
+            {saving ? "SAVING…" : "SAVE CHANGES"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Confirm Remove Vehicle ──────────────────────────── */
+function ConfirmDeleteVehicle({
+  vehicleLabel, onCancel, onConfirm,
+}: {
+  vehicleLabel: string;
+  onCancel: () => void;
+  onConfirm: () => void | Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div onClick={onCancel} style={{ position: "fixed", inset: 0, zIndex: 240, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: C.bg, borderRadius: 18, padding: 24, width: "100%", maxWidth: 380, boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
+        <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(192,57,43,0.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+          <span style={{ fontSize: 24 }}>⚠️</span>
+        </div>
+        <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 22, color: C.text, margin: "0 0 8px" }}>
+          Remove this vehicle?
+        </h3>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, lineHeight: 1.55, margin: "0 0 8px" }}>
+          You're about to permanently remove <strong style={{ color: C.text }}>{vehicleLabel}</strong> from your garage.
+        </p>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#C0392B", lineHeight: 1.55, margin: "0 0 20px" }}>
+          All documents, expenses, and history tied to this vehicle will be lost. This can't be undone.
+        </p>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={onCancel}
+            disabled={busy}
+            style={{
+              flex: 1, height: 48, borderRadius: 12,
+              border: `1.5px solid var(--gc-border)`, background: "none",
+              fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 14,
+              color: C.text, cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => { setBusy(true); try { await onConfirm(); } finally { setBusy(false); } }}
+            disabled={busy}
+            style={{
+              flex: 1, height: 48, borderRadius: 12, border: "none",
+              background: "#C0392B", color: "#fff", cursor: busy ? "default" : "pointer",
+              fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 14,
+              opacity: busy ? 0.7 : 1,
+            }}
+          >
+            {busy ? "Removing…" : "Remove vehicle"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

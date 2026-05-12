@@ -75,6 +75,14 @@ export async function createVehicle(vehicleData: CreateVehicleData): Promise<Veh
   return data;
 }
 
+export async function deleteVehicle(vehicleId: string): Promise<void> {
+  const { error } = await supabase
+    .from("vehicles")
+    .delete()
+    .eq("id", vehicleId);
+  if (error) throw error;
+}
+
 export async function updateVehicle(vehicleId: string, updates: Partial<Vehicle>): Promise<Vehicle> {
   const { data, error } = await supabase
     .from("vehicles")
