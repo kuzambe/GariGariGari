@@ -25,9 +25,9 @@ function Field({
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <label
         style={{
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Rajdhani', sans-serif",
           fontSize: 12,
-          fontWeight: 500,
+          fontWeight: 600,
           color: focused ? ACCENT : MUTED,
           textTransform: "uppercase",
           letterSpacing: "0.07em",
@@ -48,7 +48,7 @@ function Field({
           border: "none",
           borderBottom: `1.5px solid ${focused ? ACCENT : "var(--gc-border)"}`,
           padding: "10px 0",
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Rajdhani', sans-serif",
           fontSize: 17,
           color: TEXT,
           outline: "none",
@@ -175,7 +175,7 @@ export default function AuthPage() {
           </h1>
           <p
             style={{
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Rajdhani', sans-serif",
               fontSize: 15,
               color: MUTED,
               margin: 0,
@@ -204,7 +204,7 @@ export default function AuthPage() {
             />
 
             {signInError && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: ERROR, margin: 0 }}>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: ERROR, margin: 0 }}>
                 {signInError}
               </p>
             )}
@@ -220,7 +220,7 @@ export default function AuthPage() {
                 border: "none",
                 borderRadius: 12,
                 padding: "16px 0",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Rajdhani', sans-serif",
                 fontWeight: 600,
                 fontSize: 16,
                 cursor: loading ? "default" : "pointer",
@@ -254,7 +254,7 @@ export default function AuthPage() {
             />
 
             {signUpError && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: signUpError.includes("Almost") ? ACCENT : ERROR, margin: 0 }}>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: signUpError.includes("Almost") ? ACCENT : ERROR, margin: 0 }}>
                 {signUpError}
               </p>
             )}
@@ -270,7 +270,7 @@ export default function AuthPage() {
                 border: "none",
                 borderRadius: 12,
                 padding: "16px 0",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Rajdhani', sans-serif",
                 fontWeight: 600,
                 fontSize: 16,
                 cursor: loading ? "default" : "pointer",
@@ -289,7 +289,7 @@ export default function AuthPage() {
           style={{
             textAlign: "center",
             marginTop: 32,
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Rajdhani', sans-serif",
             fontSize: 14,
             color: MUTED,
           }}
@@ -307,7 +307,7 @@ export default function AuthPage() {
               cursor: "pointer",
               color: TEXT,
               fontWeight: 600,
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Rajdhani', sans-serif",
               fontSize: 14,
               padding: 0,
               textDecoration: "underline",

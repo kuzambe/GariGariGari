@@ -5,6 +5,7 @@ import { useVehicle } from "@/context/VehicleContext";
 import { createVehicle } from "@/lib/api/vehicles";
 import { GarageIcon } from "@/components/ui/GarageIcon";
 import { AmberButton } from "@/components/ui/AmberButton";
+import { ZapIcon, CheckIcon, CameraIcon, KeyboardIcon, PencilIcon } from "@/components/ui/icons";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { DecodeHintType, BarcodeFormat } from "@zxing/library";
 import { createWorker } from "tesseract.js";
@@ -17,7 +18,7 @@ const inputStyle: React.CSSProperties = {
   border: "1.5px solid #E0DED8",
   borderRadius: 12,
   padding: "14px 16px",
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'Rajdhani', sans-serif",
   fontSize: 15,
   color: "#1A1A1A",
   outline: "none",
@@ -118,7 +119,7 @@ function NicknameInput({
           border: "none",
           outline: "none",
           padding: "14px 16px",
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Rajdhani', sans-serif",
           fontSize: 15,
           color: "#1A1A1A",
           minWidth: 0,
@@ -270,7 +271,7 @@ function VinScanner({ onDetected }: { onDetected: (vin: string) => void }) {
 
   if (cameraErr) {
     return (
-      <div style={{ background: "#FFF3F3", borderRadius: 12, padding: 16, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#E24B4A", textAlign: "center" }}>
+      <div style={{ background: "#FFF3F3", borderRadius: 12, padding: 16, fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#E24B4A", textAlign: "center" }}>
         {cameraErr}
       </div>
     );
@@ -297,24 +298,29 @@ function VinScanner({ onDetected }: { onDetected: (vin: string) => void }) {
         {torchSupported && (
           <button
             onClick={toggleTorch}
-            style={{ position: "absolute", top: 12, right: 12, width: 44, height: 44, borderRadius: "50%", background: torchOn ? "#EF9F27" : "rgba(0,0,0,0.55)", border: "1.5px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 20, zIndex: 2 }}
+            style={{ position: "absolute", top: 12, right: 12, width: 44, height: 44, borderRadius: "50%", background: torchOn ? "#EF9F27" : "rgba(0,0,0,0.55)", border: "1.5px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 2 }}
           >
-            ⚡
+            <ZapIcon size={20} color="#FFFFFF" strokeWidth={2} />
           </button>
         )}
 
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 16px", background: "linear-gradient(transparent, rgba(0,0,0,0.6))", fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: status === "found" ? "#EF9F27" : "rgba(255,255,255,0.8)", textAlign: "center" }}>
-          {status === "found" ? `✓ ${foundVin}` : status === "ocr" ? "Reading text…" : "Aim the barcode or VIN label at the box"}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 16px", background: "linear-gradient(transparent, rgba(0,0,0,0.6))", fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: status === "found" ? "#EF9F27" : "rgba(255,255,255,0.8)", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          {status === "found" ? (
+            <>
+              <CheckIcon size={14} color="#EF9F27" strokeWidth={2.2} />
+              <span>{foundVin}</span>
+            </>
+          ) : status === "ocr" ? "Reading text…" : "Aim the barcode or VIN label at the box"}
         </div>
       </div>
 
       {status === "scanning" && !ocrLoading && (
-        <button onClick={captureAndOcr} style={{ background: "transparent", border: "1.5px solid #E0DED8", borderRadius: 12, padding: "11px 0", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#888", cursor: "pointer" }}>
+        <button onClick={captureAndOcr} style={{ background: "transparent", border: "1.5px solid #E0DED8", borderRadius: 12, padding: "11px 0", fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#888", cursor: "pointer" }}>
           No barcode? Capture &amp; read text
         </button>
       )}
       {ocrLoading && (
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#888", textAlign: "center", margin: 0 }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#888", textAlign: "center", margin: 0 }}>
           Reading VIN from image…
         </p>
       )}
@@ -463,7 +469,7 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
         {vinData ? "CONFIRM & NEXT →" : "NEXT →"}
       </AmberButton>
       {!vinData && (
-        <p style={{ textAlign: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#BBB", margin: 0, cursor: "pointer" }}
+        <p style={{ textAlign: "center", fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#BBB", margin: 0, cursor: "pointer" }}
           onClick={() => setStep(3)}>
           Skip — add details later
         </p>
@@ -481,7 +487,7 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
       </button>
       <div style={{ flex: 1 }}>
         <AmberButton fullWidth onClick={handleFinish} disabled={saving}>
-          {saving ? "SAVING…" : "FINISH ✓"}
+          {saving ? "SAVING…" : "FINISH"}
         </AmberButton>
       </div>
     </div>
@@ -506,14 +512,14 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
         {onCancel && (
           <button
             onClick={onCancel}
-            style={{ background: "none", border: "none", padding: "0 0 12px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#888", display: "flex", alignItems: "center", gap: 6 }}
+            style={{ background: "none", border: "none", padding: "0 0 12px", cursor: "pointer", fontFamily: "'Rajdhani', sans-serif", fontSize: 15, color: "#888", display: "flex", alignItems: "center", gap: 6 }}
           >
             ← Back
           </button>
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
           <GarageIcon width={24} height={20} stroke="#1A1A1A" />
-          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: "#1A1A1A" }}>GARI</span>
+          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: "#1A1A1A", lineHeight: 1 }}>GARI</span>
         </div>
         <ProgressDots step={step} />
       </div>
@@ -527,7 +533,7 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
             <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 32, color: "#1A1A1A", marginBottom: 8, lineHeight: 1.1 }}>
               What do you call your car?
             </h1>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#888", marginBottom: 24 }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#888", marginBottom: 24 }}>
               This is how Gari will refer to your vehicle.
             </p>
             {/* Input with inline enter arrow */}
@@ -545,7 +551,7 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
             <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 30, color: "#1A1A1A", marginBottom: 6, lineHeight: 1.1 }}>
               Identify your car
             </h1>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#888", marginBottom: 16 }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#888", marginBottom: 16 }}>
               Scan the VIN barcode, type it, or enter details manually.
             </p>
 
@@ -555,9 +561,10 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
                   <button
                     key={m}
                     onClick={() => { setVinMode(m); setVinError(""); }}
-                    style={{ flex: 1, padding: "9px 0", borderRadius: 9, border: "none", background: vinMode === m ? "#fff" : "transparent", fontFamily: "'DM Sans', sans-serif", fontWeight: vinMode === m ? 600 : 400, fontSize: 13, color: vinMode === m ? "#1A1A1A" : "#888", cursor: "pointer", boxShadow: vinMode === m ? "0 1px 4px rgba(0,0,0,0.08)" : "none", transition: "all 0.15s", textTransform: "capitalize" }}
+                    style={{ flex: 1, padding: "9px 0", borderRadius: 9, border: "none", background: vinMode === m ? "#fff" : "transparent", fontFamily: "'Rajdhani', sans-serif", fontWeight: vinMode === m ? 600 : 400, fontSize: 13, color: vinMode === m ? "#1A1A1A" : "#888", cursor: "pointer", boxShadow: vinMode === m ? "0 1px 4px rgba(0,0,0,0.08)" : "none", transition: "all 0.15s", textTransform: "capitalize", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                   >
-                    {m === "scan" ? "📷 Scan" : m === "type" ? "⌨ Type" : "✏ Manual"}
+                    {m === "scan" ? <CameraIcon size={16} color={vinMode === m ? "#1F6B2E" : "#888"} /> : m === "type" ? <KeyboardIcon size={16} color={vinMode === m ? "#1F6B2E" : "#888"} /> : <PencilIcon size={16} color={vinMode === m ? "#1F6B2E" : "#888"} />}
+                    <span style={{ textTransform: "capitalize" }}>{m}</span>
                   </button>
                 ))}
               </div>
@@ -566,7 +573,7 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
             {vinMode === "scan" && !vinData && (
               <div>
                 <VinScanner onDetected={handleScanDetected} />
-                {vinLoading && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#888", textAlign: "center", marginTop: 10 }}>Looking up VIN…</p>}
+                {vinLoading && <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#888", textAlign: "center", marginTop: 10 }}>Looking up VIN…</p>}
               </div>
             )}
 
@@ -579,11 +586,11 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
                     onChange={(v) => { setVin(v.toUpperCase()); setVinError(""); }}
                     maxLength={17}
                   />
-                  <span style={{ position: "absolute", right: 14, bottom: 14, fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: vin.length === 17 ? "#EF9F27" : "#888", fontWeight: vin.length === 17 ? 600 : 400 }}>
+                  <span style={{ position: "absolute", right: 14, bottom: 14, fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: vin.length === 17 ? "#EF9F27" : "#888", fontWeight: vin.length === 17 ? 600 : 400 }}>
                     {vin.length}/17
                   </span>
                 </div>
-                {vinError && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#E24B4A", marginTop: 8 }}>{vinError}</p>}
+                {vinError && <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#E24B4A", marginTop: 8 }}>{vinError}</p>}
                 <div style={{ marginTop: 12 }}>
                   <AmberButton fullWidth onClick={lookupVin} disabled={vinLoading || vin.length !== 17}>
                     {vinLoading ? "LOOKING UP…" : "LOOK UP VIN"}
@@ -609,7 +616,7 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
               <div style={{ background: "#F0EFE9", borderRadius: 16, padding: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                   <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 13, color: "#888", letterSpacing: "0.05em" }}>VIN DECODED</span>
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#EF9F27", cursor: "pointer" }} onClick={() => { setVinData(null); setVin(""); setVinMode("manual"); }}>
+                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#EF9F27", cursor: "pointer" }} onClick={() => { setVinData(null); setVin(""); setVinMode("manual"); }}>
                     Not right? Edit
                   </span>
                 </div>
@@ -617,8 +624,8 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
                   .filter(([, v]) => v)
                   .map(([label, value]) => (
                     <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 10, marginBottom: 10, borderBottom: "1px solid #E0DED8" }}>
-                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#888" }}>{label}</span>
-                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#1A1A1A", fontWeight: 500 }}>{value}</span>
+                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#888" }}>{label}</span>
+                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 15, color: "#1A1A1A", fontWeight: 600 }}>{value}</span>
                     </div>
                   ))}
               </div>
@@ -632,14 +639,14 @@ export default function VehicleSetup({ onSuccess, onCancel }: VehicleSetupProps 
             <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 32, color: "#1A1A1A", marginBottom: 8, lineHeight: 1.1 }}>
               Last few details
             </h1>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#888", marginBottom: 24 }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#888", marginBottom: 24 }}>
               Both optional — you can add these later.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <GariInput type="number" placeholder="Current mileage (optional)" value={mileage} onChange={setMileage} />
               <GariInput placeholder="License plate (optional)" value={plate} onChange={setPlate} />
             </div>
-            {error && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#E24B4A", marginTop: 12 }}>{error}</p>}
+            {error && <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#E24B4A", marginTop: 12 }}>{error}</p>}
           </div>
         )}
       </div>

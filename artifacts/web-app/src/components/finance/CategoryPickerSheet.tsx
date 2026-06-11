@@ -60,7 +60,7 @@ export function CategoryPickerSheet({ onSelect, onClose }: CategoryPickerSheetPr
         </div>
         <button
           onClick={onClose}
-          style={{ display: "block", width: "100%", marginTop: 20, background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.muted, cursor: "pointer", textAlign: "center", minHeight: 44 }}
+          style={{ display: "block", width: "100%", marginTop: 20, background: "none", border: "none", fontFamily: "'Rajdhani', sans-serif", fontSize: 15, color: C.muted, cursor: "pointer", textAlign: "center", minHeight: 44 }}
         >
           Cancel
         </button>

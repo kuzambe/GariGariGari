@@ -16,13 +16,13 @@ export function StatPill({ value, label, valueColor = "#1A1A1A" }: StatPillProps
     >
       <span
         className="text-sm font-medium leading-tight"
-        style={{ color: valueColor, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14 }}
+        style={{ color: valueColor, fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: 14 }}
       >
         {value}
       </span>
       <span
         className="uppercase tracking-wider"
-        style={{ color: "#888888", fontFamily: "'DM Sans', sans-serif", fontSize: 11 }}
+        style={{ color: "#888888", fontFamily: "'Rajdhani', sans-serif", fontSize: 11 }}
       >
         {label}
       </span>

@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { DecodeHintType, BarcodeFormat } from "@zxing/library";
-import { getGuestSession, setGuestSession, clearGuestSession, type GuestSession } from "@/lib/guestSession";
+import { getGuestSession, setGuestSession, updateGuestSession, clearGuestSession, type GuestSession } from "@/lib/guestSession";
+import { PAINT_OPTIONS } from "@/lib/paintColors";
 import { useVehicle } from "@/context/VehicleContext";
 import { supabase } from "@/lib/supabase";
 import { createVehicle } from "@/lib/api/vehicles";
@@ -221,10 +222,10 @@ function EntryScreen({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
         style={{
           fontFamily: "'Rajdhani', sans-serif",
           fontWeight: 700,
-          fontSize: 42,
+          fontSize: 72,
           color: TEXT,
           letterSpacing: "0.04em",
-          marginTop: 12,
+          marginTop: 8,
           lineHeight: 1,
         }}
       >
@@ -232,7 +233,7 @@ function EntryScreen({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: (
       </span>
       <p
         style={{
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Rajdhani', sans-serif",
           fontSize: 14,
           color: MUTED,
           margin: "10px 0 56px",
@@ -420,7 +421,7 @@ export function VinScanStep({
         <div className="gari-spin" style={{ width: 64, height: 64 }}>
           <img src={`${BASE}gari-icon-new-nobg.png`} alt="Gari" style={{ width: 64, height: 64, objectFit: "contain" }} />
         </div>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#FFFFFF", margin: "18px 0 0" }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#FFFFFF", margin: "18px 0 0" }}>
           Looking up your vehicle…
         </p>
       </div>
@@ -437,7 +438,7 @@ export function VinScanStep({
           {lookupError || "Add your car details"}
         </h2>
         {vinForLookup && (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: MUTED, margin: 0, letterSpacing: "0.04em" }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: MUTED, margin: 0, letterSpacing: "0.04em" }}>
             VIN {vinForLookup}
           </p>
         )}
@@ -466,7 +467,7 @@ export function VinScanStep({
     return (
       <div style={{ ...fullDark, padding: 32, gap: 16 }}>
         <img src={`${BASE}gari-icon-new-nobg.png`} alt="Gari" style={{ height: 56 }} />
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#FFFFFF", textAlign: "center", maxWidth: 280, margin: 0 }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#FFFFFF", textAlign: "center", maxWidth: 280, margin: 0 }}>
           Camera access needed to scan your VIN
         </p>
         <button onClick={() => setShowManualVinInput(true)} style={primaryBtn}>
@@ -499,7 +500,7 @@ export function VinScanStep({
       {/* Top center — Gari wordmark, 60px from top */}
       <div style={{ position: "absolute", top: 60, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, pointerEvents: "none", zIndex: 2 }}>
         <img src={`${BASE}gari-icon-new-nobg.png`} alt="" style={{ height: 36 }} />
-        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: "#FFFFFF", letterSpacing: "0.04em" }}>GARI</span>
+        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 50, color: "#FFFFFF", letterSpacing: "0.04em", lineHeight: 1 }}>GARI</span>
       </div>
 
       {/* Top left — Back */}
@@ -524,10 +525,10 @@ export function VinScanStep({
 
       {/* Instructions below frame */}
       <div style={{ position: "absolute", left: 0, right: 0, top: "calc(50% + 70px)", textAlign: "center", padding: "0 24px", pointerEvents: "none" }}>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "rgba(255,255,255,0.7)", margin: "0 0 6px" }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "rgba(255,255,255,0.7)", margin: "0 0 6px" }}>
           Point at the VIN sticker on your door frame
         </p>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0 }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0 }}>
           17-character code · Usually driver's side door jamb
         </p>
       </div>
@@ -535,7 +536,7 @@ export function VinScanStep({
       {/* Bottom buttons */}
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "20px 20px 32px", display: "flex", flexDirection: "column", gap: 10, background: "linear-gradient(transparent, rgba(0,0,0,0.55))" }}>
         <button onClick={() => { /* zxing already scanning */ }} style={primaryBtn}>SCAN BARCODE</button>
-        <button onClick={() => setShowManualVinInput(true)} style={{ background: "transparent", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "rgba(255,255,255,0.7)", cursor: "pointer", padding: "8px 0" }}>
+        <button onClick={() => setShowManualVinInput(true)} style={{ background: "transparent", border: "none", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "rgba(255,255,255,0.7)", cursor: "pointer", padding: "8px 0" }}>
           Enter VIN manually
         </button>
       </div>
@@ -596,11 +597,11 @@ function ManualVinOverlay({
             placeholder="17-character VIN" maxLength={17} autoFocus
             style={{ ...whiteInput, paddingRight: 56, letterSpacing: "0.05em", textTransform: "uppercase", border: `1.5px solid ${valid ? ACCENT : FIELD_BORDER}` }}
           />
-          <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: cleaned.length === 17 ? ACCENT : MUTED, fontWeight: cleaned.length === 17 ? 600 : 400 }}>
+          <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: cleaned.length === 17 ? ACCENT : MUTED, fontWeight: cleaned.length === 17 ? 600 : 400 }}>
             {cleaned.length}/17
           </span>
         </div>
-        {error && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: ERROR, margin: 0 }}>{error}</p>}
+        {error && <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: ERROR, margin: 0 }}>{error}</p>}
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onClose} style={{ ...secondaryBtn, flex: 1 }}>Cancel</button>
           <button onClick={onSubmit} disabled={!valid} style={{ ...primaryBtn, flex: 1, opacity: valid ? 1 : 0.6 }}>CONFIRM</button>
@@ -613,23 +614,17 @@ function ManualVinOverlay({
 /* ─────────────────────────────────────────────────────────────
  *  STEP 2: Guest dashboard — vehicle data after VIN scan
  * ───────────────────────────────────────────────────────────── */
-function SculptedCar() {
+function SculptedCar({ color }: { color?: string | null }) {
+  const OUTLINE = "#D4DDD5";
   return (
     <svg width="280" height="130" viewBox="0 0 300 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="welcomeCarShadow" x="-10%" y="-10%" width="130%" height="180%">
-          <feDropShadow dx="0" dy="8" stdDeviation="14" floodColor="#000000" floodOpacity="0.08" />
-        </filter>
-      </defs>
       <path d="M 14 98 C 6 98 4 88 4 82 C 4 70 14 62 22 56 C 28 42 40 22 66 16 C 84 10 112 8 148 8 C 182 8 212 12 234 24 C 254 34 268 52 278 68 C 286 78 294 88 292 96 C 291 100 287 102 280 102 L 252 102 Q 249 82 232 82 Q 214 82 212 102 L 100 102 Q 97 82 80 82 Q 62 82 60 102 L 14 100 Z"
-        fill="#FFFFFF" stroke="#D4DDD5" strokeWidth="1.5" filter="url(#welcomeCarShadow)" />
-      <path d="M 74 16 C 96 10 124 8 156 8 C 188 8 216 12 236 24 C 222 32 192 38 156 40 C 118 38 90 32 74 16 Z" fill="#EFF4F0" opacity="0.55" />
-      <circle cx="80" cy="112" r="22" fill="#F4F7F2" stroke="#D4DDD5" strokeWidth="1.5" />
-      <circle cx="80" cy="112" r="9" fill="#E8F0E9" stroke="#D4DDD5" strokeWidth="1" />
-      <circle cx="80" cy="112" r="3" fill="#C8D5C9" />
-      <circle cx="232" cy="112" r="22" fill="#F4F7F2" stroke="#D4DDD5" strokeWidth="1.5" />
-      <circle cx="232" cy="112" r="9" fill="#E8F0E9" stroke="#D4DDD5" strokeWidth="1" />
-      <circle cx="232" cy="112" r="3" fill="#C8D5C9" />
+        fill={color || "none"} stroke={OUTLINE} strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M 74 16 C 96 10 124 8 156 8 C 188 8 216 12 236 24" fill="none" stroke={OUTLINE} strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="80" cy="112" r="22" fill="none" stroke={OUTLINE} strokeWidth="1.8" />
+      <circle cx="80" cy="112" r="9" fill="none" stroke={OUTLINE} strokeWidth="1.4" />
+      <circle cx="232" cy="112" r="22" fill="none" stroke={OUTLINE} strokeWidth="1.8" />
+      <circle cx="232" cy="112" r="9" fill="none" stroke={OUTLINE} strokeWidth="1.4" />
     </svg>
   );
 }
@@ -654,23 +649,14 @@ function VinSection({ title, rows }: { title: string; rows: { label: string; val
             gap: 12,
           }}
         >
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, flexShrink: 0 }}>{label}</span>
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: TEXT, fontWeight: 500, textAlign: "right" }}>{value}</span>
+          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, flexShrink: 0 }}>{label}</span>
+          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: TEXT, fontWeight: 600, textAlign: "right" }}>{value}</span>
         </div>
       ))}
     </div>
   );
 }
 
-function ExternalLinkIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-      <polyline points="15 3 21 3 21 9" />
-      <line x1="10" y1="14" x2="21" y2="3" />
-    </svg>
-  );
-}
 
 function GuestDashboardStep({
   onCreateAccount, onSignIn, onRescan,
@@ -684,6 +670,17 @@ function GuestDashboardStep({
   const [nhtsaLoaded, setNhtsaLoaded] = useState(false);
   const [recalls, setRecalls] = useState<Recall[]>([]);
   const [recallsLoaded, setRecallsLoaded] = useState(false);
+
+  const [nickname, setNickname] = useState(guest?.nickname ?? "");
+  const [plate, setPlate] = useState(guest?.license_plate ?? "");
+  const [paintName, setPaintName] = useState<string | null>(guest?.paint_name ?? null);
+  const [paintHex, setPaintHex] = useState<string | null>(guest?.paint_code ?? null);
+  const isCustomPaint = !!paintName && !PAINT_OPTIONS.some((p) => p.name === paintName);
+  function selectPaint(name: string | null, hex: string | null) {
+    setPaintName(name);
+    setPaintHex(hex);
+    updateGuestSession({ paint_name: name, paint_code: hex });
+  }
 
   useEffect(() => {
     if (!guest) return;
@@ -708,7 +705,8 @@ function GuestDashboardStep({
   if (!guest) return null;
 
   const modelName = guest.model || "Car";
-  const pageTitle = `Your ${modelName}`;
+  const fallbackName = guest.model ? `Your ${modelName}` : "Your Car";
+  const pageTitle = nickname.trim() || fallbackName;
   const yearMakeModel = [guest.year, guest.make, guest.model].filter(Boolean).join(" ") || "Your Car";
   const yearStr = guest.year ? String(guest.year) : null;
   const makeStr = guest.make || null;
@@ -725,7 +723,7 @@ function GuestDashboardStep({
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>
           {pageTitle}
         </span>
         <span style={{ width: 22 }} />
@@ -734,9 +732,9 @@ function GuestDashboardStep({
       {/* Vehicle name */}
       <div style={{ textAlign: "center", padding: "8px 24px 4px" }}>
         <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: TEXT, margin: 0 }}>{pageTitle}</h1>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: MUTED, margin: "4px 0 0" }}>{yearMakeModel}</p>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: MUTED, margin: "4px 0 0" }}>{yearMakeModel}</p>
         {vin && (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: MUTED, margin: "4px 0 0", letterSpacing: "0.05em" }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: MUTED, margin: "4px 0 0", letterSpacing: "0.05em" }}>
             VIN: {vin}
           </p>
         )}
@@ -744,7 +742,7 @@ function GuestDashboardStep({
 
       {/* Car illustration */}
       <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 16px" }}>
-        <SculptedCar />
+        <SculptedCar color={paintHex} />
       </div>
 
       {/* Quick stat pills — Year and Make only, no mileage */}
@@ -759,7 +757,7 @@ function GuestDashboardStep({
       <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 10 }}>
         {!nhtsaLoaded && vin && !guest.is_manual_entry && (
           <div style={{ textAlign: "center", padding: 20 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: 0 }}>Loading vehicle data…</p>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, margin: 0 }}>Loading vehicle data…</p>
           </div>
         )}
 
@@ -777,7 +775,7 @@ function GuestDashboardStep({
         <div style={{ padding: "10px 16px 0" }}>
           {!recallsLoaded && (
             <div style={{ padding: "12px 16px", background: "#F4F7F2", borderRadius: 12 }}>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: 0 }}>Checking recalls…</p>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, margin: 0 }}>Checking recalls…</p>
             </div>
           )}
 
@@ -786,7 +784,7 @@ function GuestDashboardStep({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1F6B2E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" /><polyline points="9 12 11 14 15 10" />
               </svg>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#1F6B2E", fontWeight: 500 }}>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#1F6B2E", fontWeight: 600 }}>
                 No active recalls found
               </span>
             </div>
@@ -812,9 +810,9 @@ function GuestDashboardStep({
                     background: "#FFFFFF",
                   }}
                 >
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 13, color: TEXT, margin: "0 0 4px" }}>{r.Component}</p>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: MUTED, margin: "0 0 4px", lineHeight: 1.5 }}>{r.Summary}</p>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: MUTED, margin: 0 }}>Campaign: {r.NHTSACampaignNumber}</p>
+                  <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: 13, color: TEXT, margin: "0 0 4px" }}>{r.Component}</p>
+                  <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: MUTED, margin: "0 0 4px", lineHeight: 1.5 }}>{r.Summary}</p>
+                  <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: MUTED, margin: 0 }}>Campaign: {r.NHTSACampaignNumber}</p>
                 </div>
               ))}
             </div>
@@ -822,70 +820,96 @@ function GuestDashboardStep({
         </div>
       )}
 
-      {/* External links */}
-      {vin && (
-        <div style={{ padding: "10px 16px 0", display: "flex", flexDirection: "column", gap: 8 }}>
-          <a
-            href={`https://www.carfax.com/vehicle/${vin}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              padding: "13px 16px",
-              background: "transparent",
-              border: `1.5px solid ${FIELD_BORDER}`,
-              borderRadius: 12,
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 14,
-              color: TEXT,
-              textDecoration: "none",
-              fontWeight: 500,
-            }}
-          >
-            View Carfax Report
-            <ExternalLinkIcon />
-          </a>
-          <a
-            href={`https://www.nhtsa.gov/vehicle/${vin}/complaints`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              padding: "13px 16px",
-              background: "transparent",
-              border: `1.5px solid ${FIELD_BORDER}`,
-              borderRadius: 12,
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 14,
-              color: TEXT,
-              textDecoration: "none",
-              fontWeight: 500,
-            }}
-          >
-            View NHTSA Complaints
-            <ExternalLinkIcon />
-          </a>
+      {/* Personalize */}
+      <div style={{ padding: "10px 16px 0" }}>
+        <div style={{ background: "#FFFFFF", border: `1.5px solid ${FIELD_BORDER}`, borderRadius: 16, padding: 20, display: "flex", flexDirection: "column", gap: 18 }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 13, color: MUTED, margin: 0, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            Personalize
+          </p>
+
+          {/* Nickname */}
+          <div>
+            <label style={{ display: "block", fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: MUTED, marginBottom: 6 }}>Nickname</label>
+            <input
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              onBlur={() => updateGuestSession({ nickname: nickname.trim() || null })}
+              placeholder={fallbackName}
+              style={{ width: "100%", boxSizing: "border-box", background: "#FFFFFF", border: `1.5px solid ${FIELD_BORDER}`, borderRadius: 12, padding: "12px 14px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: 15, color: TEXT, outline: "none" }}
+            />
+          </div>
+
+          {/* Color */}
+          <div>
+            <label style={{ display: "block", fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: MUTED, marginBottom: 8 }}>
+              Color{paintName ? ` · ${paintName}` : ""}
+            </label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {PAINT_OPTIONS.map((p) => {
+                const selected = paintName === p.name;
+                return (
+                  <button
+                    key={p.name}
+                    type="button"
+                    aria-label={p.name}
+                    onClick={() => selectPaint(selected ? null : p.name, selected ? null : p.hex)}
+                    style={{
+                      width: 30, height: 30, borderRadius: "50%", background: p.hex, cursor: "pointer", padding: 0,
+                      border: selected ? `2.5px solid ${ACCENT}` : `1.5px solid ${FIELD_BORDER}`,
+                      boxShadow: selected ? "0 0 0 2px #FFFFFF inset" : "none",
+                    }}
+                  />
+                );
+              })}
+              {/* Custom color */}
+              <label
+                aria-label="Custom color"
+                title="Custom color"
+                style={{
+                  position: "relative", width: 30, height: 30, borderRadius: "50%", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: isCustomPaint && paintHex ? paintHex : "conic-gradient(from 0deg, #C0392B, #E8C33C, #1F6B2E, #2D6CB5, #6B4A2B, #C0392B)",
+                  border: isCustomPaint ? `2.5px solid ${ACCENT}` : `1.5px solid ${FIELD_BORDER}`,
+                  boxShadow: isCustomPaint ? "0 0 0 2px #FFFFFF inset" : "none",
+                }}
+              >
+                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: "#FFFFFF", lineHeight: 1, textShadow: "0 0 2px rgba(0,0,0,0.4)" }}>+</span>
+                <input
+                  type="color"
+                  value={paintHex ?? "#1F6B2E"}
+                  onChange={(e) => selectPaint("Custom", e.target.value)}
+                  style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%", padding: 0, border: "none" }}
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* License plate */}
+          <div>
+            <label style={{ display: "block", fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: MUTED, marginBottom: 6 }}>License plate</label>
+            <input
+              value={plate}
+              onChange={(e) => setPlate(e.target.value.toUpperCase())}
+              onBlur={() => updateGuestSession({ license_plate: plate.trim() || null })}
+              placeholder="ABC 123"
+              style={{ width: "100%", boxSizing: "border-box", background: "#FFFFFF", border: `1.5px solid ${FIELD_BORDER}`, borderRadius: 12, padding: "12px 14px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: "0.12em", color: TEXT, outline: "none" }}
+            />
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Save your garage CTA */}
       <div style={{ background: ACCENT, borderRadius: 16, padding: 20, margin: "20px 16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
         <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: "#FFFFFF", margin: 0 }}>
           Save your garage
         </h3>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.85)", margin: 0, lineHeight: 1.4 }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.85)", margin: 0, lineHeight: 1.4 }}>
           Create a free account to keep your vehicle data, documents, and history.
         </p>
         <button onClick={onCreateAccount} style={{ background: "#FFFFFF", color: ACCENT, border: "none", borderRadius: 12, padding: 14, fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, cursor: "pointer", marginTop: 4 }}>
           Create Free Account
         </button>
-        <button onClick={onSignIn} style={{ background: "none", border: "none", padding: "6px 0", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.65)", cursor: "pointer" }}>
+        <button onClick={onSignIn} style={{ background: "none", border: "none", padding: "6px 0", fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.65)", cursor: "pointer" }}>
           Already have an account? Sign in
         </button>
       </div>
@@ -896,7 +920,7 @@ function GuestDashboardStep({
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ background: "#FFFFFF", border: `1px solid ${FIELD_BORDER}`, borderRadius: 14, padding: "8px 14px", minWidth: 80, textAlign: "center" }}>
-      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: MUTED, margin: 0, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
+      <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 10, color: MUTED, margin: 0, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
       <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: 14, color: TEXT, margin: "2px 0 0" }}>{value}</p>
     </div>
   );
@@ -934,10 +958,11 @@ function AccountStep({
 
   async function transferGuest(userId: string, g: GuestSession) {
     const modelLabel = (g.model && g.model.trim()) || "Car";
+    const nickname = (g.nickname && g.nickname.trim()) || `Your ${modelLabel}`;
     try {
       await createVehicle({
         user_id: userId,
-        nickname: `Your ${modelLabel}`,
+        nickname,
         vin: g.vin ?? undefined,
         make: g.make ?? undefined,
         model: g.model ?? undefined,
@@ -946,6 +971,10 @@ function AccountStep({
         engine: g.engine ?? undefined,
         fuel_type: g.fuel_type ?? undefined,
         body_style: g.body_style ?? undefined,
+        paint_name: g.paint_name ?? undefined,
+        paint_code: g.paint_code ?? undefined,
+        license_plate: g.license_plate ?? undefined,
+        mileage: g.mileage ?? undefined,
         mileage_unit: "km",
       });
       clearGuestSession();
@@ -1010,7 +1039,7 @@ function AccountStep({
   return (
     <div className="gari-mount" style={{ minHeight: "100vh", background: "#FAFAF8", padding: "20px 24px 32px", position: "relative", display: "flex", flexDirection: "column" }}>
       {toast && (
-        <div style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", background: ACCENT, color: "#FFFFFF", padding: "10px 18px", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 14, zIndex: 300, boxShadow: "0 4px 12px rgba(0,0,0,0.18)" }}>
+        <div style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", background: ACCENT, color: "#FFFFFF", padding: "10px 18px", borderRadius: 12, fontFamily: "'Rajdhani', sans-serif", fontSize: 14, zIndex: 300, boxShadow: "0 4px 12px rgba(0,0,0,0.18)" }}>
           Your garage is saved!
         </div>
       )}
@@ -1025,8 +1054,8 @@ function AccountStep({
       {/* Logo */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginBottom: 24 }}>
         <img src={`${BASE}gari-icon-new-nobg.png`} alt="Gari" style={{ height: 40 }} />
-        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 36, color: TEXT, letterSpacing: "0.03em", lineHeight: 1 }}>GARI</span>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: "4px 0 0", textAlign: "center" }}>
+        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 56, color: TEXT, letterSpacing: "0.03em", lineHeight: 1 }}>GARI</span>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, margin: "4px 0 0", textAlign: "center" }}>
           {isSignup ? "Create your free account to save your garage." : "Welcome back. Sign in to your garage."}
         </p>
       </div>
@@ -1034,15 +1063,15 @@ function AccountStep({
       {/* Vehicle summary on signup */}
       {isSignup && guest && (
         <div style={{ marginBottom: 18 }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: "0 0 8px" }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, margin: "0 0 8px" }}>
             We'll save this vehicle to your account:
           </p>
           <div style={{ background: "#F4F7F2", borderRadius: 12, padding: "12px 16px" }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 14, color: TEXT, margin: 0 }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: 14, color: TEXT, margin: 0 }}>
               Your {guest.model || "Car"}
             </p>
             {yearMakeModel && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: "2px 0 0" }}>{yearMakeModel}</p>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, margin: "2px 0 0" }}>{yearMakeModel}</p>
             )}
           </div>
         </div>
@@ -1051,34 +1080,34 @@ function AccountStep({
       <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" style={whiteInput} />
         {emailErr && (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>
             {emailErr}{" "}
             {emailErr.includes("registered") && (
-              <button type="button" onClick={onSwitch} style={{ background: "none", border: "none", color: ACCENT, cursor: "pointer", padding: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 12, textDecoration: "underline" }}>Sign in</button>
+              <button type="button" onClick={onSwitch} style={{ background: "none", border: "none", color: ACCENT, cursor: "pointer", padding: 0, fontFamily: "'Rajdhani', sans-serif", fontSize: 12, textDecoration: "underline" }}>Sign in</button>
             )}
           </p>
         )}
         <input type="password" placeholder={isSignup ? "Create a password" : "Password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={isSignup ? "new-password" : "current-password"} style={whiteInput} />
-        {passwordErr && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>{passwordErr}</p>}
+        {passwordErr && <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>{passwordErr}</p>}
         {isSignup && (
           <>
             <input type="password" placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" style={whiteInput} />
             {(confirmErr || (!passwordsMatch && confirm)) && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>{confirmErr ?? "Passwords don't match"}</p>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>{confirmErr ?? "Passwords don't match"}</p>
             )}
           </>
         )}
         {formErr && (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: formErr.startsWith("Almost") ? ACCENT : ERROR, margin: "4px 0 0" }}>{formErr}</p>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: formErr.startsWith("Almost") ? ACCENT : ERROR, margin: "4px 0 0" }}>{formErr}</p>
         )}
         <button type="submit" disabled={submitting || submitDisabled} style={{ ...primaryBtn, marginTop: 8, opacity: (submitting || submitDisabled) ? 0.6 : 1, cursor: (submitting || submitDisabled) ? "default" : "pointer" }}>
           {submitting ? (isSignup ? "CREATING ACCOUNT…" : "SIGNING IN…") : (isSignup ? "CREATE ACCOUNT" : "SIGN IN")}
         </button>
       </form>
 
-      <p style={{ textAlign: "center", marginTop: 20, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED }}>
+      <p style={{ textAlign: "center", marginTop: 20, fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED }}>
         {isSignup ? "Already have an account? " : "Don't have an account? "}
-        <button type="button" onClick={onSwitch} style={{ background: "none", border: "none", cursor: "pointer", color: TEXT, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", fontSize: 13, padding: 0, textDecoration: "underline", textUnderlineOffset: 2 }}>
+        <button type="button" onClick={onSwitch} style={{ background: "none", border: "none", cursor: "pointer", color: TEXT, fontWeight: 600, fontFamily: "'Rajdhani', sans-serif", fontSize: 13, padding: 0, textDecoration: "underline", textUnderlineOffset: 2 }}>
           {isSignup ? "Sign in" : "Create one"}
         </button>
       </p>
@@ -1091,7 +1120,7 @@ function Wordmark({ dark }: { dark?: boolean }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <img src={`${BASE}gari-icon-new-nobg.png`} alt="" style={{ height: 32 }} />
-      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 24, color: dark ? TEXT : "#FFFFFF", letterSpacing: "0.04em" }}>GARI</span>
+      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 44, color: dark ? TEXT : "#FFFFFF", letterSpacing: "0.04em", lineHeight: 1 }}>GARI</span>
     </div>
   );
 }
@@ -1103,7 +1132,7 @@ const fullDark: React.CSSProperties = {
 
 const whiteInput: React.CSSProperties = {
   width: "100%", background: "#FFFFFF", border: `1.5px solid ${FIELD_BORDER}`,
-  borderRadius: 12, padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
+  borderRadius: 12, padding: "14px 16px", fontFamily: "'Rajdhani', sans-serif",
   fontSize: 15, color: TEXT, outline: "none", boxShadow: "none", boxSizing: "border-box",
 };
 
@@ -1116,19 +1145,19 @@ const primaryBtn: React.CSSProperties = {
 
 const secondaryBtn: React.CSSProperties = {
   background: "transparent", color: MUTED, border: `1.5px solid ${FIELD_BORDER}`,
-  borderRadius: 12, padding: "12px 16px", fontFamily: "'DM Sans', sans-serif",
+  borderRadius: 12, padding: "12px 16px", fontFamily: "'Rajdhani', sans-serif",
   fontSize: 15, cursor: "pointer",
 };
 
 const textLink: React.CSSProperties = {
-  background: "none", border: "none", fontFamily: "'DM Sans', sans-serif",
+  background: "none", border: "none", fontFamily: "'Rajdhani', sans-serif",
   fontSize: 13, color: MUTED, cursor: "pointer", padding: "8px 0",
 };
 
 function cornerLink(side: "left" | "right"): React.CSSProperties {
   return {
     position: "absolute", top: 28, [side]: 18, background: "none", border: "none",
-    fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.5)",
+    fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.5)",
     cursor: "pointer", padding: 6, zIndex: 3,
   } as React.CSSProperties;
 }

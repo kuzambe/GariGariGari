@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { CloseIcon } from "@/components/ui/icons";
 import { DocumentScanner } from "./DocumentScanner";
 import { ParsedDocumentSheet, ConfirmedDocument } from "./ParsedDocumentSheet";
 import { parseDocument, ParseResult } from "@/lib/documentParser";
@@ -154,7 +155,7 @@ export function AddDocumentSheet({ categoryLabel, onClose, onFileSelected, onErr
     return (
       <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 320, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18 }}>
         <div style={{ width: 40, height: 40, border: "3px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", borderRadius: "50%", animation: "scanSpin 0.9s linear infinite" }} />
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "rgba(255,255,255,0.85)", margin: 0 }}>Reading document…</p>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "rgba(255,255,255,0.85)", margin: 0 }}>Reading document…</p>
         <style>{`@keyframes scanSpin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -194,9 +195,9 @@ export function AddDocumentSheet({ categoryLabel, onClose, onFileSelected, onErr
         />
         <button
           onClick={() => { streamRef.current?.getTracks().forEach((t) => t.stop()); setMode("menu"); }}
-          style={{ position: "absolute", top: 52, left: 20, width: 44, height: 44, background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          style={{ position: "absolute", top: 52, left: 20, width: 44, height: 44, background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
         >
-          ✕
+          <CloseIcon size={20} color="#fff" strokeWidth={2} />
         </button>
         <button
           onClick={handleCapturePhoto}
@@ -279,7 +280,7 @@ export function AddDocumentSheet({ categoryLabel, onClose, onFileSelected, onErr
                 <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, margin: 0 }}>
                   {opt.title}
                 </p>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "2px 0 0" }}>
+                <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: C.muted, margin: "2px 0 0" }}>
                   {opt.subtitle}
                 </p>
               </div>
@@ -289,7 +290,7 @@ export function AddDocumentSheet({ categoryLabel, onClose, onFileSelected, onErr
 
         <button
           onClick={onClose}
-          style={{ display: "block", width: "100%", marginTop: 20, background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.muted, cursor: "pointer", textAlign: "center", minHeight: 44 }}
+          style={{ display: "block", width: "100%", marginTop: 20, background: "none", border: "none", fontFamily: "'Rajdhani', sans-serif", fontSize: 15, color: C.muted, cursor: "pointer", textAlign: "center", minHeight: 44 }}
         >
           Cancel
         </button>

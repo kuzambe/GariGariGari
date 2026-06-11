@@ -16,8 +16,8 @@ export function Odometer({ value, unit }: OdometerProps) {
       </div>
       {unit && (
         <span style={{
-          fontFamily: "'DM Sans', sans-serif",
-          fontWeight: 500,
+          fontFamily: "'Rajdhani', sans-serif",
+          fontWeight: 600,
           fontSize: 14,
           color: "var(--gc-muted)",
           letterSpacing: "0.04em",

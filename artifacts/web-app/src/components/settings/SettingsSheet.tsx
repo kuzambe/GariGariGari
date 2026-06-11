@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { usePreferences } from "@/context/PreferencesContext";
 import { updateVehicle, deleteVehicle, type Vehicle } from "@/lib/api/vehicles";
+import { PAINT_OPTIONS } from "@/lib/paintColors";
+import { BellIcon, AlertTriangleIcon } from "@/components/ui/icons";
 
 const C = {
   bg:         "var(--gc-bg)",
@@ -95,7 +97,7 @@ export function SettingsSheet({
         <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 24px" }} />
 
         {/* Account section */}
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
           Account
         </p>
         <div style={{ background: C.sage, borderRadius: 14, padding: "14px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
@@ -109,13 +111,13 @@ export function SettingsSheet({
             </span>
           </div>
           <div>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 14, color: C.text, margin: 0 }}>{userEmail ?? "—"}</p>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>Gari account</p>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: 14, color: C.text, margin: 0 }}>{userEmail ?? "—"}</p>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>Gari account</p>
           </div>
         </div>
 
         {/* Settings section */}
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
           Settings
         </p>
         <div style={{ background: C.sage, borderRadius: 14, marginBottom: 20, overflow: "hidden" }}>
@@ -125,7 +127,7 @@ export function SettingsSheet({
             onClick={() => setShowUnits((p) => !p)}
             style={{ display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: `1px solid var(--gc-border)`, cursor: "pointer" }}
           >
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>Units &amp; Display</span>
+            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>Units &amp; Display</span>
             <span style={{
               color: C.muted, fontSize: 13,
               transform: showUnits ? "rotate(90deg)" : "rotate(0deg)",
@@ -141,10 +143,10 @@ export function SettingsSheet({
               {/* Distance unit */}
               <div style={{ display: "flex", alignItems: "center", padding: "10px 16px" }}>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: C.text, margin: 0 }}>
+                  <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, fontWeight: 600, color: C.text, margin: 0 }}>
                     Distance unit
                   </p>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>
+                  <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>
                     Currently showing in <strong>{distanceUnit}</strong>
                   </p>
                 </div>
@@ -158,7 +160,7 @@ export function SettingsSheet({
                         padding: "6px 14px",
                         borderRadius: 20,
                         border: "none",
-                        fontFamily: "'DM Sans', sans-serif",
+                        fontFamily: "'Rajdhani', sans-serif",
                         fontWeight: 600,
                         fontSize: 13,
                         cursor: "pointer",
@@ -176,10 +178,10 @@ export function SettingsSheet({
               {/* Dark mode */}
               <div style={{ display: "flex", alignItems: "center", padding: "10px 16px" }}>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: C.text, margin: 0 }}>
+                  <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, fontWeight: 600, color: C.text, margin: 0 }}>
                     Dark mode
                   </p>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>
+                  <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>
                     {darkMode ? "On — dark theme active" : "Off — light theme active"}
                   </p>
                 </div>
@@ -193,19 +195,19 @@ export function SettingsSheet({
             onClick={() => setShowNotifications(true)}
             style={{ display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: `1px solid var(--gc-border)`, cursor: "pointer" }}
           >
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>Notifications</span>
+            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>Notifications</span>
             <span style={{ color: C.muted, fontSize: 13 }}>›</span>
           </div>
 
           {/* Privacy row */}
           <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", cursor: "pointer" }}>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>Privacy</span>
+            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.text, flex: 1 }}>Privacy</span>
             <span style={{ color: C.muted, fontSize: 13 }}>›</span>
           </div>
         </div>
 
         {/* Vehicle section */}
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>
           Vehicle
         </p>
         <div style={{ background: C.sage, borderRadius: 14, marginBottom: 10, overflow: "hidden" }}>
@@ -217,7 +219,7 @@ export function SettingsSheet({
               style={{
                 width: "100%", background: "none", border: "none",
                 borderBottom: `1px solid var(--gc-border)`,
-                padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
+                padding: "14px 16px", fontFamily: "'Rajdhani', sans-serif",
                 fontSize: 14, color: C.text, cursor: "pointer", textAlign: "left",
                 display: "flex", alignItems: "center", gap: 10,
               }}
@@ -233,7 +235,7 @@ export function SettingsSheet({
             className="gari-press"
             style={{
               width: "100%", background: "none", border: "none",
-              padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
+              padding: "14px 16px", fontFamily: "'Rajdhani', sans-serif",
               fontSize: 14, color: C.text, cursor: "pointer", textAlign: "left",
               display: "flex", alignItems: "center", gap: 10,
               ...(canEditVehicle ? {} : {}),
@@ -251,7 +253,7 @@ export function SettingsSheet({
               style={{
                 width: "100%", background: "none", border: "none",
                 borderTop: `1px solid var(--gc-border)`,
-                padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
+                padding: "14px 16px", fontFamily: "'Rajdhani', sans-serif",
                 fontSize: 14, color: "#C0392B", cursor: "pointer", textAlign: "left",
                 display: "flex", alignItems: "center", gap: 10,
               }}
@@ -268,7 +270,7 @@ export function SettingsSheet({
           className="gari-press"
           style={{
             width: "100%", background: "none", border: `1.5px solid var(--gc-border)`,
-            borderRadius: 14, padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
+            borderRadius: 14, padding: "14px 16px", fontFamily: "'Rajdhani', sans-serif",
             fontSize: 14, color: "#C0392B", cursor: "pointer", textAlign: "left",
             display: "flex", alignItems: "center", gap: 10,
           }}
@@ -326,7 +328,7 @@ export function SettingsSheet({
               marginBottom: 48,
             }}
           >
-            <div style={{ fontSize: 48, marginBottom: 20 }}>🔔</div>
+            <div style={{ marginBottom: 20 }}><BellIcon size={48} color="#6B7C6D" strokeWidth={1.6} /></div>
             <p style={{
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700,
@@ -338,7 +340,7 @@ export function SettingsSheet({
               Chill out buddy
             </p>
             <p style={{
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Rajdhani', sans-serif",
               fontSize: 15,
               color: C.muted,
               margin: 0,
@@ -388,6 +390,9 @@ function EditVehicleSheet({
     mileage: vehicle.mileage != null ? String(vehicle.mileage) : "",
     vin: vehicle.vin ?? "",
   });
+  const [paintName, setPaintName] = useState<string | null>(vehicle.paint_name ?? null);
+  const [paintHex, setPaintHex] = useState<string | null>(vehicle.paint_code ?? null);
+  const isCustomPaint = !!paintName && !PAINT_OPTIONS.some((p) => p.name === paintName);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -408,6 +413,8 @@ function EditVehicleSheet({
         license_plate: form.license_plate.trim() || null,
         mileage: form.mileage.trim() ? (parseInt(form.mileage.trim(), 10) || null) : null,
         vin: form.vin.trim() ? form.vin.trim().toUpperCase() : null,
+        paint_name: paintName,
+        paint_code: paintHex,
       });
       await onSaved();
     } catch (e) {
@@ -420,11 +427,11 @@ function EditVehicleSheet({
   const inputStyle: React.CSSProperties = {
     width: "100%", background: "var(--gc-bg)",
     border: `1.5px solid var(--gc-border)`, borderRadius: 12,
-    padding: "12px 14px", fontFamily: "'DM Sans', sans-serif",
+    padding: "12px 14px", fontFamily: "'Rajdhani', sans-serif",
     fontSize: 15, color: C.text, outline: "none", boxSizing: "border-box",
   };
   const labelStyle: React.CSSProperties = {
-    fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted,
+    fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted,
     margin: "0 0 4px", letterSpacing: "0.04em",
   };
 
@@ -463,6 +470,50 @@ function EditVehicleSheet({
             </div>
           </div>
           <div>
+            <p style={labelStyle}>Color{paintName ? ` · ${paintName}` : ""}</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {PAINT_OPTIONS.map((p) => {
+                const selected = paintName === p.name;
+                return (
+                  <button
+                    key={p.name}
+                    type="button"
+                    aria-label={p.name}
+                    onClick={() => {
+                      setPaintName(selected ? null : p.name);
+                      setPaintHex(selected ? null : p.hex);
+                    }}
+                    style={{
+                      width: 30, height: 30, borderRadius: "50%", background: p.hex, cursor: "pointer", padding: 0,
+                      border: selected ? `2.5px solid ${C.green}` : `1.5px solid var(--gc-border)`,
+                      boxShadow: selected ? "0 0 0 2px var(--gc-bg) inset" : "none",
+                    }}
+                  />
+                );
+              })}
+              {/* Custom color */}
+              <label
+                aria-label="Custom color"
+                title="Custom color"
+                style={{
+                  position: "relative", width: 30, height: 30, borderRadius: "50%", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: isCustomPaint && paintHex ? paintHex : "conic-gradient(from 0deg, #C0392B, #E8C33C, #1F6B2E, #2D6CB5, #6B4A2B, #C0392B)",
+                  border: isCustomPaint ? `2.5px solid ${C.green}` : `1.5px solid var(--gc-border)`,
+                  boxShadow: isCustomPaint ? "0 0 0 2px var(--gc-bg) inset" : "none",
+                }}
+              >
+                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: "#FFFFFF", lineHeight: 1, textShadow: "0 0 2px rgba(0,0,0,0.4)" }}>+</span>
+                <input
+                  type="color"
+                  value={paintHex ?? "#1F6B2E"}
+                  onChange={(e) => { setPaintName("Custom"); setPaintHex(e.target.value); }}
+                  style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%", padding: 0, border: "none" }}
+                />
+              </label>
+            </div>
+          </div>
+          <div>
             <p style={labelStyle}>License plate</p>
             <input style={inputStyle} value={form.license_plate} onChange={(e) => set("license_plate", e.target.value)} placeholder="ABC-1234" />
           </div>
@@ -476,7 +527,7 @@ function EditVehicleSheet({
           </div>
 
           {err && (
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#C0392B", margin: 0 }}>{err}</p>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#C0392B", margin: 0 }}>{err}</p>
           )}
 
           <button
@@ -510,15 +561,15 @@ function ConfirmDeleteVehicle({
     <div onClick={onCancel} style={{ position: "fixed", inset: 0, zIndex: 240, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: C.bg, borderRadius: 18, padding: 24, width: "100%", maxWidth: 380, boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
         <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(192,57,43,0.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
-          <span style={{ fontSize: 24 }}>⚠️</span>
+          <AlertTriangleIcon size={24} color="#C0392B" strokeWidth={2} />
         </div>
         <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 22, color: C.text, margin: "0 0 8px" }}>
           Remove this vehicle?
         </h3>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, lineHeight: 1.55, margin: "0 0 8px" }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.muted, lineHeight: 1.55, margin: "0 0 8px" }}>
           You're about to permanently remove <strong style={{ color: C.text }}>{vehicleLabel}</strong> from your garage.
         </p>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#C0392B", lineHeight: 1.55, margin: "0 0 20px" }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#C0392B", lineHeight: 1.55, margin: "0 0 20px" }}>
           All documents, expenses, and history tied to this vehicle will be lost. This can't be undone.
         </p>
         <div style={{ display: "flex", gap: 10 }}>
@@ -528,7 +579,7 @@ function ConfirmDeleteVehicle({
             style={{
               flex: 1, height: 48, borderRadius: 12,
               border: `1.5px solid var(--gc-border)`, background: "none",
-              fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 14,
+              fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: 14,
               color: C.text, cursor: "pointer",
             }}
           >
@@ -540,7 +591,7 @@ function ConfirmDeleteVehicle({
             style={{
               flex: 1, height: 48, borderRadius: 12, border: "none",
               background: "#C0392B", color: "#fff", cursor: busy ? "default" : "pointer",
-              fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 14,
+              fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 14,
               opacity: busy ? 0.7 : 1,
             }}
           >

@@ -69,7 +69,7 @@ export function UploadDocumentModal({ userId, vehicleId, onClose, onUploaded }: 
                 border: "none",
                 borderRadius: 999,
                 padding: "6px 14px",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Rajdhani', sans-serif",
                 fontSize: 13,
                 cursor: "pointer",
                 fontWeight: type === t ? 500 : 400,
@@ -85,14 +85,14 @@ export function UploadDocumentModal({ userId, vehicleId, onClose, onUploaded }: 
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           style={{
             width: "100%",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Rajdhani', sans-serif",
             fontSize: 14,
             color: "#1A1A1A",
             marginBottom: 16,
           }}
         />
         {error && (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#E24B4A", marginBottom: 12 }}>{error}</p>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#E24B4A", marginBottom: 12 }}>{error}</p>
         )}
         <AmberButton fullWidth onClick={handleUpload} disabled={loading}>
           {loading ? "UPLOADING..." : "UPLOAD"}

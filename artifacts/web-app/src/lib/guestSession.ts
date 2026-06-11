@@ -14,6 +14,12 @@ export interface GuestSession {
   scanned_at: string;
   is_guest: true;
   is_manual_entry?: boolean;
+  /* Personalization */
+  nickname?: string | null;
+  paint_name?: string | null;
+  paint_code?: string | null;
+  license_plate?: string | null;
+  mileage?: number | null;
 }
 
 export type GuestSessionInput = Omit<GuestSession, "scanned_at" | "is_guest">;
@@ -44,6 +50,21 @@ export function setGuestSession(input: GuestSessionInput): GuestSession {
   return full;
 }
 
+/** Merge partial personalization fields into the existing guest session. */
+export function updateGuestSession(
+  patch: Partial<Omit<GuestSession, "scanned_at" | "is_guest">>,
+): GuestSession | null {
+  const current = getGuestSession();
+  if (!current) return null;
+  const next: GuestSession = { ...current, ...patch };
+  try {
+    localStorage.setItem(KEY, JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
+  return next;
+}
+
 export function clearGuestSession(): void {
   try {
     localStorage.removeItem(KEY);
@@ -52,12 +73,18 @@ export function clearGuestSession(): void {
   }
 }
 
+/** Default display name when the user hasn't set a nickname. */
+export function guestDisplayName(g: GuestSession): string {
+  if (g.nickname && g.nickname.trim()) return g.nickname.trim();
+  const modelLabel = (g.model && g.model.trim()) || "";
+  return modelLabel ? `Your ${modelLabel}` : "Your Car";
+}
+
 export function guestSessionToVehicle(g: GuestSession): Vehicle {
-  const modelLabel = (g.model && g.model.trim()) || "Car";
   return {
     id: "guest-vehicle",
     user_id: "guest",
-    nickname: `Your ${modelLabel}`,
+    nickname: guestDisplayName(g),
     vin: g.vin,
     make: g.make,
     model: g.model,
@@ -66,12 +93,12 @@ export function guestSessionToVehicle(g: GuestSession): Vehicle {
     engine: g.engine,
     fuel_type: g.fuel_type,
     body_style: g.body_style,
-    mileage: null,
-    license_plate: null,
+    mileage: g.mileage ?? null,
+    license_plate: g.license_plate ?? null,
     country: null,
     mileage_unit: "km",
-    paint_name: null,
-    paint_code: null,
+    paint_name: g.paint_name ?? null,
+    paint_code: g.paint_code ?? null,
     created_at: g.scanned_at,
   };
 }

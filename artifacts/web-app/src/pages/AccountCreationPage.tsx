@@ -21,7 +21,7 @@ function inputStyle(focused: boolean): React.CSSProperties {
     border: `1.5px solid ${focused ? ACCENT : FIELD_BORDER}`,
     borderRadius: 12,
     padding: "14px 16px",
-    fontFamily: "'DM Sans', sans-serif",
+    fontFamily: "'Rajdhani', sans-serif",
     fontSize: 15,
     color: TEXT,
     outline: "none",
@@ -227,7 +227,7 @@ export default function AccountCreationPage() {
             color: "#FFFFFF",
             padding: "10px 18px",
             borderRadius: 12,
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Rajdhani', sans-serif",
             fontSize: 14,
             zIndex: 300,
             boxShadow: "0 4px 12px rgba(0,0,0,0.18)",
@@ -254,7 +254,7 @@ export default function AccountCreationPage() {
         </span>
         <p
           style={{
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Rajdhani', sans-serif",
             fontSize: 13,
             color: MUTED,
             margin: "4px 0 0",
@@ -270,7 +270,7 @@ export default function AccountCreationPage() {
       {/* Guest car summary */}
       {mode === "signup" && guest && (
         <div style={{ marginBottom: 20 }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: "0 0 8px" }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, margin: "0 0 8px" }}>
             We'll save this to your account:
           </p>
           <div
@@ -280,11 +280,11 @@ export default function AccountCreationPage() {
               padding: "12px 16px",
             }}
           >
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 14, color: TEXT, margin: 0 }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: 14, color: TEXT, margin: 0 }}>
               {guestNickname}
             </p>
             {yearMakeModel && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: "2px 0 0" }}>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, margin: "2px 0 0" }}>
                 {yearMakeModel}
               </p>
             )}
@@ -305,7 +305,7 @@ export default function AccountCreationPage() {
           autoComplete="email"
         />
         {emailError && (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>
             {emailError}{" "}
             {emailError.includes("registered") && (
               <button
@@ -320,7 +320,7 @@ export default function AccountCreationPage() {
                   color: ACCENT,
                   cursor: "pointer",
                   padding: 0,
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'Rajdhani', sans-serif",
                   fontSize: 12,
                   textDecoration: "underline",
                 }}
@@ -339,7 +339,7 @@ export default function AccountCreationPage() {
           autoComplete={mode === "signup" ? "new-password" : "current-password"}
         />
         {passwordError && (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>
             {passwordError}
           </p>
         )}
@@ -354,14 +354,14 @@ export default function AccountCreationPage() {
               autoComplete="new-password"
             />
             {(confirmError || (!passwordsMatch && confirm)) && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: ERROR, margin: "-6px 0 0" }}>
                 {confirmError ?? "Passwords don't match"}
               </p>
             )}
 
             {guest && (
               <>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: MUTED, margin: "8px 0 -4px" }}>
+                <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: MUTED, margin: "8px 0 -4px" }}>
                   Give your car a nickname
                 </p>
                 <GariField
@@ -378,7 +378,7 @@ export default function AccountCreationPage() {
         {formError && (
           <p
             style={{
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Rajdhani', sans-serif",
               fontSize: 12,
               color: formError.startsWith("Almost") ? ACCENT : ERROR,
               margin: "4px 0 0",
@@ -427,7 +427,7 @@ export default function AccountCreationPage() {
         style={{
           textAlign: "center",
           marginTop: 20,
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Rajdhani', sans-serif",
           fontSize: 13,
           color: MUTED,
         }}
@@ -448,7 +448,7 @@ export default function AccountCreationPage() {
             cursor: "pointer",
             color: TEXT,
             fontWeight: 600,
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Rajdhani', sans-serif",
             fontSize: 13,
             padding: 0,
             textDecoration: "underline",

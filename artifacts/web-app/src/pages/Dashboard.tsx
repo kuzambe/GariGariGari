@@ -1,10 +1,12 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, type ComponentType } from "react";
 import { useLocation } from "wouter";
+import { StorefrontIcon, TagIcon, PackageIcon, WrenchIcon, ChevronDownIcon, CloseIcon, type IconProps } from "@/components/ui/icons";
 import { useAuth } from "@/context/AuthContext";
 import { useVehicle } from "@/context/VehicleContext";
 import { getDocumentsByVehicleId, Document, uploadDocument, deleteDocumentWithFile } from "@/lib/api/documents";
 import { getExpensesByVehicleId, Expense, addExpense } from "@/lib/api/expenses";
-import { Vehicle, updateVehicle } from "@/lib/api/vehicles";
+import { Vehicle, updateVehicle, vehicleDisplayName } from "@/lib/api/vehicles";
+import { updateGuestSession } from "@/lib/guestSession";
 import { saveReminder } from "@/lib/reminders";
 import { addDays, formatDate } from "@/lib/documentParser";
 import type { ConfirmedDocument } from "@/components/documents/ParsedDocumentSheet";
@@ -137,7 +139,7 @@ function HealthGauge({ pct = 90 }: { pct?: number }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", padding: "0 24px", boxSizing: "border-box" }}>
       {/* Label above bar */}
       <p style={{
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Rajdhani', sans-serif",
         fontSize: 11,
         color: C.muted,
         margin: 0,
@@ -229,7 +231,7 @@ function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
 
   return (
     <div style={{ padding: "0 20px" }}>
-      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px", textAlign: "center" }}>
+      <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px", textAlign: "center" }}>
         Quick Access
       </p>
 
@@ -254,7 +256,7 @@ function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
           >
             <span style={{ fontSize: 26, color: C.green, lineHeight: 1, fontWeight: 300 }}>+</span>
           </button>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
             Add a shortcut
           </p>
         </div>
@@ -387,7 +389,7 @@ function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 20px" }} />
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 8px" }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 8px" }}>
               Add to quick access
             </p>
             <div style={{ background: C.sage, borderRadius: 14, overflow: "hidden" }}>
@@ -407,7 +409,7 @@ function ShortcutGrid({ onGoToPage }: { onGoToPage: (p: number) => void }) {
                     textAlign: "left",
                   }}
                 >
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.text, flex: 1 }}>{opt.label}</span>
+                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 15, color: C.text, flex: 1 }}>{opt.label}</span>
                   <span style={{ color: C.border, fontSize: 18 }}>›</span>
                 </button>
               ))}
@@ -568,7 +570,7 @@ function VinCopy({ vin }: { vin: string }) {
       }}
     >
       <span style={{
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Rajdhani', sans-serif",
         fontWeight: 700,
         fontSize: 13,
         color: copied ? C.green : C.text,
@@ -577,7 +579,7 @@ function VinCopy({ vin }: { vin: string }) {
       }}>
         {copied ? "Copied!" : (
           <>
-            <span style={{ color: C.muted, fontWeight: 500, marginRight: 6 }}>VIN</span>
+            <span style={{ color: C.muted, fontWeight: 600, marginRight: 6 }}>VIN</span>
             {vin}
           </>
         )}
@@ -589,6 +591,93 @@ function VinCopy({ vin }: { vin: string }) {
         </svg>
       )}
     </button>
+  );
+}
+
+/* ── MILEAGE SHEET ─────────────────────────────────── */
+function MileageSheet({
+  vehicle, isGuest, onClose, onSaved,
+}: {
+  vehicle: Vehicle;
+  isGuest: boolean;
+  onClose: () => void;
+  onSaved: () => void | Promise<void>;
+}) {
+  const unit = vehicle.mileage_unit ?? "km";
+  const current = vehicle.mileage ?? null;
+  const [value, setValue] = useState(current != null ? String(current) : "");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function handleSave() {
+    const parsed = parseInt(value.trim(), 10);
+    if (!value.trim() || isNaN(parsed) || parsed < 0) { setErr("Enter a valid mileage."); return; }
+    if (current != null && parsed < current) {
+      setErr(`Mileage can't be lower than the current ${current.toLocaleString("en-US")} ${unit}.`);
+      return;
+    }
+    setSaving(true); setErr(null);
+    try {
+      if (isGuest) {
+        updateGuestSession({ mileage: parsed });
+      } else {
+        await updateVehicle(vehicle.id, { mileage: parsed });
+      }
+      await onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't update mileage.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 230, background: "rgba(0,0,0,0.55)", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: C.bg, borderRadius: "22px 22px 0 0", padding: "12px 24px 32px", maxWidth: 430, width: "100%", margin: "0 auto", boxShadow: "0 -4px 32px rgba(0,0,0,0.25)" }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 16px" }} />
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+          <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 22, color: C.text, margin: 0, flex: 1 }}>Update mileage</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.muted, fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }}>×</button>
+        </div>
+        {current != null && (
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 16px" }}>
+            Current: {current.toLocaleString("en-US")} {unit}
+          </p>
+        )}
+        <div style={{ position: "relative", marginTop: current != null ? 0 : 12 }}>
+          <input
+            autoFocus
+            type="number"
+            inputMode="numeric"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="0"
+            style={{
+              width: "100%", boxSizing: "border-box", background: "var(--gc-bg)",
+              border: `1.5px solid var(--gc-border)`, borderRadius: 12,
+              padding: "14px 56px 14px 14px", fontFamily: "'Rajdhani', sans-serif",
+              fontWeight: 700, fontSize: 18, color: C.text, outline: "none",
+            }}
+          />
+          <span style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: 14, color: C.muted }}>{unit}</span>
+        </div>
+        {err && (
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#C0392B", margin: "12px 0 0" }}>{err}</p>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            marginTop: 18, width: "100%", height: 52, borderRadius: 14, border: "none",
+            background: C.green, color: "#fff", cursor: saving ? "default" : "pointer",
+            fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18,
+            letterSpacing: "0.04em", opacity: saving ? 0.6 : 1,
+          }}
+        >
+          {saving ? "SAVING…" : "SAVE"}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -689,6 +778,7 @@ function LandingPage({
   onGoToPage,
   onOpenSettings,
   onSwitchVehicle,
+  onVehicleUpdated,
 }: {
   vehicle: Vehicle;
   vehicles: Vehicle[];
@@ -703,9 +793,11 @@ function LandingPage({
   onGoToPage: (p: number) => void;
   onOpenSettings: () => void;
   onSwitchVehicle: (v: Vehicle) => void;
+  onVehicleUpdated: () => void | Promise<void>;
 }) {
   const { distanceUnit } = usePreferences();
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
+  const [showMileageSheet, setShowMileageSheet] = useState(false);
   const [carGptInput, setCarGptInput] = useState("");
   // hydratedVehicleRef tracks which vehicle's history is currently in state.
   // Initialized synchronously so the save guard is accurate from the first render.
@@ -1008,7 +1100,7 @@ function LandingPage({
 
   const make = vehicle.make ? vehicle.make.charAt(0).toUpperCase() + vehicle.make.slice(1).toLowerCase() : "";
   const yearMakeModel = [vehicle.year, make, vehicle.model].filter(Boolean).join(" ");
-  const title = vehicle.nickname?.trim() || "Your car";
+  const title = vehicleDisplayName(vehicle);
   const subtitle = yearMakeModel;
 
   return (
@@ -1037,7 +1129,7 @@ function LandingPage({
                 aria-label="Switch vehicle"
                 style={{ background: "none", border: "none", padding: "4px 2px 0", cursor: "pointer", display: "flex", alignItems: "flex-end" }}
               >
-                <span style={{ fontSize: 22, color: C.muted, lineHeight: 1, fontFamily: "system-ui" }}>⌄</span>
+                <ChevronDownIcon size={20} color={C.muted} strokeWidth={2} />
               </button>
             )}
           </div>
@@ -1078,7 +1170,7 @@ function LandingPage({
             <span
               style={{
                 flex: 1,
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Rajdhani', sans-serif",
                 fontSize: 13,
                 color: "#1F6B2E",
                 lineHeight: 1.35,
@@ -1108,13 +1200,23 @@ function LandingPage({
         )}
 
 
-        {/* Mileage — odometer */}
-        {vehicle.mileage != null && (
-          <Odometer
-            value={distanceUnit === "mi" ? Math.round(vehicle.mileage * 0.621371) : vehicle.mileage}
-            unit={distanceUnit === "mi" ? "mi" : (vehicle.mileage_unit ?? "km")}
-          />
-        )}
+        {/* Mileage — odometer (tap to update) */}
+        <button
+          onClick={() => setShowMileageSheet(true)}
+          aria-label="Update mileage"
+          style={{ background: "none", border: "none", padding: 0, margin: 0, cursor: "pointer", display: "block" }}
+        >
+          {vehicle.mileage != null ? (
+            <Odometer
+              value={distanceUnit === "mi" ? Math.round(vehicle.mileage * 0.621371) : vehicle.mileage}
+              unit={distanceUnit === "mi" ? "mi" : (vehicle.mileage_unit ?? "km")}
+            />
+          ) : (
+            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: 14, color: "#1F6B2E", letterSpacing: "0.03em", display: "inline-block", marginTop: 10 }}>
+              + Add mileage
+            </span>
+          )}
+        </button>
 
         {/* VIN — tap to copy */}
         {vehicle.vin && (
@@ -1154,7 +1256,7 @@ function LandingPage({
             <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text, margin: 0 }}>
               Car-GPT
             </p>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {carGptMessages.length > 0
                 ? "Continue chat"
                 : `Ask anything about ${title}`}
@@ -1186,7 +1288,7 @@ function LandingPage({
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 20px" }} />
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 10px" }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 10px" }}>
               Your Vehicles
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1213,7 +1315,7 @@ function LandingPage({
                     <div style={{ flex: 1 }}>
                       <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, color: C.text, margin: 0 }}>{v.nickname}</p>
                       {yearMakeModel && (
-                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>{yearMakeModel}</p>
+                        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>{yearMakeModel}</p>
                       )}
                     </div>
                     {isActive && (
@@ -1225,6 +1327,16 @@ function LandingPage({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Mileage update sheet */}
+      {showMileageSheet && (
+        <MileageSheet
+          vehicle={vehicle}
+          isGuest={isGuest}
+          onClose={() => setShowMileageSheet(false)}
+          onSaved={async () => { setShowMileageSheet(false); await onVehicleUpdated(); }}
+        />
       )}
 
       {/* Car-GPT chat sheet */}
@@ -1280,7 +1392,7 @@ function LandingPage({
               <button
                 onClick={() => setCarGptOpen(false)}
                 aria-label="Close chat"
-                style={{ background: "none", border: "none", padding: "4px 8px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted }}
+                style={{ background: "none", border: "none", padding: "4px 8px", cursor: "pointer", fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: C.muted }}
               >
                 Close
               </button>
@@ -1289,7 +1401,7 @@ function LandingPage({
             {/* Conversation — scrolls */}
             <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 2, marginBottom: 10 }}>
               {carGptMessages.length === 0 ? (
-                <p style={{ textAlign: "center", color: C.muted, fontFamily: "'DM Sans', sans-serif", fontSize: 13, margin: "auto 0" }}>
+                <p style={{ textAlign: "center", color: C.muted, fontFamily: "'Rajdhani', sans-serif", fontSize: 13, margin: "auto 0" }}>
                   Ask anything about {title}.
                 </p>
               ) : (
@@ -1303,7 +1415,7 @@ function LandingPage({
                         borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
                         background: isUser ? "#1F6B2E" : C.sage,
                         color: isUser ? "#FFFFFF" : C.text,
-                        fontFamily: "'DM Sans', sans-serif",
+                        fontFamily: "'Rajdhani', sans-serif",
                         fontSize: 13,
                         lineHeight: 1.5,
                         boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
@@ -1334,7 +1446,7 @@ function LandingPage({
                   border: `1.5px solid ${C.border}`,
                   borderRadius: 14,
                   padding: "13px 48px 13px 16px",
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'Rajdhani', sans-serif",
                   fontSize: 14,
                   color: C.text,
                   outline: "none",
@@ -1371,7 +1483,7 @@ function LandingPage({
           <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text, margin: 0 }}>
             {roadside ? roadside.provider_name : "Roadside Assistance"}
           </p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
             {roadside ? (roadside.phone ?? "Tap to view") : "Add plan and coverage"}
           </p>
         </button>
@@ -1383,7 +1495,7 @@ function LandingPage({
           <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text, margin: 0 }}>
             {mechanic ? (mechanic.shop_name || mechanic.name) : "Mechanic"}
           </p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
             {mechanic ? (mechanic.phone ?? "Tap to view") : "Add regular mechanic info"}
           </p>
         </button>
@@ -1410,11 +1522,11 @@ function LandingPage({
             {mechMode === "view" && mechanic ? (
               <>
                 <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 24, color: "#0D1C0E", margin: "0 0 4px" }}>{mechanic.name}</h2>
-                {mechanic.shop_name && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, color: "#6B7C6D", margin: "0 0 8px" }}>{mechanic.shop_name}</p>}
-                {mechanic.phone && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", margin: "0 0 6px" }}>{mechanic.phone}</p>}
-                {mechanic.address && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", margin: "0 0 6px" }}>{mechanic.address}</p>}
-                {mechanic.hours && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7C6D", margin: "0 0 6px" }}>{mechanic.hours}</p>}
-                {mechanic.notes && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7C6D", margin: "0 0 16px" }}>{mechanic.notes}</p>}
+                {mechanic.shop_name && <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 16, color: "#6B7C6D", margin: "0 0 8px" }}>{mechanic.shop_name}</p>}
+                {mechanic.phone && <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#6B7C6D", margin: "0 0 6px" }}>{mechanic.phone}</p>}
+                {mechanic.address && <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#6B7C6D", margin: "0 0 6px" }}>{mechanic.address}</p>}
+                {mechanic.hours && <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#6B7C6D", margin: "0 0 6px" }}>{mechanic.hours}</p>}
+                {mechanic.notes && <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#6B7C6D", margin: "0 0 16px" }}>{mechanic.notes}</p>}
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
                   {mechanic.phone && (
                     <a href={toTelHref(mechanic.phone)} style={{ display: "block", textAlign: "center", background: "#1F6B2E", color: "#fff", borderRadius: 14, padding: "15px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "0.04em", textDecoration: "none", boxSizing: "border-box" }}>
@@ -1424,23 +1536,23 @@ function LandingPage({
                   <button onClick={startMechEdit} style={{ width: "100%", background: "none", border: "1.5px solid #1F6B2E", borderRadius: 14, padding: "12px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: "#1F6B2E", cursor: "pointer", letterSpacing: "0.04em" }}>
                     Edit
                   </button>
-                  <button onClick={() => { setMechConfirmDelete(false); setMechSheetOpen(false); }} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", padding: "8px 0" }}>
+                  <button onClick={() => { setMechConfirmDelete(false); setMechSheetOpen(false); }} style={{ background: "none", border: "none", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", padding: "8px 0" }}>
                     Cancel
                   </button>
                   {!mechConfirmDelete ? (
-                    <button onClick={() => setMechConfirmDelete(true)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#C0392B", cursor: "pointer", padding: "4px 0", textDecoration: "underline" }}>
+                    <button onClick={() => setMechConfirmDelete(true)} style={{ background: "none", border: "none", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#C0392B", cursor: "pointer", padding: "4px 0", textDecoration: "underline" }}>
                       Remove mechanic
                     </button>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px", background: "#FBEAE7", borderRadius: 12 }}>
-                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#0D1C0E", margin: 0, textAlign: "center" }}>
+                      <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#0D1C0E", margin: 0, textAlign: "center" }}>
                         Remove this mechanic? This cannot be undone.
                       </p>
                       <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => setMechConfirmDelete(false)} disabled={mechDeleting} style={{ flex: 1, background: "none", border: "1.5px solid #6B7C6D", borderRadius: 10, padding: "10px", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: mechDeleting ? "default" : "pointer" }}>
+                        <button onClick={() => setMechConfirmDelete(false)} disabled={mechDeleting} style={{ flex: 1, background: "none", border: "1.5px solid #6B7C6D", borderRadius: 10, padding: "10px", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: mechDeleting ? "default" : "pointer" }}>
                           Cancel
                         </button>
-                        <button onClick={handleDeleteMech} disabled={mechDeleting} style={{ flex: 1, background: "#C0392B", border: "none", borderRadius: 10, padding: "10px", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#fff", cursor: mechDeleting ? "default" : "pointer", opacity: mechDeleting ? 0.7 : 1 }}>
+                        <button onClick={handleDeleteMech} disabled={mechDeleting} style={{ flex: 1, background: "#C0392B", border: "none", borderRadius: 10, padding: "10px", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#fff", cursor: mechDeleting ? "default" : "pointer", opacity: mechDeleting ? 0.7 : 1 }}>
                           {mechDeleting ? "Removing…" : "Remove"}
                         </button>
                       </div>
@@ -1462,15 +1574,15 @@ function LandingPage({
                     { label: "Notes", val: mechNotes, set: setMechNotes, ph: "Any notes…" },
                   ] as { label: string; val: string; set: (v: string) => void; ph: string; type?: string }[]).map(({ label, val, set, ph, type }) => (
                     <div key={label}>
-                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#6B7C6D", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>{label}</p>
-                      <input type={type ?? "text"} value={val} placeholder={ph} onChange={(e) => set(e.target.value)} style={{ width: "100%", background: "#F4F7F2", border: "1.5px solid #D4DDD5", borderRadius: 12, padding: "13px 16px", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#0D1C0E", outline: "none", boxSizing: "border-box" }} />
+                      <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: "#6B7C6D", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>{label}</p>
+                      <input type={type ?? "text"} value={val} placeholder={ph} onChange={(e) => set(e.target.value)} style={{ width: "100%", background: "#F4F7F2", border: "1.5px solid #D4DDD5", borderRadius: 12, padding: "13px 16px", fontFamily: "'Rajdhani', sans-serif", fontSize: 15, color: "#0D1C0E", outline: "none", boxSizing: "border-box" }} />
                     </div>
                   ))}
                 </div>
                 <button onClick={handleSaveMech} disabled={mechSaving || !mechName.trim()} style={{ width: "100%", background: "#1F6B2E", color: "#fff", border: "none", borderRadius: 14, padding: "15px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "0.04em", cursor: mechSaving || !mechName.trim() ? "default" : "pointer", opacity: mechSaving || !mechName.trim() ? 0.7 : 1, transition: "opacity 0.15s", marginBottom: 12 }}>
                   {mechSaving ? "Saving…" : "Save"}
                 </button>
-                <button onClick={() => mechMode === "edit" ? setMechMode("view") : setMechSheetOpen(false)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", width: "100%", padding: "8px 0" }}>
+                <button onClick={() => mechMode === "edit" ? setMechMode("view") : setMechSheetOpen(false)} style={{ background: "none", border: "none", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", width: "100%", padding: "8px 0" }}>
                   Cancel
                 </button>
               </>
@@ -1497,24 +1609,24 @@ function LandingPage({
                 <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 24, color: "#0D1C0E", margin: "0 0 12px" }}>{roadside.provider_name}</h2>
                 {roadside.member_number && (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", margin: 0 }}>Member # {roadside.member_number}</p>
+                    <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#6B7C6D", margin: 0 }}>Member # {roadside.member_number}</p>
                     <button
                       onClick={() => { navigator.clipboard.writeText(roadside!.member_number!).then(() => { setMemberCopied(true); setTimeout(() => setMemberCopied(false), 1800); }).catch(() => {}); }}
                       style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center" }}
                       title="Copy member number"
                     >
                       {memberCopied
-                        ? <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#1F6B2E" }}>Copied!</span>
+                        ? <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#1F6B2E" }}>Copied!</span>
                         : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4" y="1" width="9" height="9" rx="1.5" stroke="#6B7C6D" strokeWidth="1.5"/><path d="M1 5v7a1 1 0 001 1h7" stroke="#6B7C6D" strokeWidth="1.5" strokeLinecap="round"/></svg>
                       }
                     </button>
                   </div>
                 )}
-                {roadside.phone && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", margin: "0 0 8px" }}>{roadside.phone}</p>}
+                {roadside.phone && <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#6B7C6D", margin: "0 0 8px" }}>{roadside.phone}</p>}
                 {roadside.coverage_notes && (
                   <div style={{ marginBottom: 8 }}>
                     {roadside.coverage_notes.split(/[\n,]/).map((n) => n.trim()).filter(Boolean).map((n, i) => (
-                      <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#6B7C6D", margin: "0 0 4px" }}>• {n}</p>
+                      <p key={i} style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#6B7C6D", margin: "0 0 4px" }}>• {n}</p>
                     ))}
                   </div>
                 )}
@@ -1527,23 +1639,23 @@ function LandingPage({
                   <button onClick={startRoadEdit} style={{ width: "100%", background: "none", border: "1.5px solid #1F6B2E", borderRadius: 14, padding: "12px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: "#1F6B2E", cursor: "pointer", letterSpacing: "0.04em" }}>
                     Edit
                   </button>
-                  <button onClick={() => { setRoadConfirmDelete(false); setRoadSheetOpen(false); }} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", padding: "8px 0" }}>
+                  <button onClick={() => { setRoadConfirmDelete(false); setRoadSheetOpen(false); }} style={{ background: "none", border: "none", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", padding: "8px 0" }}>
                     Cancel
                   </button>
                   {!roadConfirmDelete ? (
-                    <button onClick={() => setRoadConfirmDelete(true)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#C0392B", cursor: "pointer", padding: "4px 0", textDecoration: "underline" }}>
+                    <button onClick={() => setRoadConfirmDelete(true)} style={{ background: "none", border: "none", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#C0392B", cursor: "pointer", padding: "4px 0", textDecoration: "underline" }}>
                       Remove roadside assistance
                     </button>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px", background: "#FBEAE7", borderRadius: 12 }}>
-                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#0D1C0E", margin: 0, textAlign: "center" }}>
+                      <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#0D1C0E", margin: 0, textAlign: "center" }}>
                         Remove this roadside assistance plan? This cannot be undone.
                       </p>
                       <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => setRoadConfirmDelete(false)} disabled={roadDeleting} style={{ flex: 1, background: "none", border: "1.5px solid #6B7C6D", borderRadius: 10, padding: "10px", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: roadDeleting ? "default" : "pointer" }}>
+                        <button onClick={() => setRoadConfirmDelete(false)} disabled={roadDeleting} style={{ flex: 1, background: "none", border: "1.5px solid #6B7C6D", borderRadius: 10, padding: "10px", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: roadDeleting ? "default" : "pointer" }}>
                           Cancel
                         </button>
-                        <button onClick={handleDeleteRoad} disabled={roadDeleting} style={{ flex: 1, background: "#C0392B", border: "none", borderRadius: 10, padding: "10px", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#fff", cursor: roadDeleting ? "default" : "pointer", opacity: roadDeleting ? 0.7 : 1 }}>
+                        <button onClick={handleDeleteRoad} disabled={roadDeleting} style={{ flex: 1, background: "#C0392B", border: "none", borderRadius: 10, padding: "10px", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#fff", cursor: roadDeleting ? "default" : "pointer", opacity: roadDeleting ? 0.7 : 1 }}>
                           {roadDeleting ? "Removing…" : "Remove"}
                         </button>
                       </div>
@@ -1563,15 +1675,15 @@ function LandingPage({
                     { label: "Coverage Notes", val: roadCoverage, set: setRoadCoverage, ph: "e.g. Towing up to 200km, battery boost, flat tire" },
                   ] as { label: string; val: string; set: (v: string) => void; ph: string; type?: string }[]).map(({ label, val, set, ph, type }) => (
                     <div key={label}>
-                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#6B7C6D", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>{label}</p>
-                      <input type={type ?? "text"} value={val} placeholder={ph} onChange={(e) => set(e.target.value)} style={{ width: "100%", background: "#F4F7F2", border: "1.5px solid #D4DDD5", borderRadius: 12, padding: "13px 16px", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#0D1C0E", outline: "none", boxSizing: "border-box" }} />
+                      <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: "#6B7C6D", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>{label}</p>
+                      <input type={type ?? "text"} value={val} placeholder={ph} onChange={(e) => set(e.target.value)} style={{ width: "100%", background: "#F4F7F2", border: "1.5px solid #D4DDD5", borderRadius: 12, padding: "13px 16px", fontFamily: "'Rajdhani', sans-serif", fontSize: 15, color: "#0D1C0E", outline: "none", boxSizing: "border-box" }} />
                     </div>
                   ))}
                 </div>
                 <button onClick={handleSaveRoad} disabled={roadSaving || !roadProvider.trim()} style={{ width: "100%", background: "#1F6B2E", color: "#fff", border: "none", borderRadius: 14, padding: "15px 24px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "0.04em", cursor: roadSaving || !roadProvider.trim() ? "default" : "pointer", opacity: roadSaving || !roadProvider.trim() ? 0.7 : 1, transition: "opacity 0.15s", marginBottom: 12 }}>
                   {roadSaving ? "Saving…" : "Save"}
                 </button>
-                <button onClick={() => roadMode === "edit" ? setRoadMode("view") : setRoadSheetOpen(false)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", width: "100%", padding: "8px 0" }}>
+                <button onClick={() => roadMode === "edit" ? setRoadMode("view") : setRoadSheetOpen(false)} style={{ background: "none", border: "none", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#6B7C6D", cursor: "pointer", width: "100%", padding: "8px 0" }}>
                   Cancel
                 </button>
               </>
@@ -1582,7 +1694,7 @@ function LandingPage({
 
       {/* Contact save toast */}
       {contactToast && (
-        <div style={{ position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", background: "#1F6B2E", color: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, padding: "12px 24px", borderRadius: 12, zIndex: 300, boxShadow: "0 4px 20px rgba(0,0,0,0.2)", whiteSpace: "nowrap" }}>
+        <div style={{ position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", background: "#1F6B2E", color: "#fff", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, fontWeight: 600, padding: "12px 24px", borderRadius: 12, zIndex: 300, boxShadow: "0 4px 20px rgba(0,0,0,0.2)", whiteSpace: "nowrap" }}>
           {contactToast}
         </div>
       )}
@@ -1621,9 +1733,9 @@ function DocToast({ message, color }: { message: string; color: string }) {
       transform: "translateX(-50%)",
       background: color,
       color: "#fff",
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'Rajdhani', sans-serif",
       fontSize: 14,
-      fontWeight: 500,
+      fontWeight: 600,
       padding: "12px 24px",
       borderRadius: 12,
       zIndex: 500,
@@ -1932,14 +2044,14 @@ function DocumentsPage({
               {isUploading ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{ width: 16, height: 16, border: `2px solid ${C.border}`, borderTopColor: C.green, borderRadius: "50%", animation: "docSpin 0.8s linear infinite" }} />
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>Uploading…</span>
+                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted }}>Uploading…</span>
                   <style>{`@keyframes docSpin { to { transform: rotate(360deg); } }`}</style>
                 </div>
               ) : latest ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {count > 1 && (
                     <span style={{
-                      fontFamily: "'DM Sans', sans-serif",
+                      fontFamily: "'Rajdhani', sans-serif",
                       fontSize: 11,
                       fontWeight: 600,
                       color: C.green,
@@ -1951,19 +2063,19 @@ function DocumentsPage({
                       {count} files
                     </span>
                   )}
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted }}>
+                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: C.muted }}>
                     {new Date(latest.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 </div>
               ) : (
                 <span style={{
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'Rajdhani', sans-serif",
                   fontSize: 12,
                   color: C.green,
                   border: `1.5px solid ${C.green}`,
                   borderRadius: 8,
                   padding: "4px 12px",
-                  fontWeight: 500,
+                  fontWeight: 600,
                 }}>
                   {cat.type === "vehicle-handbook" ? "View" : "Add"}
                 </span>
@@ -2044,9 +2156,9 @@ function DocumentsPage({
           {/* Close button */}
           <button
             onClick={() => setViewDoc(null)}
-            style={{ position: "absolute", top: 52, left: 20, width: 44, height: 44, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}
+            style={{ position: "absolute", top: 52, left: 20, width: 44, height: 44, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}
           >
-            ✕
+            <CloseIcon size={20} color="#fff" strokeWidth={2} />
           </button>
 
           {/* Action buttons */}
@@ -2093,7 +2205,7 @@ function DocumentsPage({
             <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, margin: "0 0 10px" }}>
               Delete this document?
             </h2>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, margin: "0 0 24px", lineHeight: 1.5 }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.muted, margin: "0 0 24px", lineHeight: 1.5 }}>
               This cannot be undone.
             </p>
             <div style={{ display: "flex", gap: 12 }}>
@@ -2205,7 +2317,7 @@ function FinancesPage({
 
         {/* Monthly total */}
         <div style={{ marginBottom: 20 }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 4px" }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 4px" }}>
             Total this month
           </p>
           <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 40, color: C.text, lineHeight: 1 }}>
@@ -2229,7 +2341,7 @@ function FinancesPage({
               {EXPENSE_TYPES.map((t, i) => byType[t] > 0 && (
                 <div key={t} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                   <div style={{ width: 8, height: 8, borderRadius: 2, background: SEGMENT_COLORS[i] }} />
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted }}>{t}</span>
+                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted }}>{t}</span>
                 </div>
               ))}
             </div>
@@ -2239,7 +2351,7 @@ function FinancesPage({
         {/* Expense list */}
         <div style={{ flex: 1 }}>
           {expenses.length === 0 ? (
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", marginTop: 40 }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", marginTop: 40 }}>
               No expenses yet.
             </p>
           ) : (
@@ -2256,10 +2368,10 @@ function FinancesPage({
                   paddingRight: 4,
                 }}
               >
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, width: 60, flexShrink: 0 }}>
+                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, width: 60, flexShrink: 0 }}>
                   {new Date(exp.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </span>
-                <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>
+                <span style={{ flex: 1, fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.text }}>
                   {exp.description || exp.type.charAt(0).toUpperCase() + exp.type.slice(1)}
                 </span>
                 <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.green }}>
@@ -2296,7 +2408,7 @@ function FinancesPage({
             Scan Receipt
           </button>
           <p style={{
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Rajdhani', sans-serif",
             fontSize: 12,
             color: C.muted,
             margin: "2px 4px 0",
@@ -2331,7 +2443,7 @@ function FinancesPage({
                     border: "none",
                     borderRadius: 999,
                     padding: "6px 14px",
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'Rajdhani', sans-serif",
                     fontSize: 13,
                     cursor: "pointer",
                   }}
@@ -2357,7 +2469,7 @@ function FinancesPage({
                     border: `1.5px solid ${C.border}`,
                     borderRadius: 12,
                     padding: "13px 16px",
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'Rajdhani', sans-serif",
                     fontSize: 15,
                     color: C.text,
                     outline: "none",
@@ -2390,9 +2502,9 @@ function FinancesPage({
           transform: "translateX(-50%)",
           background: C.green,
           color: "#fff",
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Rajdhani', sans-serif",
           fontSize: 14,
-          fontWeight: 500,
+          fontWeight: 600,
           padding: "12px 24px",
           borderRadius: 12,
           zIndex: 300,
@@ -2419,25 +2531,25 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
   const baseQuery = [make, model, year].filter(Boolean).join(" ");
   const searchQuery = search.trim() ? [make, model, year, search.trim()].filter(Boolean).join(" ") : [make, model, year, "parts"].filter(Boolean).join(" ");
 
-  const sources = [
+  const sources: { name: string; Icon: ComponentType<IconProps>; url: string }[] = [
     {
       name: "Facebook Marketplace",
-      icon: "📘",
+      Icon: StorefrontIcon,
       url: `https://www.facebook.com/marketplace/search/?query=${encodeURIComponent(searchQuery)}`,
     },
     {
       name: "Kijiji",
-      icon: "🔴",
+      Icon: TagIcon,
       url: `https://www.kijiji.ca/b-cars-vehicles/${[make, model, year].filter(Boolean).join("+")}/k0c27l0`,
     },
     {
       name: "Amazon",
-      icon: "📦",
+      Icon: PackageIcon,
       url: `https://www.amazon.ca/s?k=${encodeURIComponent(searchQuery)}`,
     },
     {
       name: "Canadian Tire",
-      icon: "🔧",
+      Icon: WrenchIcon,
       url: `https://www.canadiantire.ca/en/search.html#q=${encodeURIComponent([make, year, model, search.trim() || "parts"].filter(Boolean).join("+"))}&lang=en_CA`,
     },
   ];
@@ -2464,7 +2576,7 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
             <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" className="gari-settings-icon" style={{ height: 26, width: "auto", display: "block" }} />
           </button>
         </div>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 20px" }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 20px" }}>
           {baseQuery ? `Parts sourced for your ${baseQuery}` : "Source parts for your vehicle"}
         </p>
 
@@ -2479,7 +2591,7 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
             border: `1.5px solid ${C.border}`,
             borderRadius: 12,
             padding: "12px 16px",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Rajdhani', sans-serif",
             fontSize: 15,
             color: C.text,
             outline: "none",
@@ -2500,7 +2612,7 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
                 border: "none",
                 borderRadius: 999,
                 padding: "6px 14px",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Rajdhani', sans-serif",
                 fontSize: 13,
                 cursor: "pointer",
                 flexShrink: 0,
@@ -2512,7 +2624,7 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
         </div>
 
         {/* Source buttons */}
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px" }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px" }}>
           Find Parts Online
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 32 }}>
@@ -2534,12 +2646,12 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
                 cursor: "pointer",
               }}
             >
-              <span style={{ fontSize: 22, flexShrink: 0 }}>{source.icon}</span>
+              <span style={{ flexShrink: 0, display: "flex" }}><source.Icon size={22} color="#1F6B2E" /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, margin: 0 }}>
                   {source.name}
                 </p>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {search.trim() ? `"${search.trim()}" · ${baseQuery}` : baseQuery || "Set up your vehicle to pre-fill searches"}
                 </p>
               </div>
@@ -2678,7 +2790,7 @@ function DiagnosticsPage({ vehicle, expenses, userId, onOpenSettings }: { vehicl
             <img src={`${BASE}gari-icon-new-nobg.png`} alt="Settings" className="gari-settings-icon" style={{ height: 26, width: "auto", display: "block" }} />
           </button>
         </div>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 24px" }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 24px" }}>
           OBD-II live diagnostics coming soon. Log issues manually for now.
         </p>
 
@@ -2699,13 +2811,13 @@ function DiagnosticsPage({ vehicle, expenses, userId, onOpenSettings }: { vehicl
               }}
             >
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: STATUS_COLOR[item.status], marginRight: 12, flexShrink: 0 }} />
-              <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>{item.label}</span>
+              <span style={{ flex: 1, fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.text }}>{item.label}</span>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: STATUS_COLOR[item.status], fontWeight: 500 }}>
+                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: STATUS_COLOR[item.status], fontWeight: 600 }}>
                   {STATUS_LABEL[item.status]}
                 </span>
                 {item.lastDate && (
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted }}>
+                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted }}>
                     {item.lastDate}
                   </span>
                 )}
@@ -2714,7 +2826,7 @@ function DiagnosticsPage({ vehicle, expenses, userId, onOpenSettings }: { vehicl
           ))}
         </div>
         {noExpenses && (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "-16px 0 24px" }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: C.muted, margin: "-16px 0 24px" }}>
             Log your first service in Finances to track maintenance status.
           </p>
         )}
@@ -2726,30 +2838,30 @@ function DiagnosticsPage({ vehicle, expenses, userId, onOpenSettings }: { vehicl
           </h2>
           <button
             onClick={() => setShowAdd(true)}
-            style={{ background: C.green, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: "pointer" }}
+            style={{ background: C.green, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontFamily: "'Rajdhani', sans-serif", fontSize: 13, cursor: "pointer" }}
           >
             + Add
           </button>
         </div>
 
         {loading ? (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", marginTop: 20 }}>Loading…</p>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", marginTop: 20 }}>Loading…</p>
         ) : (
           <>
             {ongoing.length > 0 && (
               <>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Ongoing</p>
+                <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Ongoing</p>
                 {ongoing.map((issue) => (
                   <div key={issue.id} style={{ display: "flex", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.border}` }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.error, marginRight: 12, flexShrink: 0 }} />
-                    <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>{issue.title}</span>
-                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, marginRight: 8 }}>
+                    <span style={{ flex: 1, fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.text }}>{issue.title}</span>
+                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, marginRight: 8 }}>
                       {issue.date_noticed ? new Date(issue.date_noticed).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
                     </span>
                     <button
                       onClick={() => handleResolve(issue.id)}
                       disabled={resolving === issue.id}
-                      style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 8px", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, cursor: resolving === issue.id ? "default" : "pointer", opacity: resolving === issue.id ? 0.5 : 1 }}
+                      style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 8px", fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, cursor: resolving === issue.id ? "default" : "pointer", opacity: resolving === issue.id ? 0.5 : 1 }}
                     >
                       {resolving === issue.id ? "…" : "Resolve"}
                     </button>
@@ -2760,12 +2872,12 @@ function DiagnosticsPage({ vehicle, expenses, userId, onOpenSettings }: { vehicl
 
             {resolved.length > 0 && (
               <>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "16px 0 8px" }}>Resolved</p>
+                <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "16px 0 8px" }}>Resolved</p>
                 {resolved.map((issue) => (
                   <div key={issue.id} style={{ display: "flex", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.border}`, opacity: 0.6 }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2D9E4A", marginRight: 12, flexShrink: 0 }} />
-                    <span style={{ flex: 1, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.text }}>{issue.title}</span>
-                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>
+                    <span style={{ flex: 1, fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.text }}>{issue.title}</span>
+                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted }}>
                       {issue.date_resolved ? new Date(issue.date_resolved).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
                     </span>
                   </div>
@@ -2774,7 +2886,7 @@ function DiagnosticsPage({ vehicle, expenses, userId, onOpenSettings }: { vehicl
             )}
 
             {ongoing.length === 0 && resolved.length === 0 && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", marginTop: 20 }}>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", marginTop: 20 }}>
                 No issues logged. Tap + Add if something needs attention.
               </p>
             )}
@@ -2805,7 +2917,7 @@ function DiagnosticsPage({ vehicle, expenses, userId, onOpenSettings }: { vehicl
                 border: `1.5px solid ${C.border}`,
                 borderRadius: 12,
                 padding: "13px 16px",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Rajdhani', sans-serif",
                 fontSize: 15,
                 color: C.text,
                 outline: "none",
@@ -2929,7 +3041,7 @@ export default function Dashboard() {
           msOverflowStyle: "none",
         } as React.CSSProperties}
       >
-        <LandingPage vehicle={vehicle} vehicles={vehicles} expenses={expenses} documents={documents} issues={issues} healthScore={healthScore} isGuest={isGuest} onSignUpFromGuest={() => navigate("/welcome")} userId={user?.id ?? ""} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} onSwitchVehicle={(v) => switchVehicle(v.id)} />
+        <LandingPage vehicle={vehicle} vehicles={vehicles} expenses={expenses} documents={documents} issues={issues} healthScore={healthScore} isGuest={isGuest} onSignUpFromGuest={() => navigate("/welcome")} userId={user?.id ?? ""} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} onSwitchVehicle={(v) => switchVehicle(v.id)} onVehicleUpdated={async () => { await refetchVehicles(); }} />
         <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} onOpenSettings={() => setShowSettings(true)} docsLoading={docsLoading} />
         <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} onOpenSettings={() => setShowSettings(true)} />
         <PartsPage vehicle={vehicle} onOpenSettings={() => setShowSettings(true)} />
@@ -3014,7 +3126,7 @@ export default function Dashboard() {
           key={currentPage}
           style={{
             textAlign: "center",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Rajdhani', sans-serif",
             fontSize: 10,
             fontWeight: 600,
             letterSpacing: "0.16em",

@@ -1,7 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ParseResult, DocType, DOC_TYPE_LABELS, formatDate,
 } from "@/lib/documentParser";
+import { CheckIcon, ClockIcon, ShieldIcon, CarIcon } from "@/components/ui/icons";
+
+function actionIcon(key: string): ReactNode {
+  const props = { size: 14, color: "#1F6B2E", strokeWidth: 2 };
+  switch (key) {
+    case "check": return <CheckIcon {...props} />;
+    case "clock": return <ClockIcon {...props} />;
+    case "shield": return <ShieldIcon {...props} />;
+    case "car": return <CarIcon {...props} />;
+    case "dollar": return <span style={{ fontWeight: 700 }}>$</span>;
+    default: return null;
+  }
+}
 
 const C = {
   bg: "#FFFFFF",
@@ -16,7 +29,7 @@ const C = {
 };
 
 export interface PlannedAction {
-  icon: string;        // single-char icon / emoji
+  icon: string;        // semantic icon key (check | clock | shield | car | dollar)
   label: string;       // human-readable description shown in "Actions taken"
 }
 
@@ -65,22 +78,22 @@ const FIELDS_FOR_TYPE: Record<DocType, FieldDef[]> = {
 function planActions(type: DocType, v: Record<string, string>): PlannedAction[] {
   const actions: PlannedAction[] = [];
   if (type === "mechanic_invoice") {
-    if (v.amount) actions.push({ icon: "$", label: `Expense of $${v.amount} will be logged` });
-    if (v.services) actions.push({ icon: "✓", label: `Added to service history${v.shopName ? ` (${v.shopName})` : ""}` });
+    if (v.amount) actions.push({ icon: "dollar", label: `Expense of $${v.amount} will be logged` });
+    if (v.services) actions.push({ icon: "check", label: `Added to service history${v.shopName ? ` (${v.shopName})` : ""}` });
     if (/oil change/i.test(v.services || "")) {
-      actions.push({ icon: "⏰", label: "Reminder: oil change in 6 months / 5,000 km" });
+      actions.push({ icon: "clock", label: "Reminder: oil change in 6 months / 5,000 km" });
     }
   } else if (type === "insurance") {
-    if (v.provider || v.expiryDate) actions.push({ icon: "🛡", label: `Insurance details saved${v.provider ? ` (${v.provider})` : ""}` });
+    if (v.provider || v.expiryDate) actions.push({ icon: "shield", label: `Insurance details saved${v.provider ? ` (${v.provider})` : ""}` });
     if (v.expiryDate) {
-      actions.push({ icon: "⏰", label: `Reminder 30 days before ${formatDate(v.expiryDate) || v.expiryDate}` });
-      actions.push({ icon: "⏰", label: `Reminder 7 days before ${formatDate(v.expiryDate) || v.expiryDate}` });
+      actions.push({ icon: "clock", label: `Reminder 30 days before ${formatDate(v.expiryDate) || v.expiryDate}` });
+      actions.push({ icon: "clock", label: `Reminder 7 days before ${formatDate(v.expiryDate) || v.expiryDate}` });
     }
   } else if (type === "registration") {
-    if (v.plateNumber) actions.push({ icon: "🚗", label: `Plate ${v.plateNumber} saved to vehicle profile` });
-    if (v.expiryDate) actions.push({ icon: "⏰", label: `Reminder 30 days before ${formatDate(v.expiryDate) || v.expiryDate}` });
+    if (v.plateNumber) actions.push({ icon: "car", label: `Plate ${v.plateNumber} saved to vehicle profile` });
+    if (v.expiryDate) actions.push({ icon: "clock", label: `Reminder 30 days before ${formatDate(v.expiryDate) || v.expiryDate}` });
   } else if (type === "receipt") {
-    if (v.amount) actions.push({ icon: "$", label: `Expense of $${v.amount} (${v.category || "Other"}) will be logged` });
+    if (v.amount) actions.push({ icon: "dollar", label: `Expense of $${v.amount} (${v.category || "Other"}) will be logged` });
   }
   return actions;
 }
@@ -162,7 +175,7 @@ export function ParsedDocumentSheet({ parseResult, onConfirm, onClose }: Props) 
             {isUnknown ? "Document Saved" : "Confirm Details"}
           </h2>
           <span style={{
-            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500,
+            fontFamily: "'Rajdhani', sans-serif", fontSize: 12, fontWeight: 600,
             padding: "5px 11px", borderRadius: 999,
             background: isUnknown ? C.greyPill : C.greenBg,
             color: isUnknown ? C.greyPillText : C.green,
@@ -174,11 +187,11 @@ export function ParsedDocumentSheet({ parseResult, onConfirm, onClose }: Props) 
         </div>
 
         {isUnknown ? (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, margin: "12px 0 22px", lineHeight: 1.55 }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.muted, margin: "12px 0 22px", lineHeight: 1.55 }}>
             We couldn't identify this document type. It has been saved to your documents.
           </p>
         ) : (
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 18px" }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 18px" }}>
             Tap any field to correct it before saving.
           </p>
         )}
@@ -189,7 +202,7 @@ export function ParsedDocumentSheet({ parseResult, onConfirm, onClose }: Props) 
             {fieldDefs.map((f, i) => (
               <div key={f.key}>
                 <p style={{
-                  fontFamily: "'DM Sans', sans-serif", fontSize: 11,
+                  fontFamily: "'Rajdhani', sans-serif", fontSize: 11,
                   color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em",
                   margin: "0 0 4px",
                 }}>
@@ -207,7 +220,7 @@ export function ParsedDocumentSheet({ parseResult, onConfirm, onClose }: Props) 
                     border: `1.5px solid ${C.border}`,
                     borderRadius: 10,
                     padding: "12px 14px",
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'Rajdhani', sans-serif",
                     fontSize: 15,
                     color: C.text,
                     outline: "none",
@@ -228,7 +241,7 @@ export function ParsedDocumentSheet({ parseResult, onConfirm, onClose }: Props) 
             marginBottom: 20,
           }}>
             <p style={{
-              fontFamily: "'DM Sans', sans-serif", fontSize: 11,
+              fontFamily: "'Rajdhani', sans-serif", fontSize: 11,
               color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em",
               margin: "0 0 8px",
             }}>
@@ -243,9 +256,9 @@ export function ParsedDocumentSheet({ parseResult, onConfirm, onClose }: Props) 
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 13, color: C.green, flexShrink: 0,
                   }}>
-                    {a.icon}
+                    {actionIcon(a.icon)}
                   </span>
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.text, lineHeight: 1.4 }}>
+                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: C.text, lineHeight: 1.4 }}>
                     {a.label}
                   </span>
                 </li>
@@ -280,7 +293,7 @@ export function ParsedDocumentSheet({ parseResult, onConfirm, onClose }: Props) 
             style={{
               display: "block", width: "100%", marginTop: 10,
               background: "none", border: "none",
-              fontFamily: "'DM Sans', sans-serif", fontSize: 14,
+              fontFamily: "'Rajdhani', sans-serif", fontSize: 14,
               color: C.muted, cursor: saving ? "default" : "pointer",
               textAlign: "center", minHeight: 36,
               textDecoration: "underline",

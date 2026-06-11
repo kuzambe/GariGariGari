@@ -42,7 +42,7 @@ export function FeatureTile({ icon, label, comingSoon = false, onClick }: Featur
             fontSize: 9,
             borderRadius: 999,
             padding: "2px 7px",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Rajdhani', sans-serif",
           }}
         >
           Coming soon

@@ -1,0 +1,1 @@
+- [Gari web-app conventions](gari-web-app.md) — dup dashboard casing (edit Dashboard.tsx only), 5 known typecheck errors, Rajdhani tokens, paint_name/paint_code color, guest personalization

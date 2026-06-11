@@ -40,7 +40,7 @@ export function CategoryDocumentsListSheet({
           <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, margin: 0 }}>
             {label}
           </p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: 0 }}>
             {docs.length} {docs.length === 1 ? "file" : "files"}
           </p>
         </div>
@@ -66,7 +66,7 @@ export function CategoryDocumentsListSheet({
                 <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 15, color: C.text }}>
                   {label} {docs.length - i}
                 </span>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: C.muted }}>
+                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted }}>
                   Added {new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </span>
               </button>
@@ -94,7 +94,7 @@ export function CategoryDocumentsListSheet({
         </button>
         <button
           onClick={onClose}
-          style={{ display: "block", width: "100%", marginTop: 8, background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.muted, cursor: "pointer", textAlign: "center", minHeight: 44 }}
+          style={{ display: "block", width: "100%", marginTop: 8, background: "none", border: "none", fontFamily: "'Rajdhani', sans-serif", fontSize: 15, color: C.muted, cursor: "pointer", textAlign: "center", minHeight: 44 }}
         >
           Close
         </button>

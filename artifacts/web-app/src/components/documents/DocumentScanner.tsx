@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { CloseIcon } from "@/components/ui/icons";
 
 const C = {
   green: "#1F6B2E",
@@ -230,13 +231,13 @@ export function DocumentScanner({ onCapture, onClose }: DocumentScannerProps) {
         <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, margin: 0, textAlign: "center" }}>
           Camera Access Denied
         </p>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", lineHeight: 1.6, margin: 0, maxWidth: 280 }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", lineHeight: 1.6, margin: 0, maxWidth: 280 }}>
           Camera access is needed to scan documents. Please allow camera access in your device settings, then try again.
         </p>
         <a
           href="app-settings:"
           style={{
-            fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.green,
+            fontFamily: "'Rajdhani', sans-serif", fontSize: 15, color: C.green,
             textDecoration: "none", border: `1.5px solid ${C.green}`, borderRadius: 12,
             padding: "13px 28px", textAlign: "center", minHeight: 44,
             display: "flex", alignItems: "center",
@@ -246,7 +247,7 @@ export function DocumentScanner({ onCapture, onClose }: DocumentScannerProps) {
         </a>
         <button
           onClick={onClose}
-          style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: C.muted, cursor: "pointer", minHeight: 44 }}
+          style={{ background: "none", border: "none", fontFamily: "'Rajdhani', sans-serif", fontSize: 15, color: C.muted, cursor: "pointer", minHeight: 44 }}
         >
           Go Back
         </button>
@@ -261,13 +262,13 @@ export function DocumentScanner({ onCapture, onClose }: DocumentScannerProps) {
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20,
       }}>
         <div style={{ width: 40, height: 40, border: "3px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", borderRadius: "50%", animation: "scanSpin 0.9s linear infinite" }} />
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "rgba(255,255,255,0.7)", margin: 0 }}>Initialising scanner…</p>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "rgba(255,255,255,0.7)", margin: 0 }}>Initialising scanner…</p>
         <style>{`@keyframes scanSpin { to { transform: rotate(360deg); } }`}</style>
         <button
           onClick={onClose}
-          style={{ position: "absolute", top: 52, left: 20, width: 44, height: 44, background: "rgba(255,255,255,0.12)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          style={{ position: "absolute", top: 52, left: 20, width: 44, height: 44, background: "rgba(255,255,255,0.12)", border: "none", borderRadius: "50%", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
         >
-          ✕
+          <CloseIcon size={20} color="#fff" strokeWidth={2} />
         </button>
       </div>
     );
@@ -293,7 +294,7 @@ export function DocumentScanner({ onCapture, onClose }: DocumentScannerProps) {
           </button>
         </div>
         {fallbackToast && (
-          <div style={{ position: "absolute", top: 24, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.75)", color: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: 13, padding: "10px 18px", borderRadius: 10, whiteSpace: "nowrap", zIndex: 400 }}>
+          <div style={{ position: "absolute", top: 24, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.75)", color: "#fff", fontFamily: "'Rajdhani', sans-serif", fontSize: 13, padding: "10px 18px", borderRadius: 10, whiteSpace: "nowrap", zIndex: 400 }}>
             Couldn't detect edges — photo saved as-is.
           </div>
         )}
@@ -311,7 +312,7 @@ export function DocumentScanner({ onCapture, onClose }: DocumentScannerProps) {
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
       />
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#fff", marginBottom: 16, textShadow: "0 1px 4px rgba(0,0,0,0.7)", textAlign: "center" }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#fff", marginBottom: 16, textShadow: "0 1px 4px rgba(0,0,0,0.7)", textAlign: "center" }}>
           {edgesDetected ? "Document detected — tap the shutter" : "Align document within the frame"}
         </p>
         <div
@@ -328,9 +329,9 @@ export function DocumentScanner({ onCapture, onClose }: DocumentScannerProps) {
 
       <button
         onClick={onClose}
-        style={{ position: "absolute", top: 52, left: 20, width: 44, height: 44, background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}
+        style={{ position: "absolute", top: 52, left: 20, width: 44, height: 44, background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}
       >
-        ✕
+        <CloseIcon size={20} color="#fff" strokeWidth={2} />
       </button>
 
       <button

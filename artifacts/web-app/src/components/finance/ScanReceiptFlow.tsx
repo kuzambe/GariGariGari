@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { addExpense } from "@/lib/api/expenses";
+import { CloseIcon } from "@/components/ui/icons";
 
 const C = {
   bg:         "var(--gc-bg)",
@@ -126,7 +127,7 @@ export function ScanReceiptFlow({ userId, vehicleId, onClose, onSaved }: ScanRec
     border: `1.5px solid ${C.border}`,
     borderRadius: 10,
     padding: "12px 14px",
-    fontFamily: "'DM Sans', sans-serif",
+    fontFamily: "'Rajdhani', sans-serif",
     fontSize: 15,
     color: C.text,
     outline: "none",
@@ -137,10 +138,10 @@ export function ScanReceiptFlow({ userId, vehicleId, onClose, onSaved }: ScanRec
   if (stage === "denied") {
     return (
       <div style={{ position: "fixed", inset: 0, background: C.bg, zIndex: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, gap: 16 }}>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", lineHeight: 1.6 }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: C.muted, textAlign: "center", lineHeight: 1.6 }}>
           Camera access is needed to scan receipts. Please allow camera access in your device settings.
         </p>
-        <button onClick={onClose} style={{ background: C.green, color: "#fff", border: "none", borderRadius: 12, padding: "14px 32px", fontFamily: "'DM Sans', sans-serif", fontSize: 15, cursor: "pointer", minHeight: 44 }}>
+        <button onClick={onClose} style={{ background: C.green, color: "#fff", border: "none", borderRadius: 12, padding: "14px 32px", fontFamily: "'Rajdhani', sans-serif", fontSize: 15, cursor: "pointer", minHeight: 44 }}>
           Go Back
         </button>
       </div>
@@ -168,16 +169,16 @@ export function ScanReceiptFlow({ userId, vehicleId, onClose, onSaved }: ScanRec
               borderRadius: 12,
               boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)",
             }} />
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#fff", marginTop: 14, textShadow: "0 1px 4px rgba(0,0,0,0.7)" }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#fff", marginTop: 14, textShadow: "0 1px 4px rgba(0,0,0,0.7)" }}>
               Position your receipt within the frame.
             </p>
           </div>
           {/* Close */}
           <button
             onClick={onClose}
-            style={{ position: "absolute", top: 52, left: 20, width: 44, height: 44, background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{ position: "absolute", top: 52, left: 20, width: 44, height: 44, background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            ✕
+            <CloseIcon size={20} color="#fff" strokeWidth={2} />
           </button>
           {/* Capture / spinner */}
           {stage === "camera" ? (
@@ -188,7 +189,7 @@ export function ScanReceiptFlow({ userId, vehicleId, onClose, onSaved }: ScanRec
           ) : (
             <div style={{ position: "absolute", bottom: 64, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
               <div className="scan-spin" style={{ width: 36, height: 36, border: "3px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%" }} />
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#fff" }}>Reading receipt…</p>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "#fff" }}>Reading receipt…</p>
             </div>
           )}
         </>
@@ -215,7 +216,7 @@ export function ScanReceiptFlow({ userId, vehicleId, onClose, onSaved }: ScanRec
               Confirm Receipt
             </h2>
             {ocrError && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 16px", lineHeight: 1.5, background: C.sage, borderRadius: 8, padding: "10px 12px" }}>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: C.muted, margin: "0 0 16px", lineHeight: 1.5, background: C.sage, borderRadius: 8, padding: "10px 12px" }}>
                 Couldn't read this receipt clearly. Please fill in the details manually.
               </p>
             )}
@@ -228,20 +229,20 @@ export function ScanReceiptFlow({ userId, vehicleId, onClose, onSaved }: ScanRec
                 { label: "Amount ($)", val: amount, set: setAmount, ph: "0.00", type: "number" },
               ] as { label: string; val: string; set: (v: string) => void; ph: string; type: string }[]).map(({ label, val, set, ph, type }) => (
                 <div key={label}>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>{label}</p>
+                  <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>{label}</p>
                   <input type={type} value={val} placeholder={ph} onChange={(e) => set(e.target.value)} style={inputStyle} />
                 </div>
               ))}
             </div>
 
             {/* Expense type */}
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Type</p>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Type</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
               {EXPENSE_TYPES.map((t) => (
                 <button
                   key={t}
                   onClick={() => setExpType(t)}
-                  style={{ background: expType === t ? C.green : C.greenLight, color: expType === t ? "#fff" : C.text, border: "none", borderRadius: 999, padding: "7px 16px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: "pointer", minHeight: 44 }}
+                  style={{ background: expType === t ? C.green : C.greenLight, color: expType === t ? "#fff" : C.text, border: "none", borderRadius: 999, padding: "7px 16px", fontFamily: "'Rajdhani', sans-serif", fontSize: 13, cursor: "pointer", minHeight: 44 }}
                 >
                   {t}
                 </button>
@@ -249,7 +250,7 @@ export function ScanReceiptFlow({ userId, vehicleId, onClose, onSaved }: ScanRec
             </div>
 
             {/* Notes */}
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>Notes</p>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 11, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 4px" }}>Notes</p>
             <input
               placeholder="Add a note..."
               value={notes}

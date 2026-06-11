@@ -98,7 +98,7 @@ function Toast({ text, color, onDone }: { text: string; color: string; onDone: (
         color: "#FFFFFF",
         padding: "10px 18px",
         borderRadius: 12,
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Rajdhani', sans-serif",
         fontSize: 14,
         zIndex: 320,
         boxShadow: "0 4px 14px rgba(0,0,0,0.18)",
@@ -284,7 +284,7 @@ function VinScanModal({
         <div className="gari-spin" style={{ width: 56, height: 56 }}>
           <img src={`${BASE}gari-icon-new-nobg.png`} alt="Gari" style={{ width: 56, height: 56 }} />
         </div>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#FFFFFF", marginTop: 14 }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: "#FFFFFF", marginTop: 14 }}>
           Looking up vehicle…
         </p>
       </div>
@@ -302,15 +302,15 @@ function VinScanModal({
             We found your car
           </h3>
           <div style={{ background: "#F4F7F2", borderRadius: 12, padding: 14 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 15, color: TEXT, margin: 0 }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: 15, color: TEXT, margin: 0 }}>
               {yearMakeModel || "Vehicle"}
             </p>
             {vinData.trim && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: "2px 0 0" }}>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, margin: "2px 0 0" }}>
                 {vinData.trim}
               </p>
             )}
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: MUTED, margin: "6px 0 0", letterSpacing: "0.04em" }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: MUTED, margin: "6px 0 0", letterSpacing: "0.04em" }}>
               VIN {vin}
             </p>
           </div>
@@ -329,12 +329,12 @@ function VinScanModal({
             </button>
           )}
           {isGuest && (
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: MUTED, margin: 0, textAlign: "center" }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: MUTED, margin: 0, textAlign: "center" }}>
               This will be saved to your account when you sign up.
             </p>
           )}
           {vinErr && (
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#C0392B", margin: 0 }}>{vinErr}</p>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#C0392B", margin: 0 }}>{vinErr}</p>
           )}
           <button onClick={onClose} style={btnStyles.ghost}>Cancel</button>
         </div>
@@ -351,7 +351,7 @@ function VinScanModal({
           <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 22, color: TEXT, margin: 0 }}>
             Vehicle not found in database
           </h3>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: 0 }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, margin: 0 }}>
             Add the basics manually — VIN <strong>{vin || "—"}</strong>
           </p>
           {(["make", "model", "year", "trim"] as const).map((k) => (
@@ -381,7 +381,7 @@ function VinScanModal({
           <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: TEXT, margin: 0 }}>
             Camera access needed
           </h3>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: 0 }}>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, margin: 0 }}>
             Enable the camera to scan your VIN, or enter it manually below.
           </p>
           <button onClick={() => setShowManualVinInput(true)} style={btnStyles.primary}>
@@ -418,7 +418,7 @@ function VinScanModal({
       </button>
 
       {/* Bottom hint */}
-      <p style={{ position: "absolute", left: 0, right: 0, bottom: 138, textAlign: "center", padding: "0 24px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.6)", margin: 0, pointerEvents: "none" }}>
+      <p style={{ position: "absolute", left: 0, right: 0, bottom: 138, textAlign: "center", padding: "0 24px", fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.6)", margin: 0, pointerEvents: "none" }}>
         Point at VIN barcode on door frame or dashboard
       </p>
 
@@ -427,7 +427,7 @@ function VinScanModal({
         <button onClick={() => { /* already scanning */ }} style={{ background: "#FFFFFF", color: ACCENT, border: "none", borderRadius: 12, height: 50, fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, cursor: "pointer", letterSpacing: "0.04em" }}>
           SCAN BARCODE
         </button>
-        <button onClick={() => setShowManualVinInput(true)} style={{ background: "none", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.6)", cursor: "pointer", padding: "6px 0" }}>
+        <button onClick={() => setShowManualVinInput(true)} style={{ background: "none", border: "none", fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: "rgba(255,255,255,0.6)", cursor: "pointer", padding: "6px 0" }}>
           Enter manually
         </button>
       </div>
@@ -471,7 +471,7 @@ function ManualVinOverlay({
           autoFocus
           style={{ ...inputStyle, letterSpacing: "0.05em", textTransform: "uppercase" }}
         />
-        {error && <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#C0392B", margin: 0 }}>{error}</p>}
+        {error && <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: "#C0392B", margin: 0 }}>{error}</p>}
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onClose} style={{ ...btnStyles.ghost, flex: 1 }}>Cancel</button>
           <button onClick={onSubmit} disabled={!valid} style={{ ...btnStyles.primary, flex: 1, opacity: valid ? 1 : 0.6 }}>
@@ -500,7 +500,7 @@ const overlayStyles = {
 
 const inputStyle: React.CSSProperties = {
   width: "100%", background: "#FFFFFF", border: "1.5px solid #D4DDD5", borderRadius: 12,
-  padding: "12px 16px", fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: TEXT,
+  padding: "12px 16px", fontFamily: "'Rajdhani', sans-serif", fontSize: 15, color: TEXT,
   outline: "none", boxShadow: "none", boxSizing: "border-box",
 };
 
@@ -512,12 +512,12 @@ const btnStyles = {
   } as React.CSSProperties,
   secondary: {
     background: "transparent", color: ACCENT, border: `1.5px solid ${ACCENT}`, borderRadius: 12,
-    padding: "12px 16px", fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 14,
+    padding: "12px 16px", fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: 14,
     cursor: "pointer",
   } as React.CSSProperties,
   ghost: {
     background: "transparent", color: MUTED, border: "none",
-    padding: "10px 16px", fontFamily: "'DM Sans', sans-serif", fontSize: 14,
+    padding: "10px 16px", fontFamily: "'Rajdhani', sans-serif", fontSize: 14,
     cursor: "pointer",
   } as React.CSSProperties,
 };
@@ -677,7 +677,7 @@ export default function FloatingScanButton({
               style={{
                 background: "none", border: "none", cursor: "pointer",
                 padding: "16px 0",
-                fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: MUTED,
+                fontFamily: "'Rajdhani', sans-serif", fontSize: 14, color: MUTED,
                 textAlign: "center",
               }}
             >
@@ -720,7 +720,7 @@ export default function FloatingScanButton({
               <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 22, color: TEXT, margin: 0 }}>
                 {isGuest ? "Sign up to save receipts" : "Add a vehicle first"}
               </h3>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: 0 }}>
+              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, margin: 0 }}>
                 {isGuest
                   ? "Create a free account so we can keep your fuel and maintenance receipts in your garage."
                   : "Save your vehicle before logging receipts."}
@@ -798,7 +798,7 @@ function ScanRow({
         <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, color: TEXT, margin: 0, lineHeight: 1.1 }}>
           {title}
         </p>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: "3px 0 0", lineHeight: 1.3 }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: MUTED, margin: "3px 0 0", lineHeight: 1.3 }}>
           {subtitle}
         </p>
       </div>

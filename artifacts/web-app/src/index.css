@@ -238,7 +238,8 @@
     @apply antialiased;
     background: #1A1A1A;
     color: #1A1A1A;
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: 'Rajdhani', system-ui, sans-serif;
+    font-weight: 600;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -258,7 +259,7 @@
 }
 
 .font-dm-sans {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Rajdhani', sans-serif;
 }
 
 @keyframes gari-pulse {

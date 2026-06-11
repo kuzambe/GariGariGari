@@ -29,7 +29,7 @@ export function AlertStrip({ message, onAction }: AlertStripProps) {
       />
       <span
         style={{
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Rajdhani', sans-serif",
           fontSize: 13,
           color: "#1A1A1A",
           flex: 1,

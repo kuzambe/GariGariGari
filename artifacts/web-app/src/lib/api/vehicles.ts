@@ -21,6 +21,19 @@ export interface Vehicle {
   created_at: string;
 }
 
+/**
+ * Display name for a vehicle. Falls back to "Your <Model>" when a model is
+ * known, otherwise "Your Car". Used across dashboard, switcher, and onboarding.
+ */
+export function vehicleDisplayName(
+  v: { nickname?: string | null; model?: string | null },
+): string {
+  const nick = v.nickname?.trim();
+  if (nick) return nick;
+  const model = v.model?.trim();
+  return model ? `Your ${model}` : "Your Car";
+}
+
 export interface CreateVehicleData {
   user_id: string;
   nickname: string;
