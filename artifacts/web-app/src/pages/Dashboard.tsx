@@ -2943,6 +2943,19 @@ export default function Dashboard() {
           onSignOut={handleSignOut}
           onClose={() => setShowSettings(false)}
           onAddVehicle={() => { setShowSettings(false); setShowAddVehicle(true); }}
+          vehicle={vehicle}
+          isGuest={isGuest}
+          onVehicleUpdated={async () => { await refetchVehicles(); }}
+          onVehicleDeleted={async () => {
+            const remaining = vehicles.filter((v) => v.id !== vehicle.id);
+            await refetchVehicles();
+            setShowSettings(false);
+            if (remaining.length > 0) {
+              switchVehicle(remaining[0].id);
+            } else {
+              navigate("/welcome");
+            }
+          }}
         />
       )}
 
