@@ -15,7 +15,7 @@ const ERROR = "#C0392B";
 const FIELD_BORDER = "#D4DDD5";
 const VIN_RE = /[A-HJ-NPR-Z0-9]{17}/i;
 
-type Step = "vin_scan" | "guest_dashboard" | "create_account" | "sign_in";
+type Step = "entry" | "vin_scan" | "guest_dashboard" | "create_account" | "sign_in";
 
 interface VinData {
   make: string;
@@ -25,6 +25,14 @@ interface VinData {
   engine: string;
   fuel_type: string;
   body_style: string;
+}
+
+interface Recall {
+  NHTSACampaignNumber: string;
+  Component: string;
+  Summary: string;
+  Consequence?: string;
+  ReportReceivedDate?: string;
 }
 
 function isValidVin(v: string): boolean {
@@ -50,24 +58,99 @@ async function lookupVinNHTSA(vin: string, ms = 8000): Promise<VinData | null> {
   }
 }
 
+async function fetchExtendedVinData(vin: string): Promise<Record<string, string>> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const res = await fetch(
+      `https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/${vin}?format=json`,
+      { signal: ctrl.signal },
+    );
+    if (!res.ok) return {};
+    const data = await res.json();
+    const result: Record<string, string> = {};
+    for (const item of (data.Results ?? []) as { Variable: string; Value: string | null }[]) {
+      if (item.Value && item.Value !== "Not Applicable" && item.Value.trim()) {
+        result[item.Variable] = item.Value.trim();
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function fetchRecalls(make: string, model: string, year: string | number): Promise<Recall[]> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const url = `https://api.nhtsa.gov/recalls/recallsByVehicle?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&modelYear=${encodeURIComponent(String(year))}`;
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.results ?? []) as Recall[];
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+const FIELD_LABELS: Record<string, string> = {
+  "Make": "Make",
+  "Model": "Model",
+  "Model Year": "Year",
+  "Trim": "Trim",
+  "Body Class": "Body Style",
+  "Number of Doors": "Doors",
+  "Displacement (L)": "Displacement",
+  "Engine Number of Cylinders": "Cylinders",
+  "Engine Brake (hp) From": "Horsepower",
+  "Fuel Type - Primary": "Fuel Type",
+  "Drive Type": "Drive Type",
+  "Transmission Style": "Transmission",
+  "Manufacturer Name": "Manufacturer",
+  "Plant City": "Plant City",
+  "Plant Country": "Plant Country",
+  "Air Bag Loc Front": "Front Airbags",
+  "Air Bag Loc Side": "Side Airbags",
+  "Air Bag Loc Curtain": "Curtain Airbags",
+  "TPMS Type": "TPMS",
+  "Anti-Lock Braking System (ABS)": "ABS",
+  "Electronic Stability Control (ESC)": "Stability Control",
+};
+
+const NHTSA_SECTIONS = [
+  { title: "Vehicle Identity", fields: ["Make", "Model", "Model Year", "Trim", "Body Class", "Number of Doors"] },
+  { title: "Engine & Drivetrain", fields: ["Displacement (L)", "Engine Number of Cylinders", "Engine Brake (hp) From", "Fuel Type - Primary", "Drive Type", "Transmission Style"] },
+  { title: "Manufacturing", fields: ["Manufacturer Name", "Plant City", "Plant Country"] },
+  { title: "Safety Features", fields: ["Air Bag Loc Front", "Air Bag Loc Side", "Air Bag Loc Curtain", "TPMS Type", "Anti-Lock Braking System (ABS)", "Electronic Stability Control (ESC)"] },
+];
+
 /* ─────────────────────────────────────────────────────────────
  *  WelcomeFlow — owns the entire pre-authentication experience
  * ───────────────────────────────────────────────────────────── */
 export default function WelcomeFlow() {
   const [, navigate] = useLocation();
   const { refetch: refetchVehicle } = useVehicle();
-  // Always start at vin_scan when arriving at /welcome (signed out flow).
-  const [step, setStep] = useState<Step>("vin_scan");
+  const [step, setStep] = useState<Step>("entry");
 
-  // Per spec: never let user get stuck. Reset step if guest session is cleared mid-flow.
   useEffect(() => {
     if (step === "guest_dashboard" && !getGuestSession()) {
-      setStep("vin_scan");
+      setStep("entry");
     }
   }, [step]);
 
   return (
     <>
+      {step === "entry" && (
+        <EntryScreen
+          onSignUp={() => setStep("vin_scan")}
+          onSignIn={() => setStep("sign_in")}
+        />
+      )}
       {step === "vin_scan" && (
         <VinScanStep
           onComplete={async (p) => {
@@ -85,7 +168,7 @@ export default function WelcomeFlow() {
             await refetchVehicle();
             setStep("guest_dashboard");
           }}
-          topLeftAction={{ label: "Skip", onClick: () => setStep("create_account") }}
+          topLeftAction={{ label: "Back", onClick: () => setStep("entry") }}
           topRightAction={{ label: "Sign in", onClick: () => setStep("sign_in") }}
         />
       )}
@@ -100,7 +183,7 @@ export default function WelcomeFlow() {
         <AccountStep
           mode="signup"
           onDone={() => navigate("/dashboard")}
-          onBack={() => setStep(getGuestSession() ? "guest_dashboard" : "vin_scan")}
+          onBack={() => setStep(getGuestSession() ? "guest_dashboard" : "entry")}
           onSwitch={() => setStep("sign_in")}
         />
       )}
@@ -108,11 +191,95 @@ export default function WelcomeFlow() {
         <AccountStep
           mode="signin"
           onDone={() => navigate("/dashboard")}
-          onBack={() => setStep(getGuestSession() ? "guest_dashboard" : "vin_scan")}
+          onBack={() => setStep(getGuestSession() ? "guest_dashboard" : "entry")}
           onSwitch={() => setStep("create_account")}
         />
       )}
     </>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+ *  Entry screen — first thing an unauthenticated user sees
+ * ───────────────────────────────────────────────────────────── */
+function EntryScreen({ onSignUp, onSignIn }: { onSignUp: () => void; onSignIn: () => void }) {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#FAFAF8",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "40px 28px",
+        boxSizing: "border-box",
+      }}
+    >
+      <img src={`${BASE}gari-icon-new-nobg.png`} alt="Gari" style={{ height: 80 }} />
+      <span
+        style={{
+          fontFamily: "'Rajdhani', sans-serif",
+          fontWeight: 700,
+          fontSize: 42,
+          color: TEXT,
+          letterSpacing: "0.04em",
+          marginTop: 12,
+          lineHeight: 1,
+        }}
+      >
+        GARI
+      </span>
+      <p
+        style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 14,
+          color: MUTED,
+          margin: "10px 0 56px",
+          textAlign: "center",
+        }}
+      >
+        Your garage in your pocket
+      </p>
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
+        <button
+          onClick={onSignUp}
+          style={{
+            width: "100%",
+            background: ACCENT,
+            color: "#FFFFFF",
+            border: "none",
+            borderRadius: 14,
+            height: 54,
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 18,
+            cursor: "pointer",
+            letterSpacing: "0.04em",
+          }}
+        >
+          Sign Up
+        </button>
+        <button
+          onClick={onSignIn}
+          style={{
+            width: "100%",
+            background: "transparent",
+            color: ACCENT,
+            border: `1.5px solid ${ACCENT}`,
+            borderRadius: 14,
+            height: 54,
+            fontFamily: "'Rajdhani', sans-serif",
+            fontWeight: 700,
+            fontSize: 18,
+            cursor: "pointer",
+            letterSpacing: "0.04em",
+          }}
+        >
+          Sign In
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -335,7 +502,7 @@ export function VinScanStep({
         <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: "#FFFFFF", letterSpacing: "0.04em" }}>GARI</span>
       </div>
 
-      {/* Top left — Skip */}
+      {/* Top left — Back */}
       {topLeftAction && (
         <button onClick={() => { stopCamera(); topLeftAction.onClick(); }} style={cornerLink("left")}>{topLeftAction.label}</button>
       )}
@@ -398,16 +565,14 @@ export function VinScanStep({
 function CornerL({ pos }: { pos: "tl" | "tr" | "bl" | "br" }) {
   const size = 20;
   const thick = 3;
-  const offset = -1; // sit just inside the white border
+  const offset = -1;
   const top = pos.startsWith("t") ? offset : undefined;
   const bottom = pos.startsWith("b") ? offset : undefined;
   const left = pos.endsWith("l") ? offset : undefined;
   const right = pos.endsWith("r") ? offset : undefined;
   return (
     <>
-      {/* horizontal arm */}
       <div style={{ position: "absolute", top, bottom, left, right, width: size, height: thick, background: ACCENT }} />
-      {/* vertical arm */}
       <div style={{ position: "absolute", top, bottom, left, right, width: thick, height: size, background: ACCENT }} />
     </>
   );
@@ -446,7 +611,7 @@ function ManualVinOverlay({
 }
 
 /* ─────────────────────────────────────────────────────────────
- *  STEP 2: Guest dashboard
+ *  STEP 2: Guest dashboard — vehicle data after VIN scan
  * ───────────────────────────────────────────────────────────── */
 function SculptedCar() {
   return (
@@ -469,17 +634,41 @@ function SculptedCar() {
   );
 }
 
-function HealthGaugeMini({ pct = 60 }: { pct?: number }) {
+function VinSection({ title, rows }: { title: string; rows: { label: string; value: string }[] }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", padding: "0 24px", boxSizing: "border-box" }}>
-      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: MUTED, margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>Car Health</p>
-      <div style={{ position: "relative", height: 12, borderRadius: 999, background: "#E8F0E9", overflow: "hidden" }}>
-        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: ACCENT, borderRadius: 999, transition: "width 0.4s ease" }} />
-        {[20, 40, 60, 80].map((pos) => (
-          <div key={pos} style={{ position: "absolute", top: 0, bottom: 0, left: `${pos}%`, width: 2, background: "#FFFFFF", opacity: 0.6 }} />
-        ))}
+    <div style={{ background: "#FFFFFF", border: `1px solid ${FIELD_BORDER}`, borderRadius: 14, overflow: "hidden" }}>
+      <div style={{ background: "#F4F7F2", padding: "10px 16px", borderBottom: `1px solid ${FIELD_BORDER}` }}>
+        <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 13, color: MUTED, margin: 0, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          {title}
+        </p>
       </div>
+      {rows.map(({ label, value }, i) => (
+        <div
+          key={label}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            padding: "11px 16px",
+            borderBottom: i < rows.length - 1 ? `1px solid ${FIELD_BORDER}` : "none",
+            gap: 12,
+          }}
+        >
+          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, flexShrink: 0 }}>{label}</span>
+          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: TEXT, fontWeight: 500, textAlign: "right" }}>{value}</span>
+        </div>
+      ))}
     </div>
+  );
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
   );
 }
 
@@ -491,52 +680,202 @@ function GuestDashboardStep({
   onRescan: () => void;
 }) {
   const guest = getGuestSession();
+  const [nhtsaData, setNhtsaData] = useState<Record<string, string>>({});
+  const [nhtsaLoaded, setNhtsaLoaded] = useState(false);
+  const [recalls, setRecalls] = useState<Recall[]>([]);
+  const [recallsLoaded, setRecallsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!guest) return;
+    if (guest.vin && !guest.is_manual_entry) {
+      fetchExtendedVinData(guest.vin).then((data) => {
+        setNhtsaData(data);
+        setNhtsaLoaded(true);
+      });
+    } else {
+      setNhtsaLoaded(true);
+    }
+    if (guest.make && guest.model && guest.year) {
+      fetchRecalls(guest.make, guest.model, guest.year).then((r) => {
+        setRecalls(r);
+        setRecallsLoaded(true);
+      });
+    } else {
+      setRecallsLoaded(true);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!guest) return null;
+
+  const modelName = guest.model || "Car";
+  const pageTitle = `Your ${modelName}`;
   const yearMakeModel = [guest.year, guest.make, guest.model].filter(Boolean).join(" ") || "Your Car";
-  const nickname = `Your ${guest.model || "Car"}`;
-  const yearStr = guest.year ? String(guest.year) : "Not set";
-  const makeStr = guest.make || "Not set";
+  const yearStr = guest.year ? String(guest.year) : null;
+  const makeStr = guest.make || null;
+  const vin = guest.vin;
+
+  const hasRecallCapability = !!(guest.make && guest.model && guest.year);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FAFAF8", display: "flex", flexDirection: "column", padding: "20px 0 32px", boxSizing: "border-box" }}>
+    <div style={{ minHeight: "100vh", background: "#FAFAF8", display: "flex", flexDirection: "column", paddingBottom: 32, boxSizing: "border-box" }}>
       {/* Top bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px 12px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 16px 12px" }}>
         <button onClick={onRescan} aria-label="Back" style={{ background: "none", border: "none", cursor: "pointer", padding: 6 }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={TEXT} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>Guest Garage</span>
+        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          {pageTitle}
+        </span>
         <span style={{ width: 22 }} />
       </div>
 
       {/* Vehicle name */}
       <div style={{ textAlign: "center", padding: "8px 24px 4px" }}>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: TEXT, margin: 0 }}>{nickname}</h1>
+        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 28, color: TEXT, margin: 0 }}>{pageTitle}</h1>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: MUTED, margin: "4px 0 0" }}>{yearMakeModel}</p>
+        {vin && (
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: MUTED, margin: "4px 0 0", letterSpacing: "0.05em" }}>
+            VIN: {vin}
+          </p>
+        )}
       </div>
 
-      {/* Car SVG */}
-      <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 12px" }}>
+      {/* Car illustration */}
+      <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 16px" }}>
         <SculptedCar />
       </div>
 
-      {/* Health gauge at 60 */}
-      <HealthGaugeMini pct={60} />
+      {/* Quick stat pills — Year and Make only, no mileage */}
+      {(yearStr || makeStr) && (
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", padding: "0 24px 16px" }}>
+          {yearStr && <StatPill label="Year" value={yearStr} />}
+          {makeStr && <StatPill label="Make" value={makeStr} />}
+        </div>
+      )}
 
-      {/* Stat pills */}
-      <div style={{ display: "flex", gap: 10, justifyContent: "center", padding: "18px 24px 6px" }}>
-        <StatPill label="Year" value={yearStr} />
-        <StatPill label="Make" value={makeStr} />
-        <StatPill label="Mileage" value="Not set" />
+      {/* NHTSA extended data sections */}
+      <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+        {!nhtsaLoaded && vin && !guest.is_manual_entry && (
+          <div style={{ textAlign: "center", padding: 20 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: 0 }}>Loading vehicle data…</p>
+          </div>
+        )}
+
+        {nhtsaLoaded && NHTSA_SECTIONS.map((section) => {
+          const rows = section.fields
+            .filter((f) => nhtsaData[f])
+            .map((f) => ({ label: FIELD_LABELS[f] ?? f, value: nhtsaData[f] }));
+          if (rows.length === 0) return null;
+          return <VinSection key={section.title} title={section.title} rows={rows} />;
+        })}
       </div>
 
-      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, textAlign: "center", margin: "12px 24px 0" }}>
-        Scan documents and receipts to build your garage.
-      </p>
+      {/* Recalls */}
+      {hasRecallCapability && (
+        <div style={{ padding: "10px 16px 0" }}>
+          {!recallsLoaded && (
+            <div style={{ padding: "12px 16px", background: "#F4F7F2", borderRadius: 12 }}>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: MUTED, margin: 0 }}>Checking recalls…</p>
+            </div>
+          )}
 
-      {/* Save your garage card */}
-      <div style={{ background: ACCENT, borderRadius: 16, padding: 20, margin: "20px 20px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+          {recallsLoaded && recalls.length === 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "#F0FAF1", border: "1px solid #A8D5AD", borderRadius: 12 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1F6B2E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" /><polyline points="9 12 11 14 15 10" />
+              </svg>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#1F6B2E", fontWeight: 500 }}>
+                No active recalls found
+              </span>
+            </div>
+          )}
+
+          {recallsLoaded && recalls.length > 0 && (
+            <div style={{ border: "1px solid #E57373", borderRadius: 14, overflow: "hidden" }}>
+              <div style={{ background: "#FFF5F5", padding: "10px 16px", borderBottom: "1px solid #FADBD8", display: "flex", alignItems: "center", gap: 8 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={ERROR} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 14, color: ERROR, margin: 0 }}>
+                  {recalls.length} ACTIVE RECALL{recalls.length > 1 ? "S" : ""}
+                </p>
+              </div>
+              {recalls.map((r, i) => (
+                <div
+                  key={r.NHTSACampaignNumber}
+                  style={{
+                    padding: "12px 16px",
+                    borderBottom: i < recalls.length - 1 ? "1px solid #FADBD8" : "none",
+                    background: "#FFFFFF",
+                  }}
+                >
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 13, color: TEXT, margin: "0 0 4px" }}>{r.Component}</p>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: MUTED, margin: "0 0 4px", lineHeight: 1.5 }}>{r.Summary}</p>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: MUTED, margin: 0 }}>Campaign: {r.NHTSACampaignNumber}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* External links */}
+      {vin && (
+        <div style={{ padding: "10px 16px 0", display: "flex", flexDirection: "column", gap: 8 }}>
+          <a
+            href={`https://www.carfax.com/vehicle/${vin}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              padding: "13px 16px",
+              background: "transparent",
+              border: `1.5px solid ${FIELD_BORDER}`,
+              borderRadius: 12,
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 14,
+              color: TEXT,
+              textDecoration: "none",
+              fontWeight: 500,
+            }}
+          >
+            View Carfax Report
+            <ExternalLinkIcon />
+          </a>
+          <a
+            href={`https://www.nhtsa.gov/vehicle/${vin}/complaints`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              padding: "13px 16px",
+              background: "transparent",
+              border: `1.5px solid ${FIELD_BORDER}`,
+              borderRadius: 12,
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 14,
+              color: TEXT,
+              textDecoration: "none",
+              fontWeight: 500,
+            }}
+          >
+            View NHTSA Complaints
+            <ExternalLinkIcon />
+          </a>
+        </div>
+      )}
+
+      {/* Save your garage CTA */}
+      <div style={{ background: ACCENT, borderRadius: 16, padding: 20, margin: "20px 16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
         <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 20, color: "#FFFFFF", margin: 0 }}>
           Save your garage
         </h3>
