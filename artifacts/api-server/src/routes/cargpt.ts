@@ -51,6 +51,9 @@ interface VehicleContext {
   mileage_unit?: string | null;
   expenses?: Array<{ type: string; amount: number; description?: string | null; created_at: string }>;
   documents?: Array<{ type: string; created_at: string }>;
+  reminders?: Array<{ title: string; due_date: string; source?: string | null }>;
+  diagnostics?: Array<{ title: string; severity?: string | null; status?: string | null }>;
+  maintenance?: Array<{ item: string; status: string }>;
 }
 
 router.post("/cargpt", async (req, res) => {
@@ -101,6 +104,27 @@ router.post("/cargpt", async (req, res) => {
           .join("\n")
       : "No recorded documents.";
 
+  const reminderSummary =
+    vc.reminders && vc.reminders.length > 0
+      ? vc.reminders
+          .slice(0, 10)
+          .map((r) => `- ${r.title} due ${r.due_date}${r.source ? ` (${r.source})` : ""}`)
+          .join("\n")
+      : "No upcoming reminders.";
+
+  const diagnosticSummary =
+    vc.diagnostics && vc.diagnostics.length > 0
+      ? vc.diagnostics
+          .slice(0, 10)
+          .map((d) => `- ${d.title}${d.severity ? ` [${d.severity}]` : ""}${d.status ? ` — ${d.status}` : ""}`)
+          .join("\n")
+      : "No open diagnostic issues.";
+
+  const maintenanceSummary =
+    vc.maintenance && vc.maintenance.length > 0
+      ? vc.maintenance.map((m) => `- ${m.item}: ${m.status}`).join("\n")
+      : "No maintenance status available.";
+
   const systemInstruction = [
     "You are CarGPT, a knowledgeable and friendly automotive assistant built into the Gari vehicle management app.",
     "You help users with questions about their specific vehicle.",
@@ -115,6 +139,15 @@ router.post("/cargpt", async (req, res) => {
     "",
     "Recorded documents:",
     documentSummary,
+    "",
+    "Upcoming reminders:",
+    reminderSummary,
+    "",
+    "Open diagnostic issues:",
+    diagnosticSummary,
+    "",
+    "Maintenance status:",
+    maintenanceSummary,
     "",
     "Guidelines:",
     "- Keep answers concise and practical.",

@@ -70,14 +70,21 @@ function scoreType(text: string, type: Exclude<DocType, "unknown">): number {
 
 export function detectDocumentType(text: string): DocType {
   if (!text || text.trim().length < 10) return "unknown";
-  // Ordered evaluation per spec — first matching category wins.
+  // Keyword scoring across all categories — highest count wins.
+  // Ties are broken by this deterministic priority order.
   const order: Exclude<DocType, "unknown">[] = [
     "mechanic_invoice", "insurance", "registration", "receipt",
   ];
+  let best: Exclude<DocType, "unknown"> | null = null;
+  let bestScore = 0;
   for (const t of order) {
-    if (scoreType(text, t) >= 1) return t;
+    const score = scoreType(text, t);
+    if (score > bestScore) {
+      bestScore = score;
+      best = t;
+    }
   }
-  return "unknown";
+  return bestScore >= 1 && best ? best : "unknown";
 }
 
 /* ── 2. Date extraction & normalisation ───────────────────── */

@@ -199,3 +199,63 @@ export function CloseIcon({ size = 24, color = "currentColor", strokeWidth = 1.8
     </svg>
   );
 }
+
+export function IdCardIcon({ size = 24, color = "currentColor", strokeWidth = 1.8, style }: IconProps) {
+  return (
+    <svg {...base(size, color, strokeWidth, style)}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="8.5" cy="11" r="2" />
+      <path d="M5.5 16c0-1.7 1.3-3 3-3s3 1.3 3 3" />
+      <line x1="14" y1="10" x2="18" y2="10" />
+      <line x1="14" y1="13.5" x2="18" y2="13.5" />
+    </svg>
+  );
+}
+
+export function SunIcon({ size = 24, color = "currentColor", strokeWidth = 1.8, style }: IconProps) {
+  return (
+    <svg {...base(size, color, strokeWidth, style)}>
+      <circle cx="12" cy="12" r="4" />
+      <line x1="12" y1="2.5" x2="12" y2="5" />
+      <line x1="12" y1="19" x2="12" y2="21.5" />
+      <line x1="2.5" y1="12" x2="5" y2="12" />
+      <line x1="19" y1="12" x2="21.5" y2="12" />
+      <line x1="5.3" y1="5.3" x2="7" y2="7" />
+      <line x1="17" y1="17" x2="18.7" y2="18.7" />
+      <line x1="18.7" y1="5.3" x2="17" y2="7" />
+      <line x1="7" y1="17" x2="5.3" y2="18.7" />
+    </svg>
+  );
+}
+
+export function BookIcon({ size = 24, color = "currentColor", strokeWidth = 1.8, style }: IconProps) {
+  return (
+    <svg {...base(size, color, strokeWidth, style)}>
+      <path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" />
+      <path d="M5 19.5A1.5 1.5 0 0 1 6.5 18H19v3H6.5A1.5 1.5 0 0 1 5 19.5z" />
+    </svg>
+  );
+}
+
+export function RefreshIcon({ size = 24, color = "currentColor", strokeWidth = 1.8, style }: IconProps) {
+  return (
+    <svg {...base(size, color, strokeWidth, style)}>
+      <polyline points="21 4 21 10 15 10" />
+      <polyline points="3 20 3 14 9 14" />
+      <path d="M3.5 9a8 8 0 0 1 13.4-3L21 10" />
+      <path d="M20.5 15a8 8 0 0 1-13.4 3L3 14" />
+    </svg>
+  );
+}
+
+export function TrashIcon({ size = 24, color = "currentColor", strokeWidth = 1.8, style }: IconProps) {
+  return (
+    <svg {...base(size, color, strokeWidth, style)}>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}

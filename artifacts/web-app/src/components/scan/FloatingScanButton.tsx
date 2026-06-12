@@ -5,9 +5,9 @@ import { DecodeHintType, BarcodeFormat } from "@zxing/library";
 import { AddDocumentSheet } from "@/components/documents/AddDocumentSheet";
 import { ScanReceiptFlow } from "@/components/finance/ScanReceiptFlow";
 import { uploadDocument } from "@/lib/api/documents";
-import { addExpense } from "@/lib/api/expenses";
 import { createVehicle, updateVehicle } from "@/lib/api/vehicles";
 import { setGuestSession } from "@/lib/guestSession";
+import { applyParsedActions, storageTypeForParsed } from "@/lib/parsedActions";
 import type { ConfirmedDocument } from "@/components/documents/ParsedDocumentSheet";
 
 const ACCENT = "#1F6B2E";
@@ -23,9 +23,13 @@ interface Props {
   userId: string;
   isGuest: boolean;
   hidden?: boolean;
+  /** Current plate on the vehicle — lets parsed-action routing skip backfill. */
+  vehiclePlate?: string | null;
   onDocumentSaved: () => void;
   onExpenseSaved: () => void;
   onVehicleSaved: () => void;
+  /** Opens the unified CarGPT chat (rendered at the Dashboard level). */
+  onOpenCarGpt?: () => void;
 }
 
 function ScanFrameIcon() {
@@ -68,6 +72,16 @@ function ReceiptIcon() {
       <path d="M5 3v18l3-2 3 2 3-2 3 2 3-2V3z" />
       <path d="M12 8v8" />
       <path d="M14 10h-3a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-3" />
+    </svg>
+  );
+}
+
+function ChatIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-4 4z" />
+      <line x1="8" y1="8" x2="16" y2="8" />
+      <line x1="8" y1="11.5" x2="13" y2="11.5" />
     </svg>
   );
 }
@@ -524,8 +538,8 @@ const btnStyles = {
 
 /* ── Floating button + options sheet ───────────────────────── */
 export default function FloatingScanButton({
-  vehicleId, userId, isGuest, hidden,
-  onDocumentSaved, onExpenseSaved, onVehicleSaved,
+  vehicleId, userId, isGuest, hidden, vehiclePlate,
+  onDocumentSaved, onExpenseSaved, onVehicleSaved, onOpenCarGpt,
 }: Props) {
   const [, navigate] = useLocation();
   const [mode, setMode] = useState<Mode>(null);
@@ -546,39 +560,22 @@ export default function FloatingScanButton({
       setToast({ text: "Add a vehicle before saving documents", color: "#C0392B" });
       return;
     }
-    let storageType = "other";
-    if (parsed) {
-      if (parsed.type === "mechanic_invoice" || parsed.type === "receipt") storageType = "service";
-      else if (parsed.type === "insurance") storageType = "insurance";
-      else if (parsed.type === "registration") storageType = "registration";
-    }
+    const storageType = parsed ? storageTypeForParsed(parsed) : "other";
     try {
       await uploadDocument(file, userId, vehicleId, storageType);
-      // Apply parsed actions: create expense for mechanic_invoice / receipt with amount
+      // Apply parsed actions through the SAME shared routine the documents
+      // add flow uses, so smart-scan behaves identically from either entry point.
       let extras = 0;
-      if (parsed && !parsed.skipActions && (parsed.type === "mechanic_invoice" || parsed.type === "receipt")) {
-        const totalRaw = parsed.fields.total ?? parsed.fields.amount;
-        const amount = totalRaw ? parseFloat(String(totalRaw).replace(/[^0-9.]/g, "")) : NaN;
-        if (!Number.isNaN(amount) && amount > 0) {
-          try {
-            await addExpense({
-              user_id: userId,
-              vehicle_id: vehicleId,
-              type: parsed.type === "mechanic_invoice" ? "maintenance" : (parsed.fields.category || "other").toLowerCase(),
-              amount,
-              description: parsed.fields.shopName || parsed.fields.merchant || undefined,
-            });
-            extras++;
-            onExpenseSaved();
-          } catch { /* ignore */ }
-        }
+      if (parsed && !parsed.skipActions) {
+        extras = await applyParsedActions(parsed, { userId, vehicleId, existingPlate: vehiclePlate });
+        if (extras > 0) onExpenseSaved();
       }
       onDocumentSaved();
       setMode(null);
       const docLabel = parsed?.type ? parsed.type.replace(/_/g, " ") : "Document";
       const niceLabel = docLabel.charAt(0).toUpperCase() + docLabel.slice(1);
       setToast({
-        text: extras > 0 ? `${niceLabel} saved · ${extras} action taken` : `${niceLabel} saved`,
+        text: extras > 0 ? `${niceLabel} saved · ${extras} action${extras === 1 ? "" : "s"} taken` : `${niceLabel} saved`,
         color: ACCENT,
       });
     } catch (err) {
@@ -671,7 +668,16 @@ export default function FloatingScanButton({
               title="Scan Receipt"
               subtitle="Log fuel and maintenance spending instantly"
               onClick={() => setMode("receipt")}
+              borderBottom={!!onOpenCarGpt}
             />
+            {onOpenCarGpt && (
+              <ScanRow
+                icon={<ChatIcon />}
+                title="Ask Car-GPT"
+                subtitle="Get instant answers about your specific vehicle"
+                onClick={() => { close(); onOpenCarGpt(); }}
+              />
+            )}
             <button
               onClick={close}
               style={{

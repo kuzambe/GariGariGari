@@ -1,17 +1,33 @@
+import type { ComponentType } from "react";
+import {
+  ShieldIcon,
+  CertificateIcon,
+  ClipboardIcon,
+  SunIcon,
+  IdCardIcon,
+  BookIcon,
+  type IconProps,
+} from "@/components/ui/icons";
+
 const C = {
   bg:     "var(--gc-bg)",
   text:   "var(--gc-text)",
   muted:  "var(--gc-muted)",
+  green:  "#1F6B2E",
   border: "var(--gc-border)",
 };
 
-export const DOC_CATEGORIES = [
-  { label: "Insurance", type: "insurance" },
-  { label: "Ownership", type: "ownership" },
-  { label: "Registration", type: "registration" },
-  { label: "Tint Exemption", type: "tint-exemption" },
-  { label: "Driver's License", type: "drivers-license" },
-  { label: "Vehicle Handbook", type: "vehicle-handbook" },
+export const DOC_CATEGORIES: {
+  label: string;
+  type: string;
+  icon: ComponentType<IconProps>;
+}[] = [
+  { label: "Insurance", type: "insurance", icon: ShieldIcon },
+  { label: "Ownership", type: "ownership", icon: CertificateIcon },
+  { label: "Registration", type: "registration", icon: ClipboardIcon },
+  { label: "Tint Exemption", type: "tint-exemption", icon: SunIcon },
+  { label: "Driver's License", type: "drivers-license", icon: IdCardIcon },
+  { label: "Vehicle Handbook", type: "vehicle-handbook", icon: BookIcon },
 ];
 
 interface CategoryPickerSheetProps {
@@ -35,28 +51,32 @@ export function CategoryPickerSheet({ onSelect, onClose }: CategoryPickerSheetPr
           Select Category
         </p>
         <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
-          {DOC_CATEGORIES.map((cat, i) => (
-            <button
-              key={cat.type}
-              onClick={() => onSelect(cat.type, cat.label)}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "16px 18px",
-                background: C.bg,
-                border: "none",
-                borderBottom: i < DOC_CATEGORIES.length - 1 ? `1px solid ${C.border}` : "none",
-                cursor: "pointer",
-                textAlign: "left",
-                minHeight: 44,
-              }}
-            >
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text }}>{cat.label}</span>
-              <span style={{ color: C.border, fontSize: 18 }}>›</span>
-            </button>
-          ))}
+          {DOC_CATEGORIES.map((cat, i) => {
+            const Icon = cat.icon;
+            return (
+              <button
+                key={cat.type}
+                onClick={() => onSelect(cat.type, cat.label)}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 14,
+                  padding: "16px 18px",
+                  background: C.bg,
+                  border: "none",
+                  borderBottom: i < DOC_CATEGORIES.length - 1 ? `1px solid ${C.border}` : "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  minHeight: 44,
+                }}
+              >
+                <Icon size={22} color={C.green} strokeWidth={1.8} />
+                <span style={{ flex: 1, fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text }}>{cat.label}</span>
+                <span style={{ color: C.border, fontSize: 18 }}>›</span>
+              </button>
+            );
+          })}
         </div>
         <button
           onClick={onClose}

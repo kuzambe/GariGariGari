@@ -1,14 +1,13 @@
-import { useState, useRef, useEffect, useCallback, type ComponentType } from "react";
+import { useState, useRef, useEffect, useCallback, memo, type ComponentType } from "react";
 import { useLocation } from "wouter";
-import { StorefrontIcon, TagIcon, PackageIcon, WrenchIcon, ChevronDownIcon, CloseIcon, type IconProps } from "@/components/ui/icons";
+import { StorefrontIcon, TagIcon, PackageIcon, WrenchIcon, ChevronDownIcon, CloseIcon, RefreshIcon, TrashIcon, type IconProps } from "@/components/ui/icons";
 import { useAuth } from "@/context/AuthContext";
 import { useVehicle } from "@/context/VehicleContext";
 import { getDocumentsByVehicleId, Document, uploadDocument, deleteDocumentWithFile } from "@/lib/api/documents";
 import { getExpensesByVehicleId, Expense, addExpense } from "@/lib/api/expenses";
 import { Vehicle, updateVehicle, vehicleDisplayName } from "@/lib/api/vehicles";
 import { updateGuestSession } from "@/lib/guestSession";
-import { saveReminder } from "@/lib/reminders";
-import { addDays, formatDate } from "@/lib/documentParser";
+import { applyParsedActions } from "@/lib/parsedActions";
 import type { ConfirmedDocument } from "@/components/documents/ParsedDocumentSheet";
 import { Mechanic, getMechanicByVehicleId, createMechanic, updateMechanic, deleteMechanic } from "@/lib/api/mechanics";
 import { RoadsideAssistance, getRoadsideByUserId, createRoadside, updateRoadside, deleteRoadside } from "@/lib/api/roadsideAssistance";
@@ -21,6 +20,7 @@ import { VinScanStep } from "@/pages/WelcomeFlow";
 import { createVehicle } from "@/lib/api/vehicles";
 import { ScanReceiptFlow } from "@/components/finance/ScanReceiptFlow";
 import FloatingScanButton from "@/components/scan/FloatingScanButton";
+import { CarGptChat, getCarGptHistory } from "@/components/cargpt/CarGptChat";
 import { SettingsSheet } from "@/components/settings/SettingsSheet";
 import { CategoryPickerSheet, DOC_CATEGORIES } from "@/components/finance/CategoryPickerSheet";
 import { CategoryDocumentsListSheet } from "@/components/documents/CategoryDocumentsListSheet";
@@ -681,93 +681,9 @@ function MileageSheet({
   );
 }
 
-/* ── CARGPT DAILY LIMIT HELPERS ─────────────────────── */
-const CARGPT_LIMIT = 20;
-const CARGPT_LS_KEY = "cargpt_usage";
-const CARGPT_HISTORY_KEY = "cargpt_history";
-const CARGPT_HISTORY_LIMIT = 10;
-
-function getCarGptHistory(vehicleId: string): CarGptMessage[] {
-  try {
-    const today = new Date().toISOString().split("T")[0];
-    const raw = localStorage.getItem(`${CARGPT_HISTORY_KEY}_${vehicleId}`);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as { date: string; messages: CarGptMessage[] };
-    if (parsed.date !== today) return [];          // new day — clear
-    return parsed.messages ?? [];
-  } catch { return []; }
-}
-
-function saveCarGptHistory(vehicleId: string, messages: CarGptMessage[]) {
-  try {
-    const today = new Date().toISOString().split("T")[0];
-    const persisted = messages
-      .filter((m) => m.role !== "loading")
-      .slice(-CARGPT_HISTORY_LIMIT);
-    localStorage.setItem(
-      `${CARGPT_HISTORY_KEY}_${vehicleId}`,
-      JSON.stringify({ date: today, messages: persisted }),
-    );
-  } catch { /* storage full or unavailable */ }
-}
-
-function getCarGptUsage(): { date: string; count: number } {
-  try {
-    const raw = localStorage.getItem(CARGPT_LS_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { date: "", count: 0 };
-}
-
-function incrementCarGptUsage(): number {
-  const today = new Date().toISOString().split("T")[0];
-  const usage = getCarGptUsage();
-  const count = usage.date === today ? usage.count + 1 : 1;
-  localStorage.setItem(CARGPT_LS_KEY, JSON.stringify({ date: today, count }));
-  return count;
-}
-
-function getRemainingCarGptQuestions(): number {
-  const today = new Date().toISOString().split("T")[0];
-  const usage = getCarGptUsage();
-  if (usage.date !== today) return CARGPT_LIMIT;
-  return Math.max(0, CARGPT_LIMIT - usage.count);
-}
-
-/* ── THREE-DOT LOADING INDICATOR ────────────────────── */
-function CarGptTyping() {
-  return (
-    <div style={{ display: "flex", gap: 5, alignItems: "center", padding: "10px 14px" }}>
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: "#1F6B2E",
-            animation: "cargptPulse 1.2s ease-in-out infinite",
-            animationDelay: `${i * 0.2}s`,
-          }}
-        />
-      ))}
-      <style>{`
-        @keyframes cargptPulse {
-          0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
-          40% { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
-    </div>
-  );
-}
-
 /* ── PAGE 1: LANDING ───────────────────────────────── */
-interface CarGptMessage {
-  role: "user" | "model" | "loading";
-  text: string;
-}
 
-function LandingPage({
+function LandingPageBase({
   vehicle,
   vehicles,
   userId,
@@ -779,6 +695,7 @@ function LandingPage({
   onOpenSettings,
   onSwitchVehicle,
   onVehicleUpdated,
+  onOpenCarGpt,
 }: {
   vehicle: Vehicle;
   vehicles: Vehicle[];
@@ -794,24 +711,11 @@ function LandingPage({
   onOpenSettings: () => void;
   onSwitchVehicle: (v: Vehicle) => void;
   onVehicleUpdated: () => void | Promise<void>;
+  onOpenCarGpt: () => void;
 }) {
   const { distanceUnit } = usePreferences();
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
   const [showMileageSheet, setShowMileageSheet] = useState(false);
-  const [carGptInput, setCarGptInput] = useState("");
-  // hydratedVehicleRef tracks which vehicle's history is currently in state.
-  // Initialized synchronously so the save guard is accurate from the first render.
-  const hydratedVehicleRef = useRef(vehicle.id);
-  const [carGptMessages, setCarGptMessages] = useState<CarGptMessage[]>(() => {
-    hydratedVehicleRef.current = vehicle.id;
-    return getCarGptHistory(vehicle.id);
-  });
-  const [carGptLoading, setCarGptLoading] = useState(false);
-  const [carGptOpen, setCarGptOpen] = useState(false);
-  const [carGptRemaining, setCarGptRemaining] = useState(() => getRemainingCarGptQuestions());
-  const carGptBottomRef = useRef<HTMLDivElement>(null);
-  const carGptSheetRef = useRef<HTMLDivElement>(null);
-  const carGptTouchStartY = useRef(0);
 
   // ── Mechanic state ──────────────────────────────────────────────────────────
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
@@ -990,114 +894,6 @@ function LandingPage({
     }
   }
 
-  // Save effect runs BEFORE the hydration effect so that on a vehicle.id change,
-  // the guard below prevents the previous vehicle's messages from being written
-  // under the new vehicle's key (hydratedVehicleRef is still the old id at that point).
-  useEffect(() => {
-    if (hydratedVehicleRef.current !== vehicle.id) return;
-    saveCarGptHistory(vehicle.id, carGptMessages);
-  }, [carGptMessages, vehicle.id]);
-
-  // Reload history when vehicle changes (runs after save effect, safe).
-  useEffect(() => {
-    hydratedVehicleRef.current = vehicle.id;
-    setCarGptMessages(getCarGptHistory(vehicle.id));
-  }, [vehicle.id]);
-
-  // Keep counter fresh and clear history on day rollover.
-  useEffect(() => {
-    function refresh() {
-      setCarGptRemaining(getRemainingCarGptQuestions());
-      // getCarGptHistory returns [] when the stored date ≠ today (day rollover).
-      if (getCarGptHistory(vehicle.id).length === 0) {
-        setCarGptMessages([]);
-      }
-    }
-    document.addEventListener("visibilitychange", refresh);
-    const timer = setInterval(refresh, 60_000);
-    return () => { document.removeEventListener("visibilitychange", refresh); clearInterval(timer); };
-  }, [vehicle.id]);
-
-  useEffect(() => {
-    carGptBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [carGptMessages]);
-
-  async function handleCarGptSubmit() {
-    const message = carGptInput.trim();
-    if (!message || carGptLoading) return;
-
-    if (getRemainingCarGptQuestions() <= 0) {
-      setCarGptMessages((prev) => [
-        ...prev,
-        { role: "user", text: message },
-        { role: "model", text: "You've used all your CarGPT questions for today. Come back tomorrow." },
-      ]);
-      setCarGptInput("");
-      return;
-    }
-
-    incrementCarGptUsage();
-    setCarGptRemaining(getRemainingCarGptQuestions());
-
-    const history: { role: "user" | "model"; text: string }[] = carGptMessages
-      .filter((m) => m.role !== "loading")
-      .slice(-6)
-      .map((m) => ({ role: m.role as "user" | "model", text: m.text }));
-
-    setCarGptMessages((prev) => [...prev, { role: "user", text: message }, { role: "loading", text: "" }]);
-    setCarGptInput("");
-    setCarGptLoading(true);
-
-    try {
-      const [expenses, documents] = await Promise.all([
-        vehicle.id ? getExpensesByVehicleId(vehicle.id) : Promise.resolve([]),
-        vehicle.id ? getDocumentsByVehicleId(vehicle.id) : Promise.resolve([]),
-      ]);
-
-      const base = import.meta.env.BASE_URL as string;
-      const apiBase = base.replace(/\/$/, "");
-      const response = await fetch(`${apiBase}/api/cargpt`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          vehicleContext: {
-            year: vehicle.year,
-            make: vehicle.make,
-            model: vehicle.model,
-            trim: vehicle.trim,
-            engine: vehicle.engine,
-            fuel_type: vehicle.fuel_type,
-            mileage: vehicle.mileage,
-            mileage_unit: vehicle.mileage_unit,
-            expenses: expenses.slice(0, 20),
-            documents: documents.slice(0, 10),
-          },
-          userMessage: message,
-          history,
-        }),
-      });
-
-      const data = await response.json() as { text?: string; error?: string };
-      const replyText = response.status === 429
-        ? "You've used all your CarGPT questions for today. Come back tomorrow."
-        : (data.text || data.error || "CarGPT is unavailable right now. Try again in a moment.");
-
-      setCarGptMessages((prev) =>
-        prev.map((m, i) => (i === prev.length - 1 && m.role === "loading" ? { role: "model", text: replyText } : m))
-      );
-    } catch {
-      setCarGptMessages((prev) =>
-        prev.map((m, i) =>
-          i === prev.length - 1 && m.role === "loading"
-            ? { role: "model", text: "CarGPT is unavailable right now. Try again in a moment." }
-            : m
-        )
-      );
-    } finally {
-      setCarGptLoading(false);
-    }
-  }
-
   const make = vehicle.make ? vehicle.make.charAt(0).toUpperCase() + vehicle.make.slice(1).toLowerCase() : "";
   const yearMakeModel = [vehicle.year, make, vehicle.model].filter(Boolean).join(" ");
   const title = vehicleDisplayName(vehicle);
@@ -1238,7 +1034,7 @@ function LandingPage({
       {/* Car-GPT — collapsed tile (opens chat sheet) */}
       <div style={{ padding: "24px 20px 0" }}>
         <button
-          onClick={() => setCarGptOpen(true)}
+          onClick={onOpenCarGpt}
           style={{
             width: "100%",
             background: C.sage,
@@ -1257,7 +1053,7 @@ function LandingPage({
               Car-GPT
             </p>
             <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {carGptMessages.length > 0
+              {getCarGptHistory(vehicle.id).length > 0
                 ? "Continue chat"
                 : `Ask anything about ${title}`}
             </p>
@@ -1337,140 +1133,6 @@ function LandingPage({
           onClose={() => setShowMileageSheet(false)}
           onSaved={async () => { setShowMileageSheet(false); await onVehicleUpdated(); }}
         />
-      )}
-
-      {/* Car-GPT chat sheet */}
-      {carGptOpen && (
-        <div
-          style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
-          onClick={() => setCarGptOpen(false)}
-        >
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} />
-          <div
-            ref={carGptSheetRef}
-            style={{
-              position: "relative",
-              background: C.bg,
-              borderRadius: "22px 22px 0 0",
-              padding: "12px 20px 28px",
-              maxWidth: 430,
-              width: "100%",
-              margin: "0 auto",
-              boxShadow: "0 -4px 40px rgba(0,0,0,0.18)",
-              height: "58vh",
-              display: "flex",
-              flexDirection: "column",
-              animation: "gariSlideUp 0.32s cubic-bezier(0.22,1,0.36,1)",
-              transition: "transform 0.18s ease",
-              willChange: "transform",
-            }}
-            onClick={(e) => e.stopPropagation()}
-            onTouchStart={(e) => { carGptTouchStartY.current = e.touches[0].clientY; }}
-            onTouchMove={(e) => {
-              const dy = e.touches[0].clientY - carGptTouchStartY.current;
-              if (dy > 0 && carGptSheetRef.current) {
-                carGptSheetRef.current.style.transform = `translateY(${dy}px)`;
-              }
-            }}
-            onTouchEnd={(e) => {
-              const dy = e.changedTouches[0].clientY - carGptTouchStartY.current;
-              if (dy > 90) {
-                setCarGptOpen(false);
-              } else if (carGptSheetRef.current) {
-                carGptSheetRef.current.style.transform = "translateY(0)";
-              }
-            }}
-          >
-            {/* Drag handle — also acts as swipe hint */}
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 14px", flexShrink: 0, cursor: "grab" }} />
-
-            {/* Header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexShrink: 0 }}>
-              <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 18, color: C.text, margin: 0 }}>
-                Car-GPT
-              </p>
-              <button
-                onClick={() => setCarGptOpen(false)}
-                aria-label="Close chat"
-                style={{ background: "none", border: "none", padding: "4px 8px", cursor: "pointer", fontFamily: "'Rajdhani', sans-serif", fontSize: 13, color: C.muted }}
-              >
-                Close
-              </button>
-            </div>
-
-            {/* Conversation — scrolls */}
-            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 2, marginBottom: 10 }}>
-              {carGptMessages.length === 0 ? (
-                <p style={{ textAlign: "center", color: C.muted, fontFamily: "'Rajdhani', sans-serif", fontSize: 13, margin: "auto 0" }}>
-                  Ask anything about {title}.
-                </p>
-              ) : (
-                carGptMessages.map((msg, i) => {
-                  const isUser = msg.role === "user";
-                  const isLoading = msg.role === "loading";
-                  return (
-                    <div key={i} style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start" }}>
-                      <div style={{
-                        maxWidth: "80%",
-                        borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                        background: isUser ? "#1F6B2E" : C.sage,
-                        color: isUser ? "#FFFFFF" : C.text,
-                        fontFamily: "'Rajdhani', sans-serif",
-                        fontSize: 13,
-                        lineHeight: 1.5,
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-                      }}>
-                        {isLoading ? <CarGptTyping /> : (
-                          <div style={{ padding: "10px 14px", whiteSpace: "pre-wrap" }}>{msg.text}</div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-              <div ref={carGptBottomRef} />
-            </div>
-
-            {/* Input — pinned to bottom */}
-            <div style={{ position: "relative", flexShrink: 0 }}>
-              <input
-                placeholder={carGptRemaining === 0 ? "Daily limit reached. Come back tomorrow." : `Ask anything about ${title}…`}
-                value={carGptInput}
-                onChange={(e) => setCarGptInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleCarGptSubmit(); }}
-                disabled={carGptLoading || carGptRemaining === 0}
-                autoFocus
-                style={{
-                  width: "100%",
-                  background: C.sage,
-                  border: `1.5px solid ${C.border}`,
-                  borderRadius: 14,
-                  padding: "13px 48px 13px 16px",
-                  fontFamily: "'Rajdhani', sans-serif",
-                  fontSize: 14,
-                  color: C.text,
-                  outline: "none",
-                  boxSizing: "border-box",
-                  opacity: carGptLoading || carGptRemaining === 0 ? 0.5 : 1,
-                }}
-              />
-              <button
-                onClick={handleCarGptSubmit}
-                disabled={carGptLoading || !carGptInput.trim() || carGptRemaining === 0}
-                style={{
-                  position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-                  background: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "#1F6B2E" : "transparent",
-                  border: "none", borderRadius: 8, width: 30, height: 30,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  cursor: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "pointer" : "default",
-                  transition: "background 0.2s", padding: 0,
-                }}
-              >
-                <span style={{ fontSize: 16, color: carGptInput.trim() && !carGptLoading && carGptRemaining > 0 ? "#FFFFFF" : C.muted, lineHeight: 1 }}>↑</span>
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Roadside + Mechanic */}
@@ -1749,7 +1411,7 @@ function DocToast({ message, color }: { message: string; color: string }) {
 }
 
 /* ── PAGE 2: DOCUMENTS ─────────────────────────────── */
-function DocumentsPage({
+function DocumentsPageBase({
   vehicle,
   documents,
   userId,
@@ -1799,72 +1461,6 @@ function DocumentsPage({
     setTimeout(() => setToast(null), 2000);
   }
 
-  async function applyParsedActions(parsed: ConfirmedDocument): Promise<number> {
-    const f = parsed.fields;
-    let actionCount = 0;
-    try {
-      // Service date in ISO form, used for both mechanic invoices and reminders
-      const serviceDateIso = f.date && /^\d{4}-\d{2}-\d{2}$/.test(f.date) ? f.date : undefined;
-      const expenseCreatedAt = serviceDateIso ? new Date(`${serviceDateIso}T00:00:00Z`).toISOString() : undefined;
-
-      if (parsed.type === "mechanic_invoice") {
-        const amount = parseFloat(f.amount || "");
-        if (Number.isFinite(amount) && amount > 0) {
-          const description = [f.shopName, f.services].filter(Boolean).join(" — ");
-          await addExpense({
-            user_id: userId,
-            vehicle_id: vehicle.id,
-            type: "maintenance",
-            amount,
-            description: description || undefined,
-            ...(expenseCreatedAt ? { created_at: expenseCreatedAt } : {}),
-          });
-          actionCount++;
-        }
-        if (f.services && /oil change/i.test(f.services)) {
-          const baseDate = f.date && /^\d{4}-\d{2}-\d{2}$/.test(f.date) ? f.date : new Date().toISOString().slice(0, 10);
-          const due = addDays(baseDate, 180);
-          if (due) {
-            saveReminder(vehicle.id, { title: "Oil change due (6 months / 5,000 km)", due_date: due, source: "service" });
-            actionCount++;
-          }
-        }
-      } else if (parsed.type === "insurance") {
-        if (f.expiryDate && /^\d{4}-\d{2}-\d{2}$/.test(f.expiryDate)) {
-          const provider = f.provider || "Insurance";
-          const d30 = addDays(f.expiryDate, -30);
-          const d7  = addDays(f.expiryDate, -7);
-          if (d30) { saveReminder(vehicle.id, { title: `Insurance renewal due in 30 days — ${provider}`, due_date: d30, source: "insurance" }); actionCount++; }
-          if (d7)  { saveReminder(vehicle.id, { title: `Insurance expires in 7 days — renew now`,         due_date: d7,  source: "insurance" }); actionCount++; }
-        }
-      } else if (parsed.type === "registration") {
-        if (f.plateNumber && !vehicle.license_plate) {
-          try { await updateVehicle(vehicle.id, { license_plate: f.plateNumber }); actionCount++; } catch { /* silent */ }
-        }
-        if (f.expiryDate && /^\d{4}-\d{2}-\d{2}$/.test(f.expiryDate)) {
-          const d30 = addDays(f.expiryDate, -30);
-          if (d30) { saveReminder(vehicle.id, { title: `Registration renewal due — ${formatDate(f.expiryDate)}`, due_date: d30, source: "registration" }); actionCount++; }
-        }
-      } else if (parsed.type === "receipt") {
-        const amount = parseFloat(f.amount || "");
-        if (Number.isFinite(amount) && amount > 0) {
-          await addExpense({
-            user_id: userId,
-            vehicle_id: vehicle.id,
-            type: (f.category || "Other").toLowerCase(),
-            amount,
-            description: f.merchant || undefined,
-            ...(expenseCreatedAt ? { created_at: expenseCreatedAt } : {}),
-          });
-          actionCount++;
-        }
-      }
-    } catch {
-      /* never surface raw errors — just count what succeeded */
-    }
-    return actionCount;
-  }
-
   async function handleFileSelected(file: File, type: string, replacing: boolean, parsed?: ConfirmedDocument) {
     const replacingDoc = replacing ? viewDoc : null;
     setSheetType(null);
@@ -1890,7 +1486,7 @@ function DocumentsPage({
       }
 
       let extras = 0;
-      if (parsed && !parsed.skipActions) extras = await applyParsedActions(parsed);
+      if (parsed && !parsed.skipActions) extras = await applyParsedActions(parsed, { userId, vehicleId: vehicle.id, existingPlate: vehicle.license_plate });
 
       onRefresh();
       const msg = extras > 0
@@ -2007,16 +1603,19 @@ function DocumentsPage({
 
           if (docsLoading) return <DocRowSkeleton key={cat.type} i={i} />;
 
+          const Icon = cat.icon;
+
           return (
             <div
               key={cat.type}
               style={{
                 display: "flex",
                 alignItems: "center",
+                gap: 14,
                 padding: "0 20px",
-                height: 64,
-                borderBottom: `1px solid ${C.border}`,
-                borderTop: i === 0 ? `1px solid ${C.border}` : "none",
+                height: 72,
+                borderBottom: `1px solid var(--gc-divider, ${C.border})`,
+                borderTop: i === 0 ? `1px solid var(--gc-divider, ${C.border})` : "none",
                 cursor: isUploading ? "default" : "pointer",
                 background: C.bg,
                 transition: "background 0.15s",
@@ -2037,6 +1636,14 @@ function DocumentsPage({
               onMouseEnter={(e) => { if (!isUploading) (e.currentTarget as HTMLDivElement).style.background = C.sage; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = C.bg; }}
             >
+              <div style={{
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                background: C.sage, border: `1px solid ${C.border}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Icon size={20} color={C.green} strokeWidth={1.8} />
+              </div>
+
               <span style={{ flex: 1, fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text }}>
                 {cat.label}
               </span>
@@ -2169,24 +1776,15 @@ function DocumentsPage({
               aria-label="Replace document"
               title="Replace"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="23 4 23 10 17 10"/>
-                <polyline points="1 20 1 14 7 14"/>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
-                <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>
-              </svg>
+              <RefreshIcon size={18} color="#fff" strokeWidth={2} />
             </button>
             <button
               onClick={() => viewDoc && setConfirmDeleteDoc(viewDoc)}
               style={{ width: 44, height: 44, background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               aria-label="Delete document"
+              title="Delete"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                <path d="M10 11v6"/><path d="M14 11v6"/>
-                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-              </svg>
+              <TrashIcon size={18} color="#fff" strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -2234,7 +1832,7 @@ function DocumentsPage({
 }
 
 /* ── PAGE 3: FINANCES ──────────────────────────────── */
-function FinancesPage({
+function FinancesPageBase({
   vehicle,
   expenses,
   userId,
@@ -2519,17 +2117,21 @@ function FinancesPage({
 }
 
 /* ── PAGE 4: PARTS ─────────────────────────────────── */
-function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettings: () => void }) {
+function PartsPageBase({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettings: () => void }) {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
-  const filters = ["All", "Engine", "Brakes", "Suspension", "Electrical", "Body"];
+  const filters = ["All", "Engine", "Brakes", "Suspension", "Electrical", "Tires", "Body"];
 
   const make = vehicle.make ?? "";
   const model = vehicle.model ?? "";
   const year = vehicle.year ? String(vehicle.year) : "";
 
   const baseQuery = [make, model, year].filter(Boolean).join(" ");
-  const searchQuery = search.trim() ? [make, model, year, search.trim()].filter(Boolean).join(" ") : [make, model, year, "parts"].filter(Boolean).join(" ");
+  // The active category chip refines the query alongside any free-text search.
+  const filterKeyword = activeFilter !== "All" ? activeFilter.toLowerCase() : "";
+  const refineTerms = [search.trim(), filterKeyword].filter(Boolean);
+  const refineLabel = refineTerms.join(" ");
+  const searchQuery = [make, model, year, ...(refineTerms.length ? refineTerms : ["parts"])].filter(Boolean).join(" ");
 
   const sources: { name: string; Icon: ComponentType<IconProps>; url: string }[] = [
     {
@@ -2540,7 +2142,7 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
     {
       name: "Kijiji",
       Icon: TagIcon,
-      url: `https://www.kijiji.ca/b-cars-vehicles/${[make, model, year].filter(Boolean).join("+")}/k0c27l0`,
+      url: `https://www.kijiji.ca/b-auto-parts-tires/canada/${encodeURIComponent(searchQuery)}/k0c389l0`,
     },
     {
       name: "Amazon",
@@ -2550,7 +2152,7 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
     {
       name: "Canadian Tire",
       Icon: WrenchIcon,
-      url: `https://www.canadiantire.ca/en/search.html#q=${encodeURIComponent([make, year, model, search.trim() || "parts"].filter(Boolean).join("+"))}&lang=en_CA`,
+      url: `https://www.canadiantire.ca/en/search.html#q=${encodeURIComponent([make, year, model, ...(refineTerms.length ? refineTerms : ["parts"])].filter(Boolean).join("+"))}&lang=en_CA`,
     },
   ];
 
@@ -2652,12 +2254,35 @@ function PartsPage({ vehicle, onOpenSettings }: { vehicle: Vehicle; onOpenSettin
                   {source.name}
                 </p>
                 <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {search.trim() ? `"${search.trim()}" · ${baseQuery}` : baseQuery || "Set up your vehicle to pre-fill searches"}
+                  {refineLabel ? `"${refineLabel}" · ${baseQuery}` : baseQuery || "Set up your vehicle to pre-fill searches"}
                 </p>
               </div>
               <span style={{ color: C.muted, fontSize: 20, flexShrink: 0, lineHeight: 1 }}>›</span>
             </a>
           ))}
+        </div>
+
+        {/* eBay — coming soon */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 14,
+          background: C.bg, border: `1.5px dashed ${C.border}`, borderRadius: 14,
+          padding: "16px 18px", marginBottom: 32, opacity: 0.85,
+        }}>
+          <span style={{ flexShrink: 0, display: "flex" }}><PackageIcon size={22} color={C.muted} /></span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 16, color: C.text, margin: 0 }}>
+              eBay Motors
+            </p>
+            <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>
+              Direct integration coming soon
+            </p>
+          </div>
+          <span style={{
+            flexShrink: 0, fontFamily: "'Rajdhani', sans-serif", fontSize: 11, fontWeight: 600,
+            color: C.muted, background: C.greenLight, borderRadius: 999, padding: "4px 10px",
+          }}>
+            Soon
+          </span>
         </div>
       </div>
     </div>
@@ -2678,7 +2303,7 @@ const STATUS_LABEL: Record<IssueStatus, string> = {
   good: "Good",
 };
 
-function DiagnosticsPage({ vehicle, expenses, userId, onOpenSettings }: { vehicle: Vehicle; expenses: Expense[]; userId: string; onOpenSettings: () => void }) {
+function DiagnosticsPageBase({ vehicle, expenses, userId, onOpenSettings }: { vehicle: Vehicle; expenses: Expense[]; userId: string; onOpenSettings: () => void }) {
   const maintenanceItems: { label: string; status: IssueStatus; lastDate: string | null }[] = (() => {
     const now = Date.now();
     const DAY = 86400000;
@@ -2933,6 +2558,13 @@ function DiagnosticsPage({ vehicle, expenses, userId, onOpenSettings }: { vehicl
   );
 }
 
+/* ── Memoized page components (skip re-render during swipe) ── */
+const LandingPage = memo(LandingPageBase);
+const DocumentsPage = memo(DocumentsPageBase);
+const FinancesPage = memo(FinancesPageBase);
+const PartsPage = memo(PartsPageBase);
+const DiagnosticsPage = memo(DiagnosticsPageBase);
+
 /* ── MAIN DASHBOARD ────────────────────────────────── */
 export default function Dashboard() {
   const [, navigate] = useLocation();
@@ -2941,6 +2573,7 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showAddVehicle, setShowAddVehicle] = useState(false);
+  const [carGptOpen, setCarGptOpen] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const swipeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2993,12 +2626,12 @@ export default function Dashboard() {
     swipeTimer.current = setTimeout(() => setIsSwiping(false), 300);
   };
 
-  const goToPage = (p: number) => {
+  const goToPage = useCallback((p: number) => {
     if (!scrollRef.current) return;
     scrollRef.current.scrollTo({ left: p * scrollRef.current.clientWidth, behavior: "smooth" });
-  };
+  }, []);
 
-  async function handleSignOut() {
+  const handleSignOut = useCallback(async () => {
     const { clearGuestSession } = await import("@/lib/guestSession");
     clearGuestSession();
     if (isGuest) {
@@ -3008,16 +2641,22 @@ export default function Dashboard() {
     }
     await signOut();
     navigate("/welcome");
-  }
+  }, [isGuest, refetchVehicles, signOut, navigate]);
 
-  function refreshDocs() {
+  const refreshDocs = useCallback(() => {
     if (vehicle) {
       getDocumentsByVehicleId(vehicle.id).then(setDocuments).catch(() => {});
     }
-  }
-  function refreshExpenses() {
+  }, [vehicle]);
+  const refreshExpenses = useCallback(() => {
     if (vehicle) getExpensesByVehicleId(vehicle.id).then(setExpenses).catch(() => {});
-  }
+  }, [vehicle]);
+
+  const openSettings = useCallback(() => setShowSettings(true), []);
+  const openCarGpt = useCallback(() => setCarGptOpen(true), []);
+  const goToWelcome = useCallback(() => navigate("/welcome"), [navigate]);
+  const handleSwitchVehicle = useCallback((v: Vehicle) => switchVehicle(v.id), [switchVehicle]);
+  const handleVehicleUpdated = useCallback(async () => { await refetchVehicles(); }, [refetchVehicles]);
 
   if (loading || !vehicle) return <LoadingScreen />;
 
@@ -3041,11 +2680,11 @@ export default function Dashboard() {
           msOverflowStyle: "none",
         } as React.CSSProperties}
       >
-        <LandingPage vehicle={vehicle} vehicles={vehicles} expenses={expenses} documents={documents} issues={issues} healthScore={healthScore} isGuest={isGuest} onSignUpFromGuest={() => navigate("/welcome")} userId={user?.id ?? ""} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={() => setShowSettings(true)} onSwitchVehicle={(v) => switchVehicle(v.id)} onVehicleUpdated={async () => { await refetchVehicles(); }} />
-        <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} onOpenSettings={() => setShowSettings(true)} docsLoading={docsLoading} />
-        <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} onOpenSettings={() => setShowSettings(true)} />
-        <PartsPage vehicle={vehicle} onOpenSettings={() => setShowSettings(true)} />
-        <DiagnosticsPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onOpenSettings={() => setShowSettings(true)} />
+        <LandingPage vehicle={vehicle} vehicles={vehicles} expenses={expenses} documents={documents} issues={issues} healthScore={healthScore} isGuest={isGuest} onSignUpFromGuest={goToWelcome} userId={user?.id ?? ""} onSignOut={handleSignOut} onGoToPage={goToPage} onOpenSettings={openSettings} onSwitchVehicle={handleSwitchVehicle} onVehicleUpdated={handleVehicleUpdated} onOpenCarGpt={openCarGpt} />
+        <DocumentsPage vehicle={vehicle} documents={documents} userId={user?.id ?? ""} onRefresh={refreshDocs} onOpenSettings={openSettings} docsLoading={docsLoading} />
+        <FinancesPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onRefresh={refreshExpenses} onOpenSettings={openSettings} />
+        <PartsPage vehicle={vehicle} onOpenSettings={openSettings} />
+        <DiagnosticsPage vehicle={vehicle} expenses={expenses} userId={user?.id ?? ""} onOpenSettings={openSettings} />
       </div>
 
       {/* Settings sheet */}
@@ -3107,11 +2746,16 @@ export default function Dashboard() {
         vehicleId={vehicle.id === "guest-vehicle" ? null : vehicle.id}
         userId={user?.id ?? ""}
         isGuest={isGuest}
-        hidden={showSettings || showAddVehicle}
+        vehiclePlate={vehicle.license_plate ?? null}
+        hidden={showSettings || showAddVehicle || carGptOpen}
         onDocumentSaved={refreshDocs}
         onExpenseSaved={refreshExpenses}
         onVehicleSaved={() => { refetchVehicles(); }}
+        onOpenCarGpt={() => setCarGptOpen(true)}
       />
+
+      {/* Unified Car-GPT chat — reachable from the landing tile and the scan button on any page */}
+      <CarGptChat vehicle={vehicle} open={carGptOpen} onClose={() => setCarGptOpen(false)} />
 
       {/* Page indicator — sliding capsule with active label */}
       <div
